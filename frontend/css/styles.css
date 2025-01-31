@@ -62,7 +62,8 @@ a:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: fit-content;
+    margin: 50px auto;
     /* background-color: var(--primary-color); */
 }
 
@@ -82,6 +83,7 @@ a:hover {
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .auth-image img {
