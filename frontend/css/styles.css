@@ -1,11 +1,11 @@
 /* CSS Variables */
 :root {
     /* Colors */
-    --primary-color: #28a745;
-    --primary-hover-color: #218838;
+    --primary-color: #0f6fec;
+    --primary-hover-color: #0f6fec1a;
     --danger-color: #dc3545;
     --danger-hover-color: #c82333;
-    --background-color: #f4f4f4;
+    --background-color: #eff2f6;
     --white-color: #fff;
     --text-color: #333;
     --border-color: #ccc;
@@ -48,7 +48,7 @@ a {
 }
 
 a:hover {
-    color: var(--primary-hover-color);
+    color: var(--primary-color);
 }
 
 #app {
@@ -212,6 +212,7 @@ form button {
 
 form button:hover {
     background: var(--primary-hover-color);
+    color: var(--primary-color);
 }
 
 /* Forum Section */
