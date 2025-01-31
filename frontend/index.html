@@ -12,12 +12,8 @@
         <!-- Registration and Login Section -->
         <div id="auth-section">
             <div class="auth-container">
-                <!-- Image on the Right -->
-                <!-- <div class="auth-image">
-                    <img src="./images/login.jpeg" alt="Forum Image">
-                </div> -->
-
-                <div class="auth-image">
+                <!-- Image on the Left -->
+                    <div class="auth-image">
                     <img id="auth-image" src="./images/register.jpeg" alt="Forum Image">
                 </div>
         
@@ -33,11 +29,15 @@
                             </div>
                             <div class="input-group">
                                 <i class="fas fa-birthday-cake"></i>
-                                <input type="number" id="age" placeholder="Age" required>
+                                <input type="number" id="age" placeholder="Age" min="1" max="150" required>
                             </div>
                             <div class="input-group">
                                 <i class="fas fa-venus-mars"></i>
-                                <input type="text" id="gender" placeholder="Gender" required>
+                                <select id="gender" required>
+                                    <option value="" disabled selected>Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
                             </div>
                             <div class="input-group">
                                 <i class="fas fa-signature"></i>

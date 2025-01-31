@@ -215,6 +215,30 @@ form button:hover {
     color: var(--primary-color);
 }
 
+
+/* Add these styles for the select element */
+select {
+    display: block;
+    margin: var(--spacing-small) 0;
+    padding: var(--spacing-small);
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-sizing: border-box;
+    background-color: var(--white-color);
+    font-size: var(--font-size-medium);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Style the select placeholder */
+select option[value=""][disabled] {
+    color: #999;
+}
+
 /* Forum Section */
 #forum-section {
     display: none;
