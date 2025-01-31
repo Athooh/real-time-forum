@@ -9,6 +9,8 @@
     --white-color: #fff;
     --text-color: #333;
     --border-color: #ccc;
+    --disabled-color: #999;
+    --text-color1: #6e6e6e;
 
     /* Spacing */
     --spacing-small: 10px;
@@ -78,7 +80,7 @@ a:hover {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
-    max-width: 800px;
+    max-width: 900px;
     width: 90%;
     max-height: 90vh;
 }
@@ -229,14 +231,18 @@ select {
     font-size: var(--font-size-medium);
 }
 
+select#gender {
+    color: var(--text-color1);
+}
+
 select:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--primary-hover-color);
 }
 
 /* Style the select placeholder */
 select option[value=""][disabled] {
-    color: #999;
+    color: var(--disabled-color);
 }
 
 /* Forum Section */
