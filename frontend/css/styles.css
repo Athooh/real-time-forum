@@ -102,33 +102,27 @@ a:hover {
 .auth-forms {
     flex: 1;
     padding: var(--spacing-small) var(--spacing-medium);
-    /* position: relative; */
-    margin: auto;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
 }
 
 .auth-form {
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.auth-form:not(.active) {
-    visibility: hidden;
-    opacity: 0;
-    height: 0;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    width: 100%;
+    max-width: 300px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
 }
 
 .auth-form.active {
-    visibility: visible;
+    position: relative;
     opacity: 1;
-    height: auto;
-    padding: 0;
-    margin: 0;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 h2 {
@@ -323,4 +317,125 @@ header {
 
 .auth-form.active {
     animation: fadeIn 0.5s ease;
+}
+
+/* Post Styles */
+.post {
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: var(--spacing-medium);
+    padding: var(--spacing-medium);
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-small);
+}
+
+.post-category {
+    background: var(--light-bg-color);
+    padding: var(--spacing-xs) var(--spacing-small);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-small);
+    margin-left: var(--spacing-small);
+}
+
+.post-content {
+    margin: var(--spacing-medium) 0;
+    line-height: 1.5;
+}
+
+.post-actions {
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--spacing-small);
+    margin-top: var(--spacing-small);
+}
+
+.comment-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: var(--spacing-xs) var(--spacing-small);
+}
+
+.comment-btn:hover {
+    color: var(--primary-color);
+}
+
+/* Modal - using existing styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--overlay-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--white-color);
+    padding: var(--spacing-medium);
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--box-shadow);
+}
+
+/* Button interaction feedback */
+.button-pressed {
+    transform: scale(0.95);
+    transition: transform 0.2s;
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: var(--spacing-small) var(--spacing-medium);
+    border-radius: var(--border-radius);
+    background: var(--success-color);
+    color: var(--white-color);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+.toast-error {
+    background: var(--error-color);
+}
+
+.toast-fade-in {
+    opacity: 1;
+}
+
+.toast-fade-out {
+    opacity: 0;
+}
+
+/* Error message styling */
+.error-message {
+    background: var(--error-bg-color);
+    color: var(--error-color);
+    padding: var(--spacing-medium);
+    margin: var(--spacing-medium) 0;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.error-message button {
+    margin-top: var(--spacing-small);
+    padding: var(--spacing-xs) var(--spacing-small);
+    background: var(--error-color);
+    color: var(--white-color);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
 }
