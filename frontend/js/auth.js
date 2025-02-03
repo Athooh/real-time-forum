@@ -27,21 +27,24 @@ showRegisterLink.addEventListener('click', (e) => {
 registerForm.classList.add('active');
 authImage.src = "./images/register.png";
 
-// Handle User Registration
-registerForm.addEventListener('submit', async (e) => {
+// Update the form selector
+const registerFormElement = document.querySelector('#register-form form');
+
+// Update the event listener
+registerFormElement.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const userData = {
-        nickname: document.getElementById('nickname').value,
-        age: document.getElementById('age').value,
-        gender: document.getElementById('gender').value,
-        firstName: document.getElementById('first-name').value,
-        lastName: document.getElementById('last-name').value,
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value,
-    };
-
     try {
+        const userData = {
+            nickname: document.getElementById('nickname').value,
+            age: parseInt(document.getElementById('age').value),
+            gender: document.getElementById('gender').value,
+            first_name: document.getElementById('first-name').value,
+            last_name: document.getElementById('last-name').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+        };
+
         const response = await fetch('/register', {
             method: 'POST',
             headers: {
@@ -50,59 +53,106 @@ registerForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(userData),
         });
 
+        const data = await response.json();
+
         if (response.ok) {
             alert('Registration successful! Please log in.');
-            registerForm.reset();
-            registerForm.classList.remove('active');
-            loginForm.classList.add('active');
+            e.target.reset();
+            document.getElementById('register-form').classList.remove('active');
+            document.getElementById('login-form').classList.add('active');
         } else {
-            const error = await response.json();
-            alert(`Registration failed: ${error.message}`);
+            alert(`Registration failed: ${data.error || 'Unknown error'}`);
         }
     } catch (error) {
         console.error('Error during registration:', error);
-        alert('An error occurred during registration.');
+        alert('An error occurred during registration. Please try again.');
     }
 });
 
-// Handle User Login
+// Login form handler
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    const loginData = {
-        identifier: document.getElementById('login-identifier').value,
-        password: document.getElementById('login-password').value,
-    };
-
+    
     try {
+        const identifier = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        if (!identifier || !password) {
+            throw new Error('Identifier and password are required');
+        }
+
         const response = await fetch('/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(loginData),
+            body: JSON.stringify({
+                identifier: identifier,
+                password: password,
+            }),
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('token', data.token); // Store the token for future requests
+            // Store authentication data
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user_id', data.user_id);
+            
+            // Update UI
             authSection.style.display = 'none';
             forumSection.style.display = 'block';
+            
+            // Initialize forum features
+            try {
+                await fetchPosts();
+                await fetchOnlineUsers();
+                initializeWebSocket();
+            } catch (error) {
+                console.error('Error initializing forum:', error);
+            }
         } else {
-            const error = await response.json();
-            alert(`Login failed: ${error.message}`);
+            alert(data.error || 'Login failed');
         }
     } catch (error) {
         console.error('Error during login:', error);
-        alert('An error occurred during login.');
+        alert('An error occurred during login. Please try again.');
     }
 });
 
-// Handle Logout
+// Update the logout handler
 document.getElementById('logout').addEventListener('click', () => {
     localStorage.removeItem('token');
-    authSection.style.display = 'block';
+    localStorage.removeItem('user_id');
+    
+    // Reset form states
+    document.querySelectorAll('.auth-form').forEach(form => {
+        form.classList.remove('active');
+    });
+    
+    // Show login form
+    loginForm.classList.add('active');
+    
+    // Reset UI visibility
     forumSection.style.display = 'none';
-    loginForm.classList.add('active'); // Show login form after logout
-    registerForm.classList.remove('active');
+    authSection.style.display = 'flex';
+    
+    // Reset the auth image
+    authImage.src = "./images/register.jpeg";
 });
+
+// Add authentication header to all fetch requests
+function authenticatedFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('No authentication token found');
+    }
+
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+}
