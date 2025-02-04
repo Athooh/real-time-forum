@@ -48,7 +48,11 @@ registerFormElement.addEventListener('submit', async (e) => {
         const passwordValidation = validatePassword(userData.password);
 
         if (!passwordValidation.isValid) {
-            alert(`Password is invalid: ${passwordValidation.errors.join(', ')}`);
+            showNotification(
+                `Password requirements: ${passwordValidation.errors.join(', ')}`, 
+                NotificationType.WARNING,
+                8000 // Longer duration for reading requirements
+            );
             return;
         }
 
@@ -63,17 +67,20 @@ registerFormElement.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            alert('Registration successful! Please log in.');
+            showNotification('Registration successful! Please log in.', NotificationType.SUCCESS);
             e.target.reset();
             document.getElementById('register-form').classList.remove('active');
             document.getElementById('login-form').classList.add('active');
         } else {
-            alert(`Registration failed: ${data.error || 'Unknown error'}`);
+            showNotification(data.error || 'Unknown error', NotificationType.ERROR);
         }
         
     } catch (error) {
         console.error('Error during registration:', error);
-        alert('An error occurred during registration. Please try again.');
+        showNotification(
+            'An error occurred during registration. Please try again.',
+            NotificationType.ERROR
+        );
     }
 });
 
@@ -103,6 +110,7 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
+            showNotification('Login successful!', NotificationType.SUCCESS);
             // Store authentication data
             localStorage.setItem('token', data.token);
             localStorage.setItem('user_id', data.user_id);
@@ -120,7 +128,7 @@ loginForm.addEventListener('submit', async (e) => {
                 console.error('Error initializing forum:', error);
             }
         } else {
-            alert(data.error || 'Login failed');
+            showNotification(data.error || 'Login failed', NotificationType.ERROR);
         }
     } catch (error) {
         console.error('Error during login:', error);
@@ -180,3 +188,30 @@ function setupPasswordToggles() {
 }
 
 document.addEventListener('DOMContentLoaded', setupPasswordToggles);
+
+// Add this at the beginning of the file
+function checkAuthState() {
+    const token = localStorage.getItem('token');
+    if (token) {
+        // Hide auth section and show forum
+        authSection.style.display = 'none';
+        forumSection.style.display = 'block';
+        
+        // Initialize forum features
+        try {
+            fetchPosts();
+            fetchOnlineUsers();
+            initializeWebSocket();
+        } catch (error) {
+            console.error('Error initializing forum:', error);
+            showNotification('Error loading forum data', NotificationType.ERROR);
+        }
+    } else {
+        // Show auth section and hide forum
+        authSection.style.display = 'flex';
+        forumSection.style.display = 'none';
+    }
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', checkAuthState);

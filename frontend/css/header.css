@@ -1,0 +1,157 @@
+.main-header {
+    background: var(--white-color);
+    box-shadow: var(--box-shadow);
+    padding: 0.1rem 14rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.main-header h1 {
+    padding-block: 0;
+    margin-block: 0;
+    color: var(--primary-color);
+    font-size: var(--font-size-large);
+    font-weight: 700;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.logo img {
+    height: 30px;
+    width: auto;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+}
+
+.search-container input {
+    border: none;
+    background: var(--search-input-color);
+    padding: 0.5rem;
+    width: 200px;
+    border-radius: var(--border-radius);
+}
+
+.search-btn {
+    background: none;
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0.4rem;
+    margin-left: 0.3rem;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    margin-block: 0;
+}
+
+.nav-links a {
+    color: var(--text-color1);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 0.2rem;
+}
+
+.nav-links a.active {
+    color: var(--primary-color);
+}
+
+.nav-links i {
+    font-size: 0.6rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.icon-btn {
+    background: var(--search-input-color);
+    border: none;
+    position: relative;
+    padding: 0.5rem 0.7rem;
+    cursor: pointer;
+    font-size: var(--font-size-medium);
+    color: var(--primary-color);
+    border-radius: var(--border-radius);
+}
+
+.badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--error-color);
+    color: var(--danger-color);
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 50%;
+    min-width: 18px;
+}
+
+.profile-menu {
+    position: relative;
+    cursor: pointer;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--white-color);
+    box-shadow: var(--box-shadow);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0;
+    min-width: 200px;
+    display: none;
+}
+
+.profile-menu:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.dropdown-menu a:hover {
+    background: var(--bg-light);
+} 
