@@ -45,6 +45,13 @@ registerFormElement.addEventListener('submit', async (e) => {
             password: document.getElementById('password').value,
         };
 
+        const passwordValidation = validatePassword(userData.password);
+
+        if (!passwordValidation.isValid) {
+            alert(`Password is invalid: ${passwordValidation.errors.join(', ')}`);
+            return;
+        }
+
         const response = await fetch('/register', {
             method: 'POST',
             headers: {
@@ -63,6 +70,7 @@ registerFormElement.addEventListener('submit', async (e) => {
         } else {
             alert(`Registration failed: ${data.error || 'Unknown error'}`);
         }
+        
     } catch (error) {
         console.error('Error during registration:', error);
         alert('An error occurred during registration. Please try again.');
@@ -156,3 +164,19 @@ function authenticatedFetch(url, options = {}) {
         },
     });
 }
+
+
+function setupPasswordToggles() {
+    const toggles = document.querySelectorAll('.password-toggle');
+    
+    toggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const passwordInput = this.previousElementSibling;
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🔒';
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', setupPasswordToggles);
