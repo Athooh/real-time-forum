@@ -1,7 +1,12 @@
 package utils
 
 import (
+	"database/sql"
+	"errors"
 	"time"
+
+	"forum/database"
+
 	"github.com/golang-jwt/jwt"
 )
 
@@ -35,5 +40,19 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 		return nil, err
 	}
 
+	// Check if the token exists in the database and is not expired
+	var expiresAt time.Time
+	err = database.GloabalDB.QueryRow("SELECT expires_at FROM sessions WHERE jwt_token = ?", tokenString).Scan(&expiresAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("token not found in database")
+		}
+		return nil, err
+	}
+
+	if time.Now().After(expiresAt) {
+		return nil, errors.New("token has expired")
+	}
+
 	return claims, nil
-} 
+}
