@@ -1,26 +1,20 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
-	"log"
+	"forum/controllers"
+	"forum/database"
+	"forum/logger"
+	"forum/models"
+	"forum/utils"
 	"net/http"
 
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
+	auth "forum/sessions"
 )
 
-func RegisterHandler(db *sql.DB) http.HandlerFunc {
+func RegisterHandler(ac *controllers.AuthController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var user struct {
-			Nickname  string `json:"nickname"`
-			Email    string `json:"email"`
-			Password string `json:"password"`
-			FirstName string `json:"first_name"`
-			LastName  string `json:"last_name"`
-			Age      int    `json:"age"`
-			Gender   string `json:"gender"`
-		}
+		var user models.User
 
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -32,67 +26,57 @@ func RegisterHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Validate required fields
-		if user.Nickname == "" || user.Email == "" || user.Password == "" {
+		if !ac.IsValidEmail(user.Email) || !ac.IsValidUsername(user.Nickname) || !ac.IsValidPassword(user.Password) {
+			logger.Warning("Invalid input data userNickname: %s, userEmail: %s, userPassword: %s", user.Nickname, user.Email, user.Password)
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Missing required fields",
+				"error": "Invalid input data",
 			})
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		// Hash password
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		// sabitize input
+		user.Nickname = ac.SanitizeInput(user.Nickname)
+		user.Email = ac.SanitizeInput(user.Email)
+		user.Password = ac.SanitizeInput(user.Password)
+
+		// Register user
+		userID, err := ac.RegisterUser(user)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Server error",
-			})
 			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": err.Error(),
+			})
 			return
 		}
 
-		// Insert user
-		userID := uuid.New().String()
-		result, err := db.Exec(`
-            INSERT INTO users (user_id, nickname, email, password, first_name, last_name, age, gender)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, userID, user.Nickname, user.Email, hashedPassword, user.FirstName, user.LastName, user.Age, user.Gender)
-
+		token, err := auth.CreateSession(ac.DB, w, int(userID))
 		if err != nil {
-			log.Printf("Database error: %v", err)
-			w.Header().Set("Content-Type", "application/json")
+			logger.Error("Failed to create session: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Failed to create user",
+				"error": "Failed to create session",
 			})
 			return
 		}
-
-		// Check if the row was actually inserted
-		rowsAffected, err := result.RowsAffected()
-		if err != nil || rowsAffected == 0 {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Failed to create user",
-			})
-			return
-		}
+		logger.Info("User registered successfully userID: %d (nickname: %s, email: %s)", userID, user.Nickname, user.Email)
 
 		// Set headers first
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		
+
 		// Then write response
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Registration successful",
-			"user_id": userID,
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message":  "Registration successful",
+			"token":    token,
+			"userData": user,
 		})
 	}
 }
 
-func LoginHandler(db *sql.DB) http.HandlerFunc {
+func LoginHandler(ac *controllers.AuthController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var credentials struct {
 			Identifier string `json:"identifier"`
@@ -108,51 +92,115 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		var user struct {
-			ID       string
-			Password string
-		}
-
-		// Try to find user by email or nickname
-		err := db.QueryRow(`
-            SELECT user_id, password 
-            FROM users 
-            WHERE email = ? OR nickname = ?
-        `, credentials.Identifier, credentials.Identifier).Scan(&user.ID, &user.Password)
-
-		if err == sql.ErrNoRows {
+		if !ac.IsValidEmail(credentials.Identifier) && !ac.IsValidUsername(credentials.Identifier) {
+			logger.Warning("Invalid input data userIdentifier: %s", credentials.Identifier)
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Invalid credentials",
+				"error": "Invalid input data",
 			})
 			return
 		}
 
+		// sabitize input
+		credentials.Identifier = ac.SanitizeInput(credentials.Identifier)
+		credentials.Password = ac.SanitizeInput(credentials.Password)
+
+		// Authenticate user
+		user, err := ac.AuthenticateUser(credentials)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Server error",
-			})
-			return
-		}
-
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Invalid credentials",
+				"error": err.Error(),
 			})
 			return
 		}
 
+		token, err := auth.CreateSession(ac.DB, w, int(user.ID))
+		if err != nil {
+			logger.Error("Failed to create session: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to create session",
+			})
+			return
+		}
+		logger.Info("User logged in successfully userID: %d (nickname: %s, email: %s)", user.ID, user.Nickname, user.Email)
+
 		// Generate token
-		token := uuid.New().String()
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"token":   token,
-			"user_id": user.ID,
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message":  "Login successful",
+			"userData": user,
+			"token":    token,
 		})
 	}
+}
+
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the session cookie
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		logger.Debug("Logout attempted with no active session")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// Delete the session from the database
+	sessionToken := cookie.Value
+	err = controllers.DeleteSession(database.GloabalDB, sessionToken)
+	if err != nil {
+		logger.Error("Failed to delete session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Clear the session cookie on the client
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // Expire the cookie immediately
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	logger.Info("User successfully logged out")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "User is logged out succesfully",
+	})
+}
+
+func ValidateTokenHandler(w http.ResponseWriter, r *http.Request) {
+	var requestData struct {
+		Token string `json:"token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	_, err := utils.ValidateJWT(requestData.Token)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{
+		"valid": true,
+	})
 }
