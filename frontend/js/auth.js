@@ -67,6 +67,10 @@ registerFormElement.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
+            // Store authentication data
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userData', JSON.stringify(data.userData));
+
             showNotification('Registration successful! Please log in.', NotificationType.SUCCESS);
             e.target.reset();
             document.getElementById('register-form').classList.remove('active');
@@ -108,12 +112,13 @@ loginForm.addEventListener('submit', async (e) => {
         });
 
         const data = await response.json();
+        console.log("login data",data);
 
         if (response.ok) {
             showNotification('Login successful!', NotificationType.SUCCESS);
             // Store authentication data
             localStorage.setItem('token', data.token);
-            localStorage.setItem('user_id', data.user_id);
+            localStorage.setItem('userData', JSON.stringify(data.userData));
             
             // Update UI
             authSection.style.display = 'none';
@@ -128,6 +133,7 @@ loginForm.addEventListener('submit', async (e) => {
                 console.error('Error initializing forum:', error);
             }
         } else {
+
             showNotification(data.error || 'Login failed', NotificationType.ERROR);
         }
     } catch (error) {
@@ -137,24 +143,45 @@ loginForm.addEventListener('submit', async (e) => {
 });
 
 // Update the logout handler
-document.getElementById('logout').addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_id');
-    
-    // Reset form states
-    document.querySelectorAll('.auth-form').forEach(form => {
-        form.classList.remove('active');
-    });
-    
-    // Show login form
-    loginForm.classList.add('active');
-    
-    // Reset UI visibility
-    forumSection.style.display = 'none';
-    authSection.style.display = 'flex';
-    
-    // Reset the auth image
-    authImage.src = "./images/register.jpeg";
+document.getElementById('logout').addEventListener('click', async () => {
+    try {
+        // Send a request to the backend to invalidate the session
+        const response = await fetch('/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to log out from the server');
+        }
+
+        // Remove token and user data from local storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+
+        // Reset form states
+        document.querySelectorAll('.auth-form').forEach(form => {
+            form.classList.remove('active');
+        });
+
+        // Show login form
+        loginForm.classList.add('active');
+
+        // Reset UI visibility
+        forumSection.style.display = 'none';
+        authSection.style.display = 'flex';
+
+        // Reset the auth image
+        authImage.src = "./images/register.jpeg";
+
+        showNotification('You have been logged out successfully.', NotificationType.INFO);
+    } catch (error) {
+        console.error('Error during logout:', error);
+        showNotification('An error occurred during logout. Please try again.', NotificationType.ERROR);
+    }
 });
 
 // Add authentication header to all fetch requests
@@ -193,19 +220,46 @@ document.addEventListener('DOMContentLoaded', setupPasswordToggles);
 function checkAuthState() {
     const token = localStorage.getItem('token');
     if (token) {
-        // Hide auth section and show forum
-        authSection.style.display = 'none';
-        forumSection.style.display = 'block';
-        
-        // Initialize forum features
-        try {
-            fetchPosts();
-            fetchOnlineUsers();
-            initializeWebSocket();
-        } catch (error) {
-            console.error('Error initializing forum:', error);
-            showNotification('Error loading forum data', NotificationType.ERROR);
-        }
+        // Validate the token with the backend
+        authenticatedFetch('/validate-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Invalid token');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.valid) {
+                // Hide auth section and show forum
+                authSection.style.display = 'none';
+                forumSection.style.display = 'block';
+
+                // Initialize forum features
+                try {
+                    fetchPosts();
+                    fetchOnlineUsers();
+                    initializeWebSocket();
+                } catch (error) {
+                    console.error('Error initializing forum:', error);
+                    showNotification('Error loading forum data', NotificationType.ERROR);
+                }
+            } else {
+                throw new Error('Token validation failed');
+            }
+        })
+        .catch(error => {
+            console.error('Token validation error:', error);
+            // Show auth section and hide forum
+            authSection.style.display = 'flex';
+            forumSection.style.display = 'none';
+            showNotification('Session expired. Please log in again.', NotificationType.WARNING);
+        });
     } else {
         // Show auth section and hide forum
         authSection.style.display = 'flex';

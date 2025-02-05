@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi"
+	// "github.com/go-chi/chi"
 	"github.com/google/uuid"
 )
 
@@ -51,7 +51,6 @@ func GetPostsHandler(db *sql.DB) http.HandlerFunc {
             ORDER BY p.timestamp DESC
             LIMIT ? OFFSET ?
         `, limit, offset)
-
 		if err != nil {
 			http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
 			return
@@ -98,7 +97,6 @@ func CreatePostHandler(db *sql.DB) http.HandlerFunc {
             INSERT INTO posts (post_id, user_id, content, category, timestamp)
             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
         `, postID, userID, post.Content, post.Category)
-
 		if err != nil {
 			http.Error(w, "Failed to create post", http.StatusInternalServerError)
 			return
@@ -117,7 +115,6 @@ func CreatePostHandler(db *sql.DB) http.HandlerFunc {
 			&newPost.Timestamp, &newPost.User.Nickname, &newPost.User.FirstName,
 			&newPost.User.LastName,
 		)
-
 		if err != nil {
 			http.Error(w, "Failed to fetch created post", http.StatusInternalServerError)
 			return
@@ -131,7 +128,7 @@ func CreatePostHandler(db *sql.DB) http.HandlerFunc {
 func UpdatePostHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value("userID").(string)
-		postID := chi.URLParam(r, "postID")
+		postID := r.URL.Query().Get("postID")
 
 		var update struct {
 			Content string `json:"content"`
@@ -163,7 +160,7 @@ func UpdatePostHandler(db *sql.DB) http.HandlerFunc {
 func DeletePostHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value("userID").(string)
-		postID := chi.URLParam(r, "postID")
+		postID := r.URL.Query().Get("postID")
 
 		// Verify post ownership
 		var ownerID string
