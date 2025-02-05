@@ -7,11 +7,15 @@
     --danger-hover-color: #c82333;
     --background-color: #eff2f6;
     --white-color: #fff;
-    --text-color: #333;
+    --text-color: #676a79;
     --border-color: #ccc;
     --disabled-color: #999;
     --text-color1: #6e6e6e;
-    --search-input-color: #f0f0f0;
+    --search-input-color: #eef0f2;
+    --notification-color: #D6293E1A;
+    --notification-text-color: #a83a3a;
+    --notification-header-color: #000;
+
 
     /* Spacing */
     --spacing-small: 10px;

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/header.css">
     <link rel="stylesheet" href="css/notifications.css">
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
     <div id="app">
@@ -120,29 +121,29 @@
                                 <span class="badge">5</span>
                             </button>
                             <div class="dropdown-menu">
-                                <div class="notification">
-                                    <img src="images/avatar.png" alt="Notification">
-                                    <p><strong>John Doe</strong> liked your post</p>
+                                <div class="notification-header">
+                                    <p class="h3">Notifications <span>2 New</span></p>
+                                    <p class="clear-all">Clear all</p>
                                 </div>
-                                <div class="notification">
-                                    <img src="images/avatar.png" alt="Notification">
-                                    <p><strong>Jane Doe</strong> commented on your post</p>
+                                <div class="notifications-list">
+                                    <div class="notification">
+                                        <img src="images/avatar.png" alt="User Avatar">
+                                        <div class="notification-content">
+                                            <p><span><strong>John Doe</strong></span> liked your post</p>
+                                            <span class="time">2 mins</span>
+                                        </div>
+                                    </div>
+                                    <div class="notification unread">
+                                        <img src="images/avatar.png" alt="User Avatar">
+                                        <div class="notification-content">
+                                            <p><span><strong>Jane Smith</strong></span> commented on your post</p>
+                                            <span class="time">5 mins</span>
+                                        </div>
+                                    </div>
+                                    <!-- More notifications -->
                                 </div>
-                                <div class="notification">
-                                    <img src="images/avatar.png" alt="Notification">
-                                    <p><strong>John Doe</strong> liked your post</p>
-                                </div>
-                                <div class="notification">
-                                    <img src="images/avatar.png" alt="Notification">
-                                    <p><strong>Jane Doe</strong> commented on your post</p>
-                                </div>
-                                <div class="notification">
-                                    <img src="images/avatar.png" alt="Notification">
-                                    <p><strong>John Doe</strong> liked your post</p>
-                                </div>
-                                <div class="notification">
-                                    <img src="images/avatar.png" alt="Notification">
-                                    <p><strong>Jane Doe</strong> commented on your post</p>
+                                <div class="notification-footer">
+                                    <a href="#">View all notifications</a>
                                 </div>
                             </div>
                             <!-- <button class="icon-btn" title="Close">
@@ -164,34 +165,217 @@
                 </div>
             </header>
 
-            <!-- Post Feed -->
-            <div id="post-feed">
-                <h2>Posts</h2>
-                <button id="create-post">Create Post</button>
-                <div class="posts-container">
-                    <div class="loading-spinner"></div>
-                    <div id="posts"></div>
-                    <div class="posts-loading">
-                        <div class="loading-spinner"></div>
-                        <p>Loading more posts...</p>
+            <!-- New Dashboard Container -->
+            <div class="dashboard-container">
+                <!-- Left Sidebar -->
+                <aside class="sidebar left-sidebar">
+                    <div class="user-profile-card">
+                        <div class="profile-banner">
+                            <img src="images/banner.png" alt="Profile Banner">
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-avatar">
+                                <img src="images/avatar.png" alt="Profile Picture">
+                            </div>
+                            <h3 class="user-name">John Doe</h3>
+                            <p class="user-profession">Software Engineer</p>
+                            <p class="user-tagline">Building the future, one line of code at a time</p>
+                            
+                            <div class="profile-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value">1.2k</span>
+                                    <span class="stat-label">Followers</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">843</span>
+                                    <span class="stat-label">Following</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value">132</span>
+                                    <span class="stat-label">Posts</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Chat Section -->
-            <div id="chat-section">
-                <h2>Chat</h2>
-                <div id="online-users">
-                    <h3>Online Users</h3>
-                    <ul id="users-list"></ul>
-                </div>
-                <div id="chat-window">
-                    <div id="messages-container"></div>
-                    <form id="send-message">
-                        <input type="text" id="message-input" placeholder="Type a message..." required>
-                        <button type="submit">Send</button>
-                    </form>
-                </div>
+                    <nav class="sidebar-nav">
+                        <a href="#" class="nav-item active">
+                            <i class="fas fa-home"></i>
+                            <span>Feed</span>
+                        </a>
+                        <a href="#" class="nav-item">
+                            <i class="fas fa-users"></i>
+                            <span>Connections</span>
+                        </a>
+                        <a href="#" class="nav-item">
+                            <i class="fas fa-newspaper"></i>
+                            <span>Latest News</span>
+                        </a>
+                        <a href="#" class="nav-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Events</span>
+                        </a>
+                        <a href="#" class="nav-item">
+                            <i class="fas fa-user-group"></i>
+                            <span>Groups</span>
+                        </a>
+                        <a href="#" class="nav-item">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                        <a href="#" class="nav-item">
+                            <i class="fas fa-gear"></i>
+                            <span>Settings</span>
+                        </a>
+                    </nav>
+
+                    <a href="#" class="view-profile-link">
+                        <i class="fas fa-user"></i>
+                        <span>View Profile</span>
+                    </a>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="main-content">
+                    <!-- Stories Section -->
+                    <div class="stories-section">
+                        <div class="story-cards">
+                            <div class="story-card create-story">
+                                <div class="story-add">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <p>Create Story</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create Post Section -->
+                    <div class="create-post-card">
+                        <div class="post-input-section">
+                            <img src="images/avatar.png" alt="User" class="user-avatar">
+                            <div class="post-input">
+                                <input type="text" placeholder="Share your thoughts...">
+                            </div>
+                        </div>
+                        <div class="post-actions">
+                            <button class="post-action-btn">
+                                <i class="fas fa-image"></i>
+                                <span>Photo</span>
+                            </button>
+                            <button class="post-action-btn">
+                                <i class="fas fa-video"></i>
+                                <span>Video</span>
+                            </button>
+                            <button class="post-action-btn">
+                                <i class="fas fa-calendar-plus"></i>
+                                <span>Event</span>
+                            </button>
+                            <button class="post-action-btn">
+                                <i class="fas fa-face-smile"></i>
+                                <span>Feeling</span>
+                            </button>
+                            <button class="post-action-btn">
+                                <i class="fas fa-tags"></i>
+                                <span>Category</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Posts Feed -->
+                    <div class="posts-feed" id="posts-container">
+                        <!-- Post 1 -->
+                        <div class="post-card">
+                            <div class="post-header">
+                                <div class="post-user">
+                                    <img src="images/avatar.png" alt="User" class="user-avatar">
+                                    <div class="user-info">
+                                        <h4>John Doe</h4>
+                                        <span class="post-meta">Software Engineer • 2h ago</span>
+                                    </div>
+                                </div>
+                                <button class="post-menu-btn">
+                                    <i class="fas fa-ellipsis"></i>
+                                </button>
+                            </div>
+                            <div class="post-content">
+                                <p>Just launched my new project! 🚀 Check out this amazing UI design for a modern forum.</p>
+                                <img src="images/post1.jpg" alt="Post Image" class="post-image">
+                            </div>
+                            <div class="post-categories">
+                                <span class="category-tag">Design</span>
+                                <span class="category-tag">UI/UX</span>
+                                <span class="category-tag">Web Development</span>
+                            </div>
+                            <div class="post-actions">
+                                <button class="action-btn">
+                                    <i class="far fa-heart"></i>
+                                    <span>1.2k</span>
+                                </button>
+                                <button class="action-btn">
+                                    <i class="far fa-comment"></i>
+                                    <span>84</span>
+                                </button>
+                                <button class="action-btn">
+                                    <i class="far fa-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Post 2 & 3 with similar structure but different content -->
+                    </div>
+                </main>
+
+                <!-- Right Sidebar -->
+                <aside class="sidebar right-sidebar">
+                    <!-- Who to Follow Section -->
+                    <div class="sidebar-card who-to-follow">
+                        <h3><i class="fas fa-user-plus"></i> Who to Follow</h3>
+                        <div class="follow-suggestions">
+                            <div class="suggestion-item">
+                                <img src="images/avatar3.png" alt="User" class="user-avatar">
+                                <div class="suggestion-info">
+                                    <h4>Mike Wilson</h4>
+                                    <p>UI/UX Designer</p>
+                                </div>
+                                <button class="follow-btn">Follow</button>
+                            </div>
+                            <!-- Add more suggestions -->
+                        </div>
+                    </div>
+
+                    <!-- Online Users Section -->
+                    <div class="sidebar-card online-users">
+                        <h3><i class="fas fa-circle-dot"></i> Online Users</h3>
+                        <div id="users-list">
+                            <div class="online-user">
+                                <div class="user-avatar-status">
+                                    <img src="images/avatar2.png" alt="Sarah" class="user-avatar">
+                                    <span class="status-indicator online"></span>
+                                </div>
+                                <div class="user-info">
+                                    <h4>Sarah Johnson</h4>
+                                    <p>Active now</p>
+                                </div>
+                            </div>
+                            <!-- Add more users -->
+                        </div>
+                    </div>
+
+                    <!-- Latest News Section -->
+                    <div class="sidebar-card latest-news">
+                        <h3><i class="fas fa-newspaper"></i> Latest News</h3>
+                        <div class="news-items">
+                            <div class="news-item">
+                                <div class="news-content">
+                                    <h4>New Features Released</h4>
+                                    <p>Latest forum updates include real-time messaging...</p>
+                                    <span class="news-time">2 hours ago</span>
+                                </div>
+                            </div>
+                            <!-- Add more news items -->
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     </div>

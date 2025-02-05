@@ -158,46 +158,58 @@
     background: var(--bg-light);
 } 
 
-/* Notification Menu Container */
+/* Notification */
 .notification-menu {
     position: relative;
-    cursor: pointer;
 }
 
-/* Notification Dropdown */
 .notification-menu .dropdown-menu {
     position: absolute;
-    top: calc(100% + 10px); /* Add some space from the icon */
-    right: -100px; /*Center the dropdown relative to the icon */
+    top: 120%;
+    right: -10px;
     background: var(--white-color);
     box-shadow: var(--box-shadow);
     border-radius: var(--border-radius);
-    width: 350px; /* Increased width for better content fit */
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
     display: none;
-    padding: 0;
+    z-index: 1000;
+    padding-top: 8px;
+    margin-top: -5px;
 }
 
-/* Show dropdown on hover */
-.notification-menu:hover .dropdown-menu {
+.notification-menu:hover .dropdown-menu,
+.dropdown-menu:hover {
     display: block;
 }
 
-/* Individual Notification Styling */
-.notification {
+/* Override general notification styles for dropdown */
+.dropdown-menu .notification {
+    transform: none;
+    min-width: unset;
+    max-width: unset;
+    box-shadow: none;
+    border-radius: var(--border-radius);
+    margin: 0.2rem 0.4rem;
+    padding: 12px 15px;
+    /* border-bottom: 1px solid var(--border-color); */
+    background: var(--search-input-color);
+    height: 60px;
     display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 1rem;
-    border-bottom: 1px solid var(--bg-light);
+    /* align-items: center; */
+    gap: 8px;
     transition: background-color 0.2s ease;
 }
 
-.notification:last-child {
-    border-bottom: none;
+.dropdown-menu .notification-content {
+    flex: 1;
+    /* padding-right: 5px; */
 }
 
-.notification:hover {
-    background: var(--bg-light);
+.dropdown-menu .notification-content p {
+    white-space: normal;
+    /* word-wrap: break-word; */
 }
 
 .notification img {
@@ -205,34 +217,75 @@
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    flex-shrink: 0; /* Prevent image from shrinking */
 }
 
-.notification p {
+.notification-content {
+    display: flex;
+    justify-content: space-between;
+    /* flex: 1; */
+}
+
+.notification-content p {
     margin: 0;
     font-size: 0.9rem;
     color: var(--text-color);
-    line-height: 1.4; /* Better line height for readability */
-    white-space: normal; /* Allow text to wrap */
-    flex-grow: 1; /* Allow text to take remaining space */
+    line-height: 1.4;
+    width: 70%;
+    text-overflow: ellipsis;
+    text-align: start;
 }
 
-/* Scrollbar styling for the notifications dropdown */
-.notification-menu .dropdown-menu::-webkit-scrollbar {
-    width: 8px;
+.notification-content p span {
+    color: var(--primary-color);
 }
 
-.notification-menu .dropdown-menu::-webkit-scrollbar-track {
-    background: var(--bg-light);
-    border-radius: 4px;
+.notification-content .time {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    right: 0;
 }
 
-.notification-menu .dropdown-menu::-webkit-scrollbar-thumb {
-    background: var(--primary-color);
-    border-radius: 4px;
+.notification-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Add hover effect to the notification icon button */
-.notification-menu .icon-btn:hover {
-    background: var(--bg-light);
+.notification-header .h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--notification-header-color);
+    font-weight: 600;
 }
+
+.notification-header p span {
+    background-color: var(--notification-color);
+    color: var(--notification-text-color);
+    border-radius: var(--border-radius);
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+.notification-footer {
+    padding: 12px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.notification-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.clear-all {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
