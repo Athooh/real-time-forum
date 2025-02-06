@@ -1,4 +1,4 @@
-// Notification types
+// Notification type enum
 const NotificationType = {
     SUCCESS: 'success',
     ERROR: 'error',
@@ -6,7 +6,7 @@ const NotificationType = {
     INFO: 'info'
 };
 
-// Create and show notification
+// Global notification function
 function showNotification(message, type = NotificationType.INFO, duration = 5000) {
     // Create notification container if it doesn't exist
     let container = document.getElementById('notification-container');
@@ -69,5 +69,4 @@ function getNotificationIcon(type) {
 }
 
 // Export functions
-window.showNotification = showNotification;
-window.NotificationType = NotificationType; 
+export { showNotification, NotificationType, getNotificationIcon };
