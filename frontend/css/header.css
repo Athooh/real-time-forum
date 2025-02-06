@@ -1,7 +1,7 @@
 .main-header {
     background: var(--white-color);
     box-shadow: var(--box-shadow);
-    padding: 0.1rem 14rem;
+    padding: 0.1rem 16rem;
     position: fixed;
     top: 0;
     left: 0;

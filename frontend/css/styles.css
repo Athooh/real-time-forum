@@ -352,12 +352,12 @@ header {
     margin: var(--spacing-medium) 0;
     line-height: 1.5;
 }
-
+/* 
 .post-actions {
     border-top: 1px solid var(--border-color);
     padding-top: var(--spacing-small);
     margin-top: var(--spacing-small);
-}
+} */
 
 .comment-btn {
     background: none;
