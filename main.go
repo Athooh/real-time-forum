@@ -74,6 +74,8 @@ func main() {
 	routes.UserRegAndLogin(db)
 	routes.MainRoute(db)
 
+	logger.Info("Starting Application...")
+
 	// Run the server in a goroutine
 	go func() {
 		log.Printf("Server running at http://localhost:%s\n", port)

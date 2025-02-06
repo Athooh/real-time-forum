@@ -156,7 +156,26 @@
 
 .dropdown-menu a:hover {
     background: var(--bg-light);
-} 
+}
+
+.dropdown-menu .dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: none;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    text-align: left;
+    font-size: inherit;
+    color: inherit;
+}
+
+.dropdown-menu .dropdown-btn:hover {
+    background-color: var(--hover-color);
+}
 
 /* Notification */
 .notification-menu {
