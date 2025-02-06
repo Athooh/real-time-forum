@@ -18,9 +18,28 @@
     max-width: 300px;
     min-width: 300px;
     position: sticky;
-    top: 90px; /* Header height + padding */
-    height: calc(100vh - 90px);
-    /* overflow-y: auto; */
+    top: 70px; /* Match header height */
+    align-self: flex-start; /* Keep sidebar at the top */
+    max-height: calc(100vh - 70px); /* Viewport height minus header */
+    overflow-y: auto; /* Only scroll when content overflows */
+}
+
+/* Add custom scrollbar for better aesthetics */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
 }
 
 /* Left Sidebar */
@@ -69,6 +88,12 @@
     font-size: 1.2rem;
     font-weight: 600;
     margin-bottom: 5px;
+}
+
+.user-info h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-block: 5px;
 }
 
 .user-profession {
@@ -163,7 +188,6 @@
 
 /* Main Content */
 .main-content {
-    padding: 20px 0;
     width: 100%;
     max-width: 700px;
     min-width: 700px;
@@ -178,7 +202,6 @@
 .story-cards {
     display: flex;
     gap: 15px;
-    padding: 10px 0;
 }
 
 .story-card {
@@ -189,6 +212,7 @@
     position: relative;
     cursor: pointer;
     box-shadow: var(--box-shadow);
+    border: 1px dashed var(--border-color);
 }
 
 .create-story {
@@ -208,7 +232,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 10px;
 }
 
 /* Create Post Card */
@@ -251,6 +274,25 @@
     /* border-top: 1px solid var(--border-color); */
 }
 
+.post-actions li {
+    list-style: none;
+    cursor: pointer;
+    padding-right: 10px;
+}
+
+.post-actions li span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.action-like-btn, .action-dislike-btn {
+    color: var(--primary-color);
+}
+
+.action-dislike-btn {
+    color: var(--primary-color);
+}
+
 .post-action-btn {
     flex: 1;
     display: flex;
@@ -277,6 +319,66 @@
     width: 25px;
 }
 
+#posts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border: none;
+    padding: 0;
+    width: 100%;
+    /* overflow-y: visible; */
+    max-height: none;
+}
+
+.post-card {
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+    height: auto;
+    width: auto;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.post-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.post-content img {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+}
+
+.post-description p{
+    text-align: start;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.post-categories {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.category-tag {
+    background: var(--notification-color);
+    color: var(--notification-text-color);
+    padding: 5px 10px;
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+}
+
 /* Right Sidebar */
 .sidebar-card {
     background: var(--white-color);
@@ -291,6 +393,86 @@
     margin-bottom: 15px;
     color: var(--text-color);
 }
+
+/* Comment Input Styles */
+.post-comments {
+    margin-top: 15px;
+    padding-top: 15px;
+}
+
+.comment-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comment-input-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.comment-input {
+    width: 100%;
+    padding: 12px;
+    padding-right: 40px;
+    border: none;
+    border-radius: var(--border-radius);
+    background: var(--search-input-color);
+}
+
+.comment-submit-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    transition: all 0.3s ease;
+}
+
+.comment-submit-btn:hover {
+    transform: translateX(2px);
+    color: var(--primary-color);
+}
+
+
+/* right sidebar */
+.suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.user-suggestions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-suggestions h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.user-suggestions p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.user-suggestions img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+
 
 /* Responsive Design
 @media (max-width: 1200px) {
