@@ -1,4 +1,6 @@
-function initializeWebSocket() {
+import { NotificationType, showNotification } from './utils/notifications.js';
+
+export function initializeWebSocket() {
     const token = localStorage.getItem('token');
     const socket = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
 
@@ -8,20 +10,7 @@ function initializeWebSocket() {
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        switch (data.type) {
-            case 'new_post':
-                // Handle new post
-                break;
-            case 'new_comment':
-                handleNewComment(data.payload);
-                showNotification('New Comment', `${data.payload.user} commented on a post`);
-                break;
-            case 'new_message':
-                // Handle new message
-                break;
-            default:
-                console.log('Unknown message type:', data.type);
-        }
+        handleWebSocketMessage(data);
     };
 
     socket.onclose = () => {
@@ -31,6 +20,8 @@ function initializeWebSocket() {
     socket.onerror = (error) => {
         console.error('WebSocket error:', error);
     };
+
+    return socket;
 }
 
 // Send a message via WebSocket
@@ -42,20 +33,20 @@ function sendMessage(message) {
     }
 }
 
-// Add notification handling
-function showNotification(title, body) {
-    if (!("Notification" in window)) {
-        return;
-    }
-
-    if (Notification.permission === "granted") {
-        new Notification(title, { body });
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification(title, { body });
-            }
-        });
+export function handleWebSocketMessage(data) {
+    switch (data.type) {
+        case 'new_post':
+            // Handle new post
+            break;
+        case 'new_comment':
+            handleNewComment(data.payload);
+            showNotification('New Comment', `${data.payload.user} commented on a post`);
+            break;
+        case 'new_message':
+            // Handle new message
+            break;
+        default:
+            console.log('Unknown message type:', data.type);
     }
 }
 
