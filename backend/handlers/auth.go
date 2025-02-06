@@ -109,6 +109,7 @@ func LoginHandler(ac *controllers.AuthController) http.HandlerFunc {
 		// Authenticate user
 		user, err := ac.AuthenticateUser(credentials)
 		if err != nil {
+			logger.Error("Authentication failed: %v", err)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{
