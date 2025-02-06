@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"forum/controllers"
-	"forum/logger"
-	"forum/utils"
+	"forum/backend/controllers"
+	"forum/backend/logger"
+	"forum/backend/utils"
 
 	"github.com/google/uuid"
 )

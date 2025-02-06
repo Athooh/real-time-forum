@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"forum/logger"
+	"forum/backend/logger"
 )
 
 func GenerateCSRFToken(db *sql.DB, sessionToken string) (string, error) {

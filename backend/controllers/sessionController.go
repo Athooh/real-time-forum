@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"forum/logger"
+	"forum/backend/logger"
 )
 
 // Helper function to check if a session is valid

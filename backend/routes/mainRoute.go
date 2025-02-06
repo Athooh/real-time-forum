@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
-	"forum/handlers"
+	"forum/backend/handlers"
 )
 
 func MainRoute(db *sql.DB) {

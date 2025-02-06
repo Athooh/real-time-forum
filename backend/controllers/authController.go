@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"forum/logger"
-	"forum/models"
+	"forum/backend/logger"
+	"forum/backend/models"
 
 	"golang.org/x/crypto/bcrypt"
 )

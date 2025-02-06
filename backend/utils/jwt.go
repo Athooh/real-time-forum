@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"forum/database"
+	"forum/backend/database"
 
 	"github.com/golang-jwt/jwt"
 )

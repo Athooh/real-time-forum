@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
-	"forum/controllers"
-	"forum/handlers"
+	"forum/backend/controllers"
+	"forum/backend/handlers"
 )
 
 func UserRegAndLogin(db *sql.DB) {

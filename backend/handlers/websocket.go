@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"forum/logger"
+	"forum/backend/logger"
 
 	"github.com/gorilla/websocket"
 )

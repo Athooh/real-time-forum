@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"forum/controllers"
-	"forum/database"
-	"forum/logger"
-	"forum/utils"
+	"forum/backend/controllers"
+	"forum/backend/database"
+	"forum/backend/logger"
+	"forum/backend/utils"
 )
 
 // Middleware to check if the user is authenticated

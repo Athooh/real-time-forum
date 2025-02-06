@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"forum/controllers"
-	"forum/logger"
+	"forum/backend/controllers"
+	"forum/backend/logger"
 )
 
 // VerifyCSRFMiddleware is a middleware function to verify CSRF tokens

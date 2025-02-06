@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"forum/controllers"
-	"forum/database"
-	"forum/logger"
-	"forum/routes"
+	"forum/backend/controllers"
+	"forum/backend/database"
+	"forum/backend/logger"
+	"forum/backend/routes"
 
 	_ "github.com/mattn/go-sqlite3"
 )

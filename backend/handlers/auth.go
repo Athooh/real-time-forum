@@ -2,14 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"forum/controllers"
-	"forum/database"
-	"forum/logger"
-	"forum/models"
-	"forum/utils"
 	"net/http"
 
-	auth "forum/sessions"
+	"forum/backend/controllers"
+	"forum/backend/database"
+	"forum/backend/logger"
+	"forum/backend/models"
+	auth "forum/backend/sessions"
+	"forum/backend/utils"
 )
 
 func RegisterHandler(ac *controllers.AuthController) http.HandlerFunc {
