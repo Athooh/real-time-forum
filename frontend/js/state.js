@@ -1,5 +1,5 @@
 // Shared state across modules
-window.forumState = {
+export const forumState = {
     isLoading: false,
     currentPage: 1,
     hasMorePosts: true
