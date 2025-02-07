@@ -1,12 +1,10 @@
 /* Dashboard Layout */
 .dashboard-container {
-    width: 100%;
-    max-width: 1600px;
-    /* min-width: 1600px; */
-    margin: 70px auto;
+    width: 1350px;
+    /* max-width: 1600px; */
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    justify-content: space-between;
+    margin: 70px auto;
     padding: 0 20px;
     min-height: calc(100vh - 70px);
 }
@@ -22,6 +20,11 @@
     align-self: flex-start; /* Keep sidebar at the top */
     max-height: calc(100vh - 70px); /* Viewport height minus header */
     overflow-y: auto; /* Only scroll when content overflows */
+}
+.left-sidebar, .right-sidebar {
+    width: 100%;
+    max-width: 300px;
+    min-width: 300px;
 }
 
 /* Add custom scrollbar for better aesthetics */
@@ -44,7 +47,7 @@
 }
 
 /* Left Sidebar */
-.user-profile-card {
+.user-profile-card, .sidebar-nav {
     background: var(--white-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -134,12 +137,13 @@
 }
 
 /* Sidebar Navigation */
-.sidebar-nav {
+/* .sidebar-nav {
     background: var(--white-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    padding: 15px 0;
-}
+    overflow: hidden;
+    margin-bottom: 20px;
+} */
 
 .nav-item, .view-profile-link {
     display: flex;
@@ -214,7 +218,7 @@
     position: relative;
     cursor: pointer;
     box-shadow: var(--box-shadow);
-    border: 1px dashed var(--border-color);
+    border: 3px dashed var(--border-color);
 }
 
 .create-story {
@@ -249,6 +253,7 @@
     display: flex;
     gap: 15px;
     margin-bottom: 15px;
+    position: relative;
 }
 
 .user-avatar {
@@ -425,6 +430,10 @@
 
 .news-time {
     color: var(--text-muted);
+}
+
+.online-users i {
+    color: var(--online-user-color);
 }
 
 /* Comment Input Styles */

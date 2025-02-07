@@ -73,6 +73,9 @@ function createPostCard() {
                 <img src="images/avatar.png" alt="User" class="user-avatar">
                 <div class="post-input">
                     <input type="text" placeholder="Share your thoughts...">
+                    <button class="comment-submit-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
                 </div>
             </div>
             <div class="post-actions">
