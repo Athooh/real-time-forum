@@ -100,10 +100,14 @@ export function createRightSidebar() {
 function createWhoToFollowSection() {
     return `
         <div class="sidebar-card who-to-follow">
-            <h3><i class="fas fa-user-plus"></i> Who to Follow</h3>
+        <div class="who-to-follow-header">
+            <img src="images/add-friend.png" alt="follow me">
+            <h3>Who to Follow</h3>
+        </div>
             <div class="follow-suggestions">
                 ${createSuggestionItems()}
             </div>
+            <button class="load-more">View More...</button>
         </div>
     `;
 }
@@ -140,14 +144,42 @@ function createOnlineUsersSection() {
 function createLatestNewsSection() {
     return `
         <div class="sidebar-card latest-news">
-            <h3><i class="fas fa-newspaper"></i> Latest News</h3>
+            <div class="who-to-follow-header">
+                <img src="images/news.png" alt="Latest News">
+                <h3>Latest News</h3>
+            </div>
             <div class="news-items">
                 <div class="news-item">
                     <div class="news-content">
-                        <h4>New Features Released</h4>
-                        <p>Latest forum updates include real-time messaging...</p>
-                        <span class="news-time">2 hours ago</span>
+                        <div class="news">
+                            <h4>New Features Released</h4>
+                        </div>
+                        <span class="news-time">2hr</span>
                     </div>
+                     <div class="news-content">
+                        <div class="news">
+                            <h4>Ten questions you should answer truthfully</h4>
+                        </div>
+                        <span class="news-time">2hr</span>
+                    </div>
+                    <div class="news-content">
+                        <div class="news">
+                            <h4>Five unbelievable facts about money</h4>
+                        </div>
+                        <span class="news-time">3hr</span>
+                    </div>
+                    <div class="news-content">
+                        <div class="news">
+                            <h4>Best Pinterest Boards for learning about business</h4>
+                        </div>
+                        <span class="news-time">4hr</span>
+                    </div>
+                    <div class="news-content">
+                        <div class="news">
+                            <h4>Skills that you can learn from business</h4>
+                        </div>
+                        <span class="news-time">6hr</span>
+                    </div>                    
                 </div>
             </div>
         </div>
