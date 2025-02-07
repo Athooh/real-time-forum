@@ -26,7 +26,8 @@
 
 /* Add custom scrollbar for better aesthetics */
 .sidebar::-webkit-scrollbar {
-    width: 6px;
+    /* width: 6px; */
+    display: none;
 }
 
 .sidebar::-webkit-scrollbar-track {
@@ -94,6 +95,7 @@
     font-size: 1.2rem;
     font-weight: 600;
     margin-block: 5px;
+    color: var(--notification-header-color);
 }
 
 .user-profession {
@@ -359,6 +361,10 @@
     border-radius: var(--border-radius);
 }
 
+.post-title h3 {
+    color: var(--notification-header-color);
+}
+
 .post-description p{
     text-align: start;
     font-size: 0.9rem;
@@ -391,7 +397,34 @@
 .sidebar-card h3 {
     font-size: 1.1rem;
     margin-bottom: 15px;
-    color: var(--text-color);
+    color: var(--notification-header-color);
+}
+
+.who-to-follow-header {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.who-to-follow-header img {
+    width: 20px;
+}
+
+.news-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.news h4 {
+    color: var(--notification-header-color);
+    margin-block: 10px;
+}
+
+.news-time {
+    color: var(--text-muted);
 }
 
 /* Comment Input Styles */
@@ -470,6 +503,22 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
+}
+
+.load-more {
+    width: 100%;
+    padding-block: 10px;
+    border: none;
+    background: var(--follow-btn-bg-color);
+    color: var(--primary-color);
+    font-size: var(--font-size-medium);
+    cursor: pointer;
+}
+
+.load-more:hover {
+    background: var(--primary-color);
+    color: var(--white-color);
+    transition: .6s;
 }
 
 
