@@ -2,7 +2,7 @@ import { escapeHTML } from '../utils.js';
 
 export function createLeftSidebar() {
     return `
-        <aside class="sidebar left-sidebar">
+        <aside class="sidebar">
             ${createUserProfileCard()}
             ${createSidebarNav()}
         </aside>
@@ -89,7 +89,7 @@ function createSidebarNav() {
 
 export function createRightSidebar() {
     return `
-        <aside class="sidebar right-sidebar">
+        <aside class="sidebar">
             ${createWhoToFollowSection()}
             ${createOnlineUsersSection()}
             ${createLatestNewsSection()}
@@ -179,7 +179,8 @@ function createLatestNewsSection() {
                             <h4>Skills that you can learn from business</h4>
                         </div>
                         <span class="news-time">6hr</span>
-                    </div>                    
+                    </div>
+                    <a href="#" class="load-news">... View all latest news</a>                    
                 </div>
             </div>
         </div>
