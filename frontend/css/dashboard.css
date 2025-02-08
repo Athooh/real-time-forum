@@ -1,11 +1,11 @@
 /* Dashboard Layout */
 .dashboard-container {
-    width: 1350px;
+    width: 1400px;
     /* max-width: 1600px; */
     display: flex;
     justify-content: space-between;
     margin: 70px auto;
-    padding: 0 20px;
+    padding: 0;
     min-height: calc(100vh - 70px);
 }
 
@@ -15,16 +15,33 @@
     width: 100%;
     max-width: 300px;
     min-width: 300px;
-    position: sticky;
-    top: 70px; /* Match header height */
-    align-self: flex-start; /* Keep sidebar at the top */
-    max-height: calc(100vh - 70px); /* Viewport height minus header */
-    overflow-y: auto; /* Only scroll when content overflows */
+    position: fixed;
+    height: calc(100vh - 70px);
+    overflow-y: scroll; /* Always allow scrolling */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
 }
-.left-sidebar, .right-sidebar {
-    width: 100%;
-    max-width: 300px;
-    min-width: 300px;
+
+/* Left sidebar positioning */
+.sidebar-left {
+    left: calc((100% - 1380px) / 2 + 20px);
+    top: 70px;
+}
+
+/* Right sidebar positioning */
+.sidebar-right {
+    right: calc((100% - 1380px) / 2 + 20px);
+    top: 70px;
+}
+
+/* Add hover-based scrolling */
+.sidebar {
+    overflow-y: hidden; /* Hide scrollbar by default */
+    transition: overflow-y 0.3s;
+}
+
+.sidebar:hover {
+    overflow-y: auto; /* Show scrollbar on hover */
 }
 
 /* Add custom scrollbar for better aesthetics */
@@ -194,9 +211,10 @@
 
 /* Main Content */
 .main-content {
+    margin: 0 auto; /* Add margin to account for fixed sidebars */
     width: 100%;
     max-width: 700px;
-    min-width: 700px;
+    padding-inline: 20px; 
 }
 
 /* Stories Section */
