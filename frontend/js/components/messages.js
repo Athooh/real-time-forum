@@ -20,7 +20,7 @@ const dummyMessages = [
         user: {
             id: 102,
             nickname: "John Smith",
-            avatar: "images/avatar1.png",
+            avatar: "images/avatar2.png",
             isOnline: true
         },
         content: "I've just reviewed the project proposal. Let's discuss the changes...",
@@ -32,7 +32,7 @@ const dummyMessages = [
         user: {
             id: 103,
             nickname: "Emma Davis",
-            avatar: "images/avatar1.png",
+            avatar: "images/avatar3.png",
             isOnline: false
         },
         content: "Thanks for your help with the presentation yesterday!",
@@ -44,7 +44,7 @@ const dummyMessages = [
         user: {
             id: 104,
             nickname: "Michael Chen",
-            avatar: "images/avatar1.png",
+            avatar: "images/avatar4.png",
             isOnline: true
         },
         content: "Did you see the new updates to the design system?",
@@ -56,7 +56,7 @@ const dummyMessages = [
         user: {
             id: 105,
             nickname: "Lisa Anderson",
-            avatar: "images/avatar1.png",
+            avatar: "images/avatar5.png",
             isOnline: false
         },
         content: "Great work on the latest feature implementation! The client is very happy...",
