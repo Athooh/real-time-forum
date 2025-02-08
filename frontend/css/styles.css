@@ -79,6 +79,7 @@ a:hover {
     right: 0;
     bottom: 0;
     background-color: var(--background-color);
+    z-index: 10000;
 }
 
 .auth-container {

@@ -142,11 +142,47 @@ function createMessage(message) {
 }
 
 function setupMessageEventListeners() {
-    // Message thread selection
-    const threadElements = document.querySelectorAll('.message-thread');
-    threadElements?.forEach(thread => {
-        thread.addEventListener('click', handleThreadSelect);
+    // Add click handlers for message items
+    document.querySelectorAll('.message-item').forEach(messageItem => {
+        messageItem.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            try {
+                const userId = messageItem.dataset.userId;
+                // Use the dummy messages directly without parsing
+                const user = dummyMessages.find(msg => msg.user.id.toString() === userId)?.user;
+                
+                if (!user) {
+                    throw new Error('User not found');
+                }
+                
+                await openChatWindow(user);
+            } catch (error) {
+                console.error('Error opening chat:', error);
+                showNotification('Failed to load chat', NotificationType.ERROR);
+            }
+        });
     });
+
+    // Toggle messages panel
+    const floatingBtn = document.getElementById('floating-messenger-btn');
+    const messagesPanel = document.getElementById('messages-slide-panel');
+    
+    if (floatingBtn) {
+        floatingBtn.addEventListener('click', () => {
+            messagesPanel.classList.toggle('active');
+        });
+    }
+
+    // Close panel button
+    const closeBtn = document.querySelector('.close-messages-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            messagesPanel.classList.remove('active');
+        });
+    }
 
     // Message form submission
     const messageForm = document.getElementById('message-form');
@@ -510,4 +546,176 @@ function formatTimeAgo(timestamp) {
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return date.toLocaleDateString();
+}
+
+function createChatWindow(user) {
+    return `
+        <div class="chat-window" id="chat-window-${user.id}">
+            <div class="chat-header">
+                <div class="user-avatar-wrapper">
+                    <img src="${user.avatar}" alt="${user.nickname}" class="user-avatar">
+                    <span class="status-indicator ${user.isOnline ? 'online' : 'offline'}"></span>
+                </div>
+                <div class="user-info">
+                    <h4>${user.nickname}</h4>
+                    <small>${user.isOnline ? 'Online' : 'Offline'}</small>
+                </div>
+                <button class="close-chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="chat-messages">
+                <!-- Messages will be dynamically inserted here -->
+            </div>
+            
+            <div class="chat-input-area">
+                <button class="chat-action-btn">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="text" placeholder="Type a message...">
+                <div class="chat-actions">
+                    <button class="chat-action-btn">
+                        <i class="fas fa-smile"></i>
+                    </button>
+                    <button class="chat-action-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function openChatWindow(user) {
+    try {
+        // Remove existing chat window for this user if it exists
+        const existingChat = document.getElementById(`chat-window-${user.id}`);
+        if (existingChat) {
+            existingChat.classList.add('active');
+            return;
+        }
+
+        // Create and append new chat window
+        const chatWindow = document.createElement('div');
+        chatWindow.innerHTML = createChatWindow(user);
+        document.body.appendChild(chatWindow.firstElementChild);
+
+        // Load initial chat messages
+        await loadChatHistory(user.id);
+
+        // Add event listeners for the new chat window
+        setupChatEventListeners(user.id);
+
+        // Show the chat window with animation
+        setTimeout(() => {
+            const newChatWindow = document.getElementById(`chat-window-${user.id}`);
+            if (newChatWindow) {
+                newChatWindow.classList.add('active');
+            }
+        }, 50);
+    } catch (error) {
+        throw new Error('Failed to open chat window');
+    }
+}
+
+function setupChatEventListeners(userId) {
+    const chatWindow = document.getElementById(`chat-window-${userId}`);
+    if (!chatWindow) return;
+
+    // Handle message input
+    const input = chatWindow.querySelector('input');
+    const sendBtn = chatWindow.querySelector('.fa-paper-plane').parentElement;
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(userId, input.value);
+        }
+    });
+
+    sendBtn.addEventListener('click', () => {
+        sendMessage(userId, input.value);
+    });
+
+    // Handle close button
+    const closeBtn = chatWindow.querySelector('.close-chat');
+    closeBtn.addEventListener('click', () => {
+        chatWindow.classList.remove('active');
+        setTimeout(() => chatWindow.remove(), 300);
+    });
+}
+
+async function sendMessage(userId, content) {
+    if (!content.trim()) return;
+
+    const chatWindow = document.getElementById(`chat-window-${userId}`);
+    const messagesContainer = chatWindow.querySelector('.chat-messages');
+    const input = chatWindow.querySelector('input');
+
+    // Add message to chat
+    const messageHTML = `
+        <div class="message-bubble sent">
+            <div class="message-content">${content}</div>
+            <div class="message-time">${formatTimeAgo(new Date())}</div>
+        </div>
+    `;
+    messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
+
+    // Clear input
+    input.value = '';
+
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // TODO: Send message to server
+    // await sendMessageToServer(userId, content);
+}
+
+// Add this function to load chat history
+async function loadChatHistory(userId) {
+    try {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Get chat messages container
+        const chatWindow = document.getElementById(`chat-window-${userId}`);
+        const messagesContainer = chatWindow.querySelector('.chat-messages');
+        
+        // Add some dummy chat messages
+        const dummyChatMessages = [
+            {
+                sent: false,
+                content: "Hey there! How are you?",
+                timestamp: new Date(Date.now() - 1000 * 60 * 30)
+            },
+            {
+                sent: true,
+                content: "I'm good, thanks! Just working on the new project.",
+                timestamp: new Date(Date.now() - 1000 * 60 * 25)
+            },
+            {
+                sent: false,
+                content: "That's great! How's it going so far?",
+                timestamp: new Date(Date.now() - 1000 * 60 * 20)
+            }
+        ];
+
+        // Render messages
+        const messagesHTML = dummyChatMessages.map(msg => `
+            <div class="message-bubble ${msg.sent ? 'sent' : 'received'}">
+                <div class="message-content">${msg.content}</div>
+                <div class="message-time">${formatTimeAgo(msg.timestamp)}</div>
+            </div>
+        `).join('');
+
+        messagesContainer.innerHTML = messagesHTML;
+        
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    } catch (error) {
+        console.error('Error loading chat history:', error);
+        throw new Error('Failed to load chat history');
+    }
 }

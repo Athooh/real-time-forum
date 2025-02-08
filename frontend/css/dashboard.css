@@ -109,6 +109,7 @@
     font-size: 1.2rem;
     font-weight: 600;
     margin-bottom: 5px;
+    color: var(--notification-header-color);
 }
 
 .user-info h4 {
@@ -506,6 +507,10 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+}
+
+.suggestion-info h4 {
+    color: var(--notification-header-color);
 }
 
 .user-suggestions {
