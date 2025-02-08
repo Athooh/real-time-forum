@@ -1,5 +1,5 @@
 import { fetchPosts } from './components/posts.js';
-import { fetchOnlineUsers, initializeMessages } from './components/messages.js';
+import { fetchOnlineUsers, initializeMessages, initializeMessenger } from './components/messages.js';
 import { initializeWebSocket } from './websocket.js';
 import { NotificationType, showNotification } from './utils/notifications.js';
 import { authenticatedFetch } from './utils/fetch.js';
@@ -21,6 +21,7 @@ class App {
         // Initialize the app
         this.render();
         this.checkAuthState();
+        initializeMessenger();
     }
 
     render() {
@@ -123,6 +124,7 @@ let appInstance;
 
 document.addEventListener('DOMContentLoaded', () => {
     appInstance = new App();
+    initializeMessenger();
 });
 
 export { appInstance as app };
