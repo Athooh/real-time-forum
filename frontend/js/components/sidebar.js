@@ -2,7 +2,7 @@ import { escapeHTML } from '../utils.js';
 
 export function createLeftSidebar() {
     return `
-        <aside class="sidebar">
+        <aside class="sidebar sidebar-left">
             ${createUserProfileCard()}
             ${createSidebarNav()}
         </aside>
@@ -89,7 +89,7 @@ function createSidebarNav() {
 
 export function createRightSidebar() {
     return `
-        <aside class="sidebar">
+        <aside class="sidebar sidebar-right">
             ${createWhoToFollowSection()}
             ${createOnlineUsersSection()}
             ${createLatestNewsSection()}
