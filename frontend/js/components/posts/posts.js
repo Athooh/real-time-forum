@@ -1,5 +1,21 @@
-import { createStorySection, createPostCard, createPostsFeed, createPostHeader, createPostContent, createPostCategories, createPostActions, createPostComments } from './postsTemplates.js';
-import { handleCreatePost, handlePostReaction, handleCommentSubmit, handleSavePost, handlePostSubmit, fetchPosts } from './postsApi.js';
+import {
+    createStorySection,
+    createPostCard,
+    createPostsFeed,
+    createPostHeader,
+    createPostContent,
+    createPostCategories,
+    createPostActions,
+    createPostComments
+} from './postsTemplates.js';
+import {
+    handleCreatePost,
+    handlePostReaction,
+    handleCommentSubmit,
+    handleSavePost,
+    handlePostSubmit,
+    fetchPosts
+} from './postsApi.js';
 import {
     handleCategorySelection,
     setupVideoDropZone,
@@ -8,6 +24,7 @@ import {
     handleVideoUpload
 } from './postsEvent.js';
 
+import { setupInfiniteScroll } from '../../utils.js';
 // main functions
 function createMainContent() {
     return `
@@ -64,6 +81,9 @@ function setupPostEventListeners() {
     // Setup drop zone
     setupDropZone();
 
+    // Setup infinite scroll
+    setupInfiniteScroll();
+
     // Text post input trigger
     const textPostTrigger = document.querySelector('.text-post-trigger');
     if (textPostTrigger) {
@@ -91,22 +111,15 @@ function setupPostEventListeners() {
     // Setup video drop zone
     setupVideoDropZone();
 
-    // Add input monitoring for debugging
+    // Add input monitoring
     document.querySelectorAll('#title-input-text, #thought-input-text').forEach(input => {
-        input.addEventListener('input', (e) => {
-            console.log(`${e.target.id} changed to:`, e.target.value);
-        });
-        
-        // Also log initial values
-        console.log(`Initial ${input.id} value:`, input.value);
+        input.addEventListener('input', (e) => {});
     });
 
     // Ensure post button has correct listener
     document.querySelectorAll('.modal-content .post-button').forEach(btn => {
-        // Remove any existing listeners first
         btn.removeEventListener('click', handlePostSubmit);
         btn.addEventListener('click', handlePostSubmit);
-        console.log("Post button listener attached");
     });
 
     // Setup category selection handlers
@@ -152,6 +165,12 @@ function renderPosts(posts, append = false) {
     const postsContainer = document.getElementById('posts-container');
     if (!postsContainer) return;
 
+    // Add type checking and error handling
+    if (!Array.isArray(posts)) {
+        console.error('Expected posts to be an array, received:', typeof posts);
+        posts = []; // Set to empty array to prevent errors
+    }
+
     const postsHTML = posts.map(post => `
         <div class="post-card" id="post-${post.id}">
             ${createPostHeader(post)}
@@ -189,13 +208,3 @@ export {
 };
 
            
-
-
-// Update getSelectedCategories to look for the correct class
-function getSelectedCategories(modal) {
-    const categoryTags = modal.querySelectorAll('.category-tag .selected');
-    console.log("categoryTags", categoryTags)
-    return Array.from(categoryTags)
-        .map(tag => tag.querySelector('.remove-category').dataset.value)
-        .filter(Boolean); // Remove any undefined/null values
-}
