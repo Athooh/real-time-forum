@@ -6,16 +6,13 @@ import (
 	"strings"
 
 	"forum/backend/logger"
+	"forum/backend/models"
 	"forum/backend/utils"
 )
 
-// Define a custom type for context keys
-type contextKey string
-
-const userIDKey contextKey = "userID"
-
 func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("JWTAuthMiddleware called")
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			logger.Warning("Unauthorized attempt  Authorization header missing - remote_addr: %s, method: %s, path: %s",
@@ -28,8 +25,10 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		logger.Info("tokenString: %s", tokenString)
 		claims, err := utils.ValidateJWT(tokenString)
-		if err != nil {
+		logger.Info("claims: %v", claims)
+		if err != nil || claims.UserID == "" {
 			logger.Warning("Unauthorized attempt  Invalid token - remote_addr: %s, method: %s, path: %s",
 				r.RemoteAddr,
 				r.Method,
@@ -39,7 +38,7 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+		ctx := context.WithValue(r.Context(), models.UserIDKey, claims.UserID)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
