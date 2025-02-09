@@ -52,15 +52,6 @@ func RegisterHandler(ac *controllers.AuthController) http.HandlerFunc {
 			return
 		}
 
-		token, err := auth.CreateSession(ac.DB, w, int(userID))
-		if err != nil {
-			logger.Error("Failed to create session: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Failed to create session",
-			})
-			return
-		}
 		logger.Info("User registered successfully userID: %d (nickname: %s, email: %s)", userID, user.Nickname, user.Email)
 
 		// Set headers first
@@ -69,9 +60,7 @@ func RegisterHandler(ac *controllers.AuthController) http.HandlerFunc {
 
 		// Then write response
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"message":  "Registration successful",
-			"token":    token,
-			"userData": user,
+			"message": "Registration successful",
 		})
 	}
 }
