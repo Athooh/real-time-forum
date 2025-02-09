@@ -1,13 +1,15 @@
+import { forumState } from './state.js';
+
 // Utility functions (e.g., throttling, debouncing)
-function throttle(func, delay) {
-    let lastCall = 0;
-    return function (...args) {
-        const now = new Date().getTime();
-        if (now - lastCall >= delay) {
-            lastCall = now;
+function throttle(func, limit) {
+    let inThrottle;
+    return function(...args) {
+        if (!inThrottle) {
             func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
         }
-    };
+    }
 }
 
 function debounce(func, wait) {
@@ -120,5 +122,30 @@ function formatTimeAgo(timestamp) {
     return Math.floor(seconds) + ' second' + (seconds === 1 ? '' : 's') + ' ago';
 }
 
+function setupInfiniteScroll() {
+    const handleScroll = throttle(() => {
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const bodyHeight = document.documentElement.scrollHeight;
+        
+        // Load more when user reaches 80% of the page
+        if (scrollPosition > bodyHeight * 0.8) {
+            if (!forumState.isLoading && !forumState.allPostsLoaded) {
+                forumState.currentPage = (forumState.currentPage || 1) + 1;
+                fetchPosts(forumState.currentPage, true);
+            }
+        }
+    }, 500); // Throttle to once every 500ms
+
+    window.addEventListener('scroll', handleScroll);
+}
+
 // Export utilities to window object
-export { throttle, debounce, validatePassword, rateLimiter, escapeHTML, formatTimeAgo };
+export {
+    throttle,
+    debounce,
+    validatePassword,
+    rateLimiter,
+    escapeHTML,
+    formatTimeAgo,
+    setupInfiniteScroll
+};
