@@ -1,54 +1,5 @@
-import { NotificationType, showNotification } from '../utils/notifications.js';
-import { DUMMY_DATA } from '../utils/dummy-data.js';
-import { forumState } from '../state.js';
-import { escapeHTML } from '../utils.js';
+import { escapeHTML, formatTimeAgo } from '../../utils.js';
 
-// Export main functions
-export function createMainContent() {
-    return `
-        <main class="main-content">
-
-            ${createStorySection()}
-            ${createPostCard()}
-            ${createPostsFeed()}
-        </main>
-    `;
-}
-
-export function setupPostEventListeners() {
-    // Create post form submission
-    const createPostForm = document.getElementById('create-post-form');
-    if (createPostForm) {
-        createPostForm.addEventListener('submit', handleCreatePost);
-    }
-
-    // Like/Dislike buttons
-    document.querySelectorAll('.action-like-btn, .action-dislike-btn').forEach(btn => {
-        btn.addEventListener('click', handlePostReaction);
-    });
-
-    // Comment submission
-    document.querySelectorAll('.comment-input').forEach(input => {
-        input.addEventListener('keypress', handleCommentSubmit);
-    });
-
-    // Save post
-    document.querySelectorAll('.save-post').forEach(btn => {
-        btn.addEventListener('click', handleSavePost);
-    });
-
-    // Modal close button
-    const closeModalBtn = document.querySelector('.close-modal');
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', closePostModal);
-    }
-
-    // Create post button
-    const createPostBtn = document.querySelector('.create-post-btn');
-    if (createPostBtn) {
-        createPostBtn.addEventListener('click', showCreatePostModal);
-    }
-}
 
 // Helper functions
 function createStorySection() {
@@ -66,24 +17,147 @@ function createStorySection() {
     `;
 }
 
+function createCategorySelection() {
+    return `
+        <div class="category-selection">
+            <select class="category-dropdown">
+                <option value="default" selected>Select category</option>
+                <option value="technology">Technology</option>
+                <option value="design">Design</option>
+                <option value="programming">Programming</option>
+                <option value="lifestyle">Lifestyle</option>
+                <option value="gaming">Gaming</option>
+                <option value="other">Other</option>
+            </select>
+            <div class="selected-categories"></div>
+        </div>
+    `;
+}
+
+function createImagePostModal() {
+    return `
+        <div id="create-post-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Add post photo</div>
+                    <button class="close-button close-modal">x</button>
+                </div>
+                
+                <div class="user-input-section">
+                    <img src="images/avatar.png" alt="User" class="user-avatar">
+                    <div class="input-container">
+                        <textarea id="title-input-text" class="title-input" placeholder="Title" maxlength="100" ></textarea>
+                    </div>
+                </div>
+                <textarea id="thought-input-text" class="thought-input" placeholder="Share your thoughts..." maxlength="2000" ></textarea>
+
+                <div class="upload-section" id="dropZone">
+                    <svg class="upload-icon" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/>
+                    </svg>
+                    <div class="upload-text">Drag here or click to upload photo.</div>
+                </div>
+
+                <div id="imagePreviewArea" class="image-preview-area"></div>
+
+                <input type="file" id="image-upload" style="display: none" accept="image/*" multiple>
+
+                <div class="button-section">
+                    ${createCategorySelection()}
+                    <div class="right-buttons">
+                        <button type="button" class="cancel-button">Cancel</button>
+                        <button class="post-button">Post</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createTextPostModal() {
+    return `
+        <div id="text-post-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Create Post</div>
+                    <button class="close-button close-modal">×</button>
+                </div>
+                
+                <div class="user-input-section">
+                    <img src="images/avatar.png" alt="User" class="user-avatar">
+                    <div class="input-container">
+                        <textarea id="title-input-text" class="title-input" placeholder="Title" maxlength="100" ></textarea>
+                    </div>
+                </div>
+                <textarea id="thought-input-text" class="thought-input text-only" placeholder="Share your thoughts..." maxlength="2000" rows="5"></textarea>
+
+                <div class="button-section">
+                    ${createCategorySelection()}
+                    <div class="right-buttons">
+                        <button type="button" class="cancel-button">Cancel</button>
+                        <button class="post-button">Post</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createVideoPostModal() {
+    return `
+        <div id="video-post-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Add post video</div>
+                    <button class="close-button close-modal">x</button>
+                </div>
+                
+                <div class="user-input-section">
+                    <img src="images/avatar.png" alt="User" class="user-avatar">
+                    <div class="input-container">
+                        <textarea id="title-input-text" class="title-input" placeholder="Title" maxlength="100" ></textarea>
+                    </div>
+                </div>
+                <textarea id="thought-input-text" class="thought-input" placeholder="Share your thoughts..." maxlength="2000" ></textarea>
+
+                <div class="upload-section" id="videoDropZone">
+                    <svg class="upload-icon" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                    </svg>
+                    <div class="upload-text">Drag here or click to upload video.</div>
+                </div>
+
+                <div id="videoPreviewArea" class="video-preview-area"></div>
+
+                <input type="file" id="video-upload" style="display: none" accept="video/*">
+
+                <div class="button-section">
+                    ${createCategorySelection()}
+                    <div class="right-buttons">
+                        <button type="button" class="cancel-button">Cancel</button>
+                        <button class="post-button">Post</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function createPostCard() {
     return `
         <div class="create-post-card">
             <div class="post-input-section">
                 <img src="images/avatar.png" alt="User" class="user-avatar">
                 <div class="post-input">
-                    <input type="text" placeholder="Share your thoughts...">
-                    <button class="comment-submit-btn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
+                    <input type="text" placeholder="Share your thoughts..." readonly class="text-post-trigger">
                 </div>
             </div>
             <div class="post-actions">
-                <button class="post-action-btn">
+                <button class="post-action-btn create-post-btn">
                     <img src="images/picture.png" alt="" srcset="">
                     <span>Photo</span>
                 </button>
-                <button class="post-action-btn">
+                <button class="post-action-btn create-video-btn">
                     <img src="images/videos.png" alt="" srcset="">
                     <span>Video</span>
                 </button>
@@ -101,6 +175,9 @@ function createPostCard() {
                 </button>
             </div>
         </div>
+        ${createImagePostModal()}
+        ${createTextPostModal()}
+        ${createVideoPostModal()}
     `;
 }
 
@@ -271,130 +348,14 @@ function createPostsFeed() {
     `;
 }
 
-async function handleCreatePost(e) {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-
-    try {
-        const response = await createPost(formData);
-        if (response.ok) {
-            closePostModal();
-            await refreshPosts();
-            showNotification('Post created successfully!', NotificationType.SUCCESS);
-        }
-    } catch (error) {
-        showNotification('Failed to create post', NotificationType.ERROR);
-    }
-}
-
-async function handlePostReaction(e) {
-    const postId = e.currentTarget.dataset.postId;
-    const isLike = e.currentTarget.classList.contains('action-like-btn');
-    
-    try {
-        await reactToPost(postId, isLike);
-        updatePostReactions(postId);
-    } catch (error) {
-        showNotification('Failed to update reaction', NotificationType.ERROR);
-    }
-}
-
-async function handleCommentSubmit(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const postId = e.target.dataset.postId;
-        const content = e.target.value.trim();
-
-        if (content) {
-            try {
-                await submitComment(postId, content);
-                e.target.value = '';
-                await refreshComments(postId);
-            } catch (error) {
-                showNotification('Failed to post comment', NotificationType.ERROR);
-            }
-        }
-    }
-}
-
-async function handleSavePost(e) {
-    const postId = e.currentTarget.dataset.postId;
-    try {
-        await savePost(postId);
-        e.currentTarget.classList.toggle('saved');
-        showNotification('Post saved successfully!', NotificationType.SUCCESS);
-    } catch (error) {
-        showNotification('Failed to save post', NotificationType.ERROR);
-    }
-}
-
-// Utility functions
-function formatTimeAgo(timestamp) {
-    // Implement time formatting logic
-    return new Date(timestamp).toLocaleString();
-}
-
-// Add these new functions for modal handling
-function showCreatePostModal() {
-    const modal = document.getElementById('create-post-modal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-function closePostModal() {
-    const modal = document.getElementById('create-post-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Update fetchPosts to use forumState instead of window.forumState
-async function fetchPosts(page = 1, append = false) {
-    if (forumState.isLoading) return;
-    forumState.isLoading = true;
-
-    try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Use dummy data
-        const posts = DUMMY_DATA.posts;
-        renderPosts(posts, append);
-        
-    } catch (error) {
-        console.error('Error fetching posts:', error);
-        showNotification('Failed to load posts', NotificationType.ERROR);
-    } finally {
-        forumState.isLoading = false;
-    }
-}
-
-function renderPosts(posts, append = false) {
-    const postsContainer = document.getElementById('posts-container');
-    if (!postsContainer) return;
-
-    const postsHTML = posts.map(post => `
-        <div class="post-card" id="post-${post.id}">
-            ${createPostHeader(post)}
-            ${createPostContent(post)}
-            ${createPostCategories(post)}
-            ${createPostActions(post)}
-            ${createPostComments(post)}
-        </div>
-    `).join('');
-
-    if (append) {
-        postsContainer.innerHTML += postsHTML;
-    } else {
-        postsContainer.innerHTML = postsHTML;
-    }
-
-    // Reattach event listeners for the new posts
-    setupPostEventListeners();
-}
-
-export { fetchPosts };
-// Export for use in other components
-           
+export {
+    createPostCard,
+    createPostHeader,
+    createPostContent,
+    createPostCategories,
+    createPostActions,
+    createPostComments,
+    createComment,
+    createPostsFeed,
+    createStorySection
+};

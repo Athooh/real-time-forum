@@ -2,18 +2,17 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 
 	"forum/backend/controllers"
 	"forum/backend/database"
 	"forum/backend/logger"
-	"forum/backend/utils"
 )
 
 // Middleware to check if the user is authenticated
-func AuthMiddleware(next http.Handler) http.Handler {
+func SessionAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if the user is authenticated
+		logger.Info("SessionAuthMiddleware called")
 		sessionCookie, err := r.Cookie("session_token")
 		if err != nil || sessionCookie == nil || sessionCookie.Value == "" {
 			logger.Warning("Unauthorized attempt  nil sessionCookie - remote_addr: %s, method: %s, path: %s",
@@ -47,37 +46,4 @@ func ApplyMiddleware(handler http.Handler, middlewares ...func(http.Handler) htt
 		handler = middleware(handler)
 	}
 	return handler
-}
-
-func JWTAuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			logger.Warning("Unauthorized attempt  Authorization header missing - remote_addr: %s, method: %s, path: %s",
-				r.RemoteAddr,
-				r.Method,
-				r.URL.Path,
-			)
-			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		_, err := utils.ValidateJWT(tokenString)
-		if err != nil {
-			logger.Warning("Unauthorized attempt  Invalid token - remote_addr: %s, method: %s, path: %s",
-				r.RemoteAddr,
-				r.Method,
-				r.URL.Path,
-			)
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		// Add claims to context if needed
-		// ctx := context.WithValue(r.Context(), "userID", claims.UserID)
-		// r = r.WithContext(ctx)
-
-		next.ServeHTTP(w, r)
-	})
 }

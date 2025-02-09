@@ -7,8 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"forum/backend/controllers"
+	"forum/backend/logger"
+	"forum/backend/models"
+	"forum/backend/utils"
 	// "github.com/go-chi/chi"
-	"github.com/google/uuid"
 )
 
 // User struct definition
@@ -19,17 +22,7 @@ type User struct {
 	LastName  string `json:"last_name"`
 }
 
-// Post struct definition
-type Post struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Content   string    `json:"content"`
-	Category  string    `json:"category"`
-	Timestamp time.Time `json:"timestamp"`
-	User      User      `json:"user"`
-}
-
-func GetPostsHandler(db *sql.DB) http.HandlerFunc {
+func GetPostsHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -43,31 +36,11 @@ func GetPostsHandler(db *sql.DB) http.HandlerFunc {
 
 		offset := (page - 1) * limit
 
-		rows, err := db.Query(`
-            SELECT p.post_id, p.user_id, p.content, p.category, p.timestamp,
-                   u.nickname, u.first_name, u.last_name
-            FROM posts p
-            JOIN users u ON p.user_id = u.user_id
-            ORDER BY p.timestamp DESC
-            LIMIT ? OFFSET ?
-        `, limit, offset)
+		posts, err := pc.GetAllPosts(offset, limit)
 		if err != nil {
-			http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
+			logger.Error("Failed to fetch posts: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
-		}
-		defer rows.Close()
-
-		var posts []Post
-		for rows.Next() {
-			var p Post
-			err := rows.Scan(
-				&p.ID, &p.UserID, &p.Content, &p.Category, &p.Timestamp,
-				&p.User.Nickname, &p.User.FirstName, &p.User.LastName,
-			)
-			if err != nil {
-				continue
-			}
-			posts = append(posts, p)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -78,124 +51,331 @@ func GetPostsHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func CreatePostHandler(db *sql.DB) http.HandlerFunc {
+func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("userID").(string)
-
-		var post struct {
-			Content  string `json:"content"`
-			Category string `json:"category"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+		userIDAny := r.Context().Value(models.UserIDKey)
+		userIDStr, ok := userIDAny.(string)
+		if !ok {
+			logger.Error("Failed to convert userID to string - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		postID := uuid.New().String()
-		_, err := db.Exec(`
-            INSERT INTO posts (post_id, user_id, content, category, timestamp)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `, postID, userID, post.Content, post.Category)
+		userID, err := strconv.Atoi(userIDStr)
 		if err != nil {
-			http.Error(w, "Failed to create post", http.StatusInternalServerError)
+			logger.Error("Failed to convert userID to int - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		// Fetch the newly created post with user details
-		var newPost Post
-		err = db.QueryRow(`
-            SELECT p.post_id, p.user_id, p.content, p.category, p.timestamp,
-                   u.nickname, u.first_name, u.last_name
-            FROM posts p
-            JOIN users u ON p.user_id = u.user_id
-            WHERE p.post_id = ?
-        `, postID).Scan(
-			&newPost.ID, &newPost.UserID, &newPost.Content, &newPost.Category,
-			&newPost.Timestamp, &newPost.User.Nickname, &newPost.User.FirstName,
-			&newPost.User.LastName,
-		)
+		// Inside CreatePostHandler, before processing files
+		logger.Info("Starting to process files for post creation")
+		if r.MultipartForm != nil {
+			logger.Info("MultipartForm details:")
+			for key, files := range r.MultipartForm.File {
+				logger.Info("Key: %s, Number of files: %d", key, len(files))
+				for i, fileHeader := range files {
+					logger.Info("File %d: name=%s, size=%d bytes", i, fileHeader.Filename, fileHeader.Size)
+				}
+			}
+		}
+
+		// Parse multipart form
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			logger.Error("Failed to parse multipart form: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to parse form data",
+			})
+			return
+		}
+
+		// Extract form fields
+		title := r.FormValue("title")
+		content := r.FormValue("content")
+		category := r.FormValue("category")
+
+		// Validate required fields
+		if title == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Title is required",
+			})
+			return
+		}
+
+		if category == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Category is required",
+			})
+			return
+		}
+
+		// Check for video upload
+		var videoPath string
+		if form := r.MultipartForm; form != nil && form.File["post-video"] != nil && len(form.File["post-video"]) > 0 {
+			videoPath, err = utils.UploadFile(r, "post-video", userID, 0)
+			if err != nil {
+				logger.Error("Failed to save video file: %v", err)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "Failed to save video file",
+				})
+				return
+			}
+		}
+
+		// Check for image uploads
+		var imagePaths []string
+		if videoPath == "" { // Only process images if no video was uploaded
+			form := r.MultipartForm
+			if form != nil && form.File["post-images"] != nil {
+				logger.Info("Found %d images to process", len(form.File["post-images"]))
+				for i, fileHeader := range form.File["post-images"] {
+					logger.Info("Processing image %d: %s", i, fileHeader.Filename)
+					imagePath, err := utils.UploadFile(r, "post-images", userID, i)
+					if err != nil {
+						logger.Error("Failed to save image file: %v", err)
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusInternalServerError)
+						json.NewEncoder(w).Encode(map[string]string{
+							"error": "Failed to save image file",
+						})
+						return
+					}
+					if imagePath != "" {
+						imagePaths = append(imagePaths, imagePath)
+					}
+				}
+			}
+		}
+
+		if content == "" && len(imagePaths) == 0 && videoPath == "" {
+			logger.Warning("Invalid post creation request: missing content, images, and video")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Either content, images, or video is required",
+			})
+			return
+		}
+
+		userName, err := controllers.GetUsernameByID(pc.DB, userID)
 		if err != nil {
-			http.Error(w, "Failed to fetch created post", http.StatusInternalServerError)
+			logger.Error("Failed to get username: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Create post
+		post := models.Post{
+			Title:     title,
+			Author:    userName,
+			UserID:    userID,
+			Category:  category,
+			Content:   content,
+			Timestamp: time.Now(),
+			VideoUrl: sql.NullString{
+				String: videoPath,
+				Valid:  videoPath != "",
+			},
+			Images: imagePaths,
+		}
+
+		// Insert post
+		_, err = pc.InsertPost(post)
+		if err != nil {
+			logger.Error("Failed to insert post: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to create post",
+			})
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(newPost)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Post created successfully",
+		})
 	}
 }
 
-func UpdatePostHandler(db *sql.DB) http.HandlerFunc {
+func UpdatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("userID").(string)
+		userID := r.Context().Value("userID").(int)
 		postID := r.URL.Query().Get("postID")
 
-		var update struct {
-			Content string `json:"content"`
+		// Parse multipart form
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			logger.Error("Failed to parse multipart form: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to parse form data",
+			})
+			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+		// Get existing post
+		existingPost, err := pc.GetPostByID(postID)
+		if err != nil {
+			logger.Error("Failed to fetch post: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to fetch post",
+			})
 			return
 		}
 
 		// Verify post ownership
-		var ownerID string
-		err := db.QueryRow("SELECT user_id FROM posts WHERE post_id = ?", postID).Scan(&ownerID)
-		if err != nil || ownerID != userID {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		isAuthor, err := pc.IsPostAuthor(existingPost.ID, userID)
+		if err != nil || !isAuthor {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Unauthorized",
+			})
 			return
 		}
 
-		_, err = db.Exec("UPDATE posts SET content = ? WHERE post_id = ?", update.Content, postID)
+		// Extract form fields
+		title := r.FormValue("title")
+		content := r.FormValue("content")
+		category := r.FormValue("category")
+
+		// Update fields if provided
+		if title != "" {
+			existingPost.Title = title
+		}
+		if content != "" {
+			existingPost.Content = content
+		}
+		if category != "" {
+			existingPost.Category = category
+		}
+
+		// Handle video upload
+		var videoPath string
+		if form := r.MultipartForm; form != nil && form.File["post-video"] != nil && len(form.File["post-video"]) > 0 {
+			videoPath, err = utils.UploadFile(r, "post-video", userID, 0)
+			if err != nil {
+				logger.Error("Failed to save video file: %v", err)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "Failed to save video file",
+				})
+				return
+			}
+		}
+		if videoPath != "" {
+			existingPost.VideoUrl = sql.NullString{
+				String: videoPath,
+				Valid:  true,
+			}
+		}
+
+		// Handle image uploads
+		if videoPath == "" { // Only process images if no video was uploaded
+			form := r.MultipartForm
+			if form != nil && form.File["post-images"] != nil {
+				var imagePaths []string
+				for i := range form.File["post-images"] {
+					imagePath, err := utils.UploadFile(r, "post-images", userID, i)
+					if err != nil {
+						logger.Error("Failed to save image file: %v", err)
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusInternalServerError)
+						json.NewEncoder(w).Encode(map[string]string{
+							"error": "Failed to save image file",
+						})
+						return
+					}
+					imagePaths = append(imagePaths, imagePath)
+				}
+				existingPost.Images = imagePaths
+			}
+		}
+
+		// Update post
+		err = pc.UpdatePost(existingPost)
 		if err != nil {
-			http.Error(w, "Failed to update post", http.StatusInternalServerError)
+			logger.Error("Failed to update post: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to update post",
+			})
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Post updated successfully",
+		})
 	}
 }
 
-func DeletePostHandler(db *sql.DB) http.HandlerFunc {
+func DeletePostHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("userID").(string)
-		postID := r.URL.Query().Get("postID")
+		userID := r.Context().Value("userID").(int)
+		postIDStr := r.URL.Query().Get("postID")
+
+		postID, err := strconv.Atoi(postIDStr)
+		if err != nil {
+			logger.Error("Invalid post ID: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Invalid post ID",
+			})
+			return
+		}
 
 		// Verify post ownership
-		var ownerID string
-		err := db.QueryRow("SELECT user_id FROM posts WHERE post_id = ?", postID).Scan(&ownerID)
-		if err != nil || ownerID != userID {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		isAuthor, err := pc.IsPostAuthor(postID, userID)
+		if err != nil || !isAuthor {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Unauthorized",
+			})
 			return
 		}
 
-		// Delete post and its comments
-		tx, err := db.Begin()
+		// Delete post
+		err = pc.DeletePost(postID, userID)
 		if err != nil {
-			http.Error(w, "Transaction failed", http.StatusInternalServerError)
+			logger.Error("Failed to delete post: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to delete post",
+			})
 			return
 		}
 
-		_, err = tx.Exec("DELETE FROM comments WHERE post_id = ?", postID)
-		if err != nil {
-			tx.Rollback()
-			http.Error(w, "Failed to delete comments", http.StatusInternalServerError)
-			return
-		}
-
-		_, err = tx.Exec("DELETE FROM posts WHERE post_id = ?", postID)
-		if err != nil {
-			tx.Rollback()
-			http.Error(w, "Failed to delete post", http.StatusInternalServerError)
-			return
-		}
-
-		if err := tx.Commit(); err != nil {
-			http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
-			return
-		}
-
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Post deleted successfully",
+		})
 	}
 }

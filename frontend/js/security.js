@@ -30,6 +30,7 @@ function authenticatedFetch(url, options = {}) {
             'X-CSRF-Token': csrfToken,
             'Content-Security-Policy': "default-src 'self'",
         },
+        credentials: 'include',
     });
 }
 
@@ -60,3 +61,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up periodic CSRF token refresh
     setInterval(fetchCSRFToken, 30 * 60 * 1000); // Refresh every 30 minutes
 }); 
+
+export { authenticatedFetch, cspHeader, sanitizeInput };

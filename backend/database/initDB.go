@@ -36,17 +36,38 @@ func InitializeDatabase() (*sql.DB, error) {
 			last_name TEXT,
 			age INTEGER,
 			gender TEXT,
+			profile_img TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 
 		CREATE TABLE IF NOT EXISTS posts (
-			post_id TEXT PRIMARY KEY,
-			user_id INTEGER,
-			title TEXT,
-			content TEXT,
-			category TEXT,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (user_id) REFERENCES users(id)
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            author TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            likes INTEGER DEFAULT 0,
+            dislikes INTEGER DEFAULT 0,
+            content TEXT NOT NULL,
+            video_url TEXT,
+            timestamp DATETIME NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        );
+
+		CREATE TABLE IF NOT EXISTS post_images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            image_url TEXT NOT NULL,
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
+        );
+
+		CREATE TABLE IF NOT EXISTS user_votes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            user_vote TEXT CHECK(user_vote IN ('like', 'dislike')),
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE,
+			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 		);
 
 		CREATE TABLE IF NOT EXISTS messages (
@@ -60,14 +81,19 @@ func InitializeDatabase() (*sql.DB, error) {
 		);
 
 		CREATE TABLE IF NOT EXISTS comments (
-			comment_id TEXT PRIMARY KEY,
-			post_id TEXT,
-			user_id INTEGER,
-			content TEXT,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (post_id) REFERENCES posts(post_id),
-			FOREIGN KEY (user_id) REFERENCES users(id)
-		);
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            parent_id INTEGER DEFAULT NULL,
+            author TEXT NOT NULL,
+            content TEXT NOT NULL,
+            likes INTEGER DEFAULT 0,
+            dislikes INTEGER DEFAULT 0,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+            FOREIGN KEY (parent_id) REFERENCES comments (id) ON DELETE CASCADE
+        );
 
 		CREATE TABLE IF NOT EXISTS sessions (
 			session_token TEXT PRIMARY KEY,

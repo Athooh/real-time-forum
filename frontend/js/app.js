@@ -1,4 +1,3 @@
-import { fetchPosts } from './components/posts.js';
 import { fetchOnlineUsers, initializeMessages, initializeMessenger } from './components/messages.js';
 import { initializeWebSocket } from './websocket.js';
 import { NotificationType, showNotification } from './utils/notifications.js';
@@ -8,7 +7,7 @@ import { createAuthSection, setupAuthEventListeners } from './components/auth.js
 import { setupNotificationEventListeners } from './components/notifications.js';
 import { createHeader, setupHeaderEventListeners } from './components/header.js';
 import { createLeftSidebar, createRightSidebar } from './components/sidebar.js';
-import { createMainContent, setupPostEventListeners } from './components/posts.js';
+import { createMainContent, setupPostEventListeners } from './components/posts/posts.js';
 
 class App {
     constructor() {
@@ -129,20 +128,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 export { appInstance as app };
 
-// Make sure fetchPosts is available globally
-if (typeof window.fetchPosts === 'undefined') {
-    window.fetchPosts = async function(page = 1, append = false) {
-        try {
-            const response = await authenticatedFetch(`/posts?page=${page}`);
-            if (response.ok) {
-                const data = await response.json();
-                renderPosts(data.posts, append);
-            } else {
-                throw new Error('Failed to fetch posts');
-            }
-        } catch (error) {
-            console.error('Error fetching posts:', error);
-            showNotification('Failed to load posts', NotificationType.ERROR);
-        }
-    };
-} 
