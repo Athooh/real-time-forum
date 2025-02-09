@@ -54,18 +54,19 @@ func (ac *AuthController) RegisterUser(user models.User) (int64, error) {
 }
 
 func (ac *AuthController) AuthenticateUser(credentials models.LoginRequest) (*models.User, error) {
+	var hashedPassword string
 	user := &models.User{}
 	err := ac.DB.QueryRow(`
-	SELECT id, password 
+	SELECT id, nickname, email, first_name, last_name, age, gender, password
 	FROM users 
 	WHERE email = ? OR nickname = ?
-`, credentials.Identifier, credentials.Identifier).Scan(&user.ID, &user.Password)
+`, credentials.Identifier, credentials.Identifier).Scan(&user.ID, &user.Nickname, &user.Email, &user.FirstName, &user.LastName, &user.Age, &user.Gender, &hashedPassword)
 	if err != nil {
 		logger.Warning("Authentication failed - invalid credentials: %s error: %v", credentials.Identifier, err)
 		return nil, errors.New("invalid credentials")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(credentials.Password)); err != nil {
 		logger.Warning("Authentication failed - invalid password for user: %s", credentials.Identifier)
 		return nil, errors.New("invalid password")
 	}
@@ -128,20 +129,20 @@ func (ac *AuthController) SanitizeInput(input string) string {
 }
 
 // Function to retrieve username based on user ID from SQLite database
-func GetUsernameByID(db *sql.DB, userID int) string {
+func GetUsernameByID(db *sql.DB, userID int) (string, error) {
 	var username string
 
 	// Query to fetch the username for the given user ID
-	query := `SELECT username FROM users WHERE id = ?`
+	query := `SELECT nickname FROM users WHERE id = ?`
 	err := db.QueryRow(query, userID).Scan(&username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// No rows were found for the given user ID
-			return ""
+			return "", errors.New("user not found")
 		}
 		// Other database errors
-		return ""
+		return "", err
 	}
 
-	return username
+	return username, nil
 }
