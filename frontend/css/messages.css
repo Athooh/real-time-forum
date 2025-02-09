@@ -66,6 +66,16 @@
     right: 0;
 }
 
+/* Prevent slider from closing when clicking inside */
+.messages-slide-panel * {
+    pointer-events: auto;
+}
+
+/* Ensure chat windows are above slider */
+.chat-window {
+    z-index: 10001;
+}
+
 .messages-panel-header {
     padding: 20px;
     border-bottom: 1px solid var(--border-color);
@@ -213,22 +223,27 @@
 
 .chat-window {
     position: fixed;
-    right: 400px;
-    top: 0;
-    width: 320px;
-    height: 100vh;
+    right: 20px;
+    bottom: 0;
+    width: 340px;
+    max-height: 450px;
     background: white;
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     z-index: 10001;
     display: flex;
     flex-direction: column;
     transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, right 0.3s ease;
     pointer-events: auto;
 }
 
 .chat-window.active {
     transform: translateX(0);
+}
+
+.chat-window.minimized {
+    height: 50px;
+    overflow: hidden;
 }
 
 .chat-header {
@@ -251,6 +266,15 @@
     color: white;
     cursor: pointer;
     font-size: 1.2rem;
+}
+
+.chat-header .minimize-chat {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.2rem;
+    margin-right: 10px;
 }
 
 .chat-messages {
