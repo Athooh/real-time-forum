@@ -13,7 +13,6 @@ type Post struct {
 	Category  string         `json:"category"`
 	Likes     int            `json:"likes"`
 	Dislikes  int            `json:"dislikes"`
-	UserVote  string         `json:"user_vote"`
 	Content   string         `json:"content"`
 	Timestamp time.Time      `json:"timestamp"`
 	VideoUrl  sql.NullString `json:"video_url"`
