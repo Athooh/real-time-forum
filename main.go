@@ -73,6 +73,7 @@ func main() {
 	routes.ServeStaticFolder()
 	routes.UserRegAndLogin(db)
 	routes.MainRoute(db)
+	routes.PostRoute(db)
 
 	logger.Info("Starting Application...")
 
