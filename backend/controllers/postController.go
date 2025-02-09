@@ -27,9 +27,9 @@ func (pc *PostController) InsertPost(post models.Post) (int, error) {
 
 	// Insert the post
 	result, err := tx.Exec(`
-		INSERT INTO posts (title, user_id, author, category, likes, dislikes, user_vote, content, timestamp, video_url)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-	`, post.Title, post.UserID, post.Author, post.Category, post.Likes, post.Dislikes, post.UserVote, post.Content, post.Timestamp, post.VideoUrl)
+		INSERT INTO posts (title, user_id, author, category, likes, dislikes, content, timestamp, video_url)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+	`, post.Title, post.UserID, post.Author, post.Category, post.Likes, post.Dislikes, post.Content, post.Timestamp, post.VideoUrl)
 	if err != nil {
 		return 0, fmt.Errorf("failed to insert post: %w", err)
 	}
@@ -60,7 +60,7 @@ func (pc *PostController) InsertPost(post models.Post) (int, error) {
 func (pc *PostController) GetAllPosts(offset, limit int) ([]models.Post, error) {
 	rows, err := pc.DB.Query(`
 		SELECT id, title, user_id, author, category, likes, dislikes, 
-			   user_vote, content, timestamp, video_url
+			   content, timestamp, video_url
 		FROM posts 
 		ORDER BY timestamp DESC
 		LIMIT ? OFFSET ?
@@ -77,7 +77,7 @@ func (pc *PostController) GetAllPosts(offset, limit int) ([]models.Post, error) 
 		err := rows.Scan(
 			&post.ID, &post.Title, &post.UserID, &post.Author,
 			&post.Category, &post.Likes, &post.Dislikes,
-			&post.UserVote, &post.Content, &post.Timestamp, &post.VideoUrl,
+			&post.Content, &post.Timestamp, &post.VideoUrl,
 		)
 		if err != nil {
 			logger.Error("Row scan failed in GetAllPosts: %v", err)
@@ -93,13 +93,13 @@ func (pc *PostController) GetPostByID(postID string) (models.Post, error) {
 	var post models.Post
 	err := pc.DB.QueryRow(`
         SELECT id, title, user_id, author, category, likes, dislikes, 
-               user_vote, content, timestamp, video_url
+               content, timestamp, video_url
         FROM posts 
         WHERE id = ?
     `, postID).Scan(
 		&post.ID, &post.Title, &post.UserID, &post.Author,
 		&post.Category, &post.Likes, &post.Dislikes,
-		&post.UserVote, &post.Content, &post.Timestamp, &post.VideoUrl,
+		&post.Content, &post.Timestamp, &post.VideoUrl,
 	)
 	if err != nil {
 		return post, fmt.Errorf("failed to fetch post: %w", err)
@@ -111,7 +111,7 @@ func (pc *PostController) UpdatePost(post models.Post) error {
 	// Prepare the SQL statement for updating the post
 	query := `
 	UPDATE posts
-	SET title = ?, author = ?, user_id = ?, category = ?, likes = ?, dislikes = ?, user_vote = ?, content = ?, video_url = ?, timestamp = ?
+	SET title = ?, author = ?, user_id = ?, category = ?, likes = ?, dislikes = ?, content = ?, video_url = ?, timestamp = ?
 	WHERE id = ?;
 	`
 
@@ -123,7 +123,6 @@ func (pc *PostController) UpdatePost(post models.Post) error {
 		post.Category,
 		post.Likes,
 		post.Dislikes,
-		post.UserVote,
 		post.Content,
 		post.VideoUrl,
 		post.Timestamp,
