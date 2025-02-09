@@ -122,17 +122,32 @@ async function handleSavePost(e) {
     }
 }
 
-// Update fetchPosts to use forumState instead of window.forumState
 async function fetchPosts(page = 1, append = false) {
-    if (forumState.isLoading) return;
+    if (forumState.isLoading || forumState.allPostsLoaded) return;
     forumState.isLoading = true;
 
     try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const limit = 10; // Posts per page
+        const response = await authenticatedFetch(`/api/posts?page=${page}&limit=${limit}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch posts');
+        }
+
+        const data = await response.json();
+        const posts = data.posts;
         
-        // Use dummy data
-        const posts = DUMMY_DATA.posts;
+        console.log("posts", posts);
+        // Check if we've reached the end
+        if (!posts || posts.length < limit) {
+            forumState.allPostsLoaded = true;
+        }
+
         renderPosts(posts, append);
         
     } catch (error) {
@@ -156,6 +171,11 @@ async function createPost({ title, content, modal }) {
         const selectedCategories = Array.from(SelectedCategories);
         if (selectedCategories.length > 0) {
             formData.append('category', selectedCategories.join(','));
+        }
+        
+        if (selectedCategories.length === 0) {
+           showNotification('Please select at least one category', NotificationType.ERROR);
+           return null;
         }
 
         // Add images if they exist
@@ -287,6 +307,13 @@ async function savePost(postId) {
         console.error('Error saving post:', error);
         throw error;
     }
+}
+// Initialize state
+if (!forumState.hasOwnProperty('currentPage')) {
+    forumState.currentPage = 1;
+}
+if (!forumState.hasOwnProperty('allPostsLoaded')) {
+    forumState.allPostsLoaded = false;
 }
 
 export { handleCreatePost, handlePostReaction, handlePostSubmit, handleCommentSubmit, handleSavePost, fetchPosts };
