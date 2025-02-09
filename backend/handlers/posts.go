@@ -53,7 +53,41 @@ func GetPostsHandler(pc *controllers.PostController) http.HandlerFunc {
 
 func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("userID").(int)
+		userIDAny := r.Context().Value(models.UserIDKey)
+		userIDStr, ok := userIDAny.(string)
+		if !ok {
+			logger.Error("Failed to convert userID to string - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			logger.Error("Failed to convert userID to int - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Inside CreatePostHandler, before processing files
+		logger.Info("Starting to process files for post creation")
+		if r.MultipartForm != nil {
+			logger.Info("MultipartForm details:")
+			for key, files := range r.MultipartForm.File {
+				logger.Info("Key: %s, Number of files: %d", key, len(files))
+				for i, fileHeader := range files {
+					logger.Info("File %d: name=%s, size=%d bytes", i, fileHeader.Filename, fileHeader.Size)
+				}
+			}
+		}
+
 		// Parse multipart form
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
 			logger.Error("Failed to parse multipart form: %v", err)
@@ -71,30 +105,37 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 		category := r.FormValue("category")
 
 		// Validate required fields
-		if title == "" || category == "" {
-			logger.Warning("Invalid post creation request: missing required fields - remote_addr: %s, method: %s, path: %s",
-				r.RemoteAddr,
-				r.Method,
-				r.URL.Path,
-			)
+		if title == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{
-				"message": "Title and category are required",
+				"error": "Title is required",
+			})
+			return
+		}
+
+		if category == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Category is required",
 			})
 			return
 		}
 
 		// Check for video upload
-		videoPath, err := utils.UploadFile(r, "post-video", userID)
-		if err != nil && err != http.ErrMissingFile {
-			logger.Error("Failed to save video file: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Failed to save video file",
-			})
-			return
+		var videoPath string
+		if form := r.MultipartForm; form != nil && form.File["post-video"] != nil && len(form.File["post-video"]) > 0 {
+			videoPath, err = utils.UploadFile(r, "post-video", userID, 0)
+			if err != nil {
+				logger.Error("Failed to save video file: %v", err)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "Failed to save video file",
+				})
+				return
+			}
 		}
 
 		// Check for image uploads
@@ -102,8 +143,10 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 		if videoPath == "" { // Only process images if no video was uploaded
 			form := r.MultipartForm
 			if form != nil && form.File["post-images"] != nil {
-				for range form.File["post-images"] {
-					imagePath, err := utils.UploadFile(r, "post_image", userID)
+				logger.Info("Found %d images to process", len(form.File["post-images"]))
+				for i, fileHeader := range form.File["post-images"] {
+					logger.Info("Processing image %d: %s", i, fileHeader.Filename)
+					imagePath, err := utils.UploadFile(r, "post-images", userID, i)
 					if err != nil {
 						logger.Error("Failed to save image file: %v", err)
 						w.Header().Set("Content-Type", "application/json")
@@ -113,7 +156,9 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 						})
 						return
 					}
-					imagePaths = append(imagePaths, imagePath)
+					if imagePath != "" {
+						imagePaths = append(imagePaths, imagePath)
+					}
 				}
 			}
 		}
@@ -123,12 +168,17 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{
-				"message": "Either content, images, or video is required",
+				"error": "Either content, images, or video is required",
 			})
 			return
 		}
 
-		userName := controllers.GetUsernameByID(pc.DB, userID)
+		userName, err := controllers.GetUsernameByID(pc.DB, userID)
+		if err != nil {
+			logger.Error("Failed to get username: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
 		// Create post
 		post := models.Post{
@@ -221,15 +271,18 @@ func UpdatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 		}
 
 		// Handle video upload
-		videoPath, err := utils.UploadFile(r, "post-video", userID)
-		if err != nil && err != http.ErrMissingFile {
-			logger.Error("Failed to save video file: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Failed to save video file",
-			})
-			return
+		var videoPath string
+		if form := r.MultipartForm; form != nil && form.File["post-video"] != nil && len(form.File["post-video"]) > 0 {
+			videoPath, err = utils.UploadFile(r, "post-video", userID, 0)
+			if err != nil {
+				logger.Error("Failed to save video file: %v", err)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "Failed to save video file",
+				})
+				return
+			}
 		}
 		if videoPath != "" {
 			existingPost.VideoUrl = sql.NullString{
@@ -243,8 +296,8 @@ func UpdatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 			form := r.MultipartForm
 			if form != nil && form.File["post-images"] != nil {
 				var imagePaths []string
-				for range form.File["post-images"] {
-					imagePath, err := utils.UploadFile(r, "post_image", userID)
+				for i := range form.File["post-images"] {
+					imagePath, err := utils.UploadFile(r, "post-images", userID, i)
 					if err != nil {
 						logger.Error("Failed to save image file: %v", err)
 						w.Header().Set("Content-Type", "application/json")
