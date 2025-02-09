@@ -190,7 +190,7 @@ function createPostHeader(post) {
                 <img src="${post.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
                 <div class="user-info">
                     <h4>${escapeHTML(post.user.nickname)}</h4>
-                    <span class="post-meta">${post.user.profession} • ${formatTimeAgo(post.timestamp)}</span>
+                    <span class="post-meta">${post.user.profession ? `${post.user.profession} • ` : 'Feature in progress • '}${formatTimeAgo(post.timestamp)}</span>
                 </div>
             </div>
             <button class="post-menu-btn">
@@ -201,10 +201,58 @@ function createPostHeader(post) {
 }
 
 function createPostContent(post) {
+    const createImageGrid = (images) => {
+        if (!images || images.length === 0) return '';
+        
+        const gridClasses = {
+            1: 'single-image',
+            2: 'two-images',
+            3: 'three-images',
+            4: 'four-images',
+            5: 'five-images'
+        };
+
+        // Normalize image paths to ensure they start with "/"
+        const normalizeImagePath = (path) => {
+            // Remove any leading "/" to avoid double slashes
+            path = path.replace(/^\/+/, '');
+            // Ensure path starts with "/"
+            return path.startsWith('/') ? path : `/${path}`;
+        };
+
+        const gridClass = gridClasses[Math.min(images.length, 5)] || 'five-images';
+        
+        return `
+            <div class="post-media-grid ${gridClass}">
+                ${images.slice(0, 5).map((image, index) => `
+                    <div class="grid-item">
+                        <img src="http://localhost:8080/${normalizeImagePath(image)}" alt="Post Image ${index + 1}" class="post-image">
+                        ${images.length > 5 && index === 4 ? `
+                            <div class="more-overlay">+${images.length - 5}</div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    };
+
     return `
         <div class="post-content">
             ${post.title ? `<div class="post-title"><h3>${escapeHTML(post.title)}</h3></div>` : ''}
-            ${post.image ? `<img src="${post.image}" alt="Post Image" class="post-image">` : ''}
+            ${post.video_url.Valid ? `
+                <div class="post-video-container">
+                    <video class="post-video" controls>
+                        <source src="${post.video_url.String}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            ` : post.images ? createImageGrid(post.images) : post.image ? `
+                <div class="post-media-grid single-image">
+                    <div class="grid-item">
+                        <img src="${post.image}" alt="Post Image" class="post-image">
+                    </div>
+                </div>
+            ` : ''}
             <div class="post-description">
                 <p>${escapeHTML(post.content)}</p>
             </div>
