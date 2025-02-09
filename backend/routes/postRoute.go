@@ -12,7 +12,7 @@ import (
 func PostRoute(db *sql.DB) {
 	PostController := controllers.NewPostController(db)
 
-	http.Handle("/posts", middleware.ApplyMiddleware(
+	http.Handle("/api/posts", middleware.ApplyMiddleware(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPost:
