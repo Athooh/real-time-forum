@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+
+	"forum/backend/handlers"
 )
 
 // ValidatePathAndMethod is a middleware factory that returns a middleware function
@@ -12,11 +14,11 @@ func ValidatePathAndMethod(expectedPath string, expectedMethod string) func(http
 			// Check if the path and method match the expected values
 			if r.URL.Path != expectedPath {
 				w.WriteHeader(http.StatusNotFound)
-				http.Error(w, "Page Not Found", http.StatusNotFound)
+				handlers.ServeErrorPage(w, http.StatusNotFound, "Page Not Found", "The page you are looking for does not exist.")
 				return
 			} else if r.Method != expectedMethod {
 				w.WriteHeader(http.StatusMethodNotAllowed)
-				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+				handlers.ServeErrorPage(w, http.StatusMethodNotAllowed, "Method Not Allowed", "The method you are trying to use is not allowed.")
 			}
 
 			// Call the next handler if validation passes
