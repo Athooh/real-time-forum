@@ -8,6 +8,7 @@ import { setupNotificationEventListeners } from './components/notifications.js';
 import { createHeader, setupHeaderEventListeners } from './components/header.js';
 import { createLeftSidebar, createRightSidebar } from './components/sidebar.js';
 import { createMainContent, setupPostEventListeners } from './components/posts/posts.js';
+import { fetchPosts } from './components/posts/postsApi.js';
 
 class App {
     constructor() {
@@ -107,7 +108,7 @@ class App {
     async initializeForumFeatures() {
         try {
             await Promise.all([
-                // fetchPosts(),
+                fetchPosts(),
                 // fetchOnlineUsers()
             ]);
             initializeWebSocket();
