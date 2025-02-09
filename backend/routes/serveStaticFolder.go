@@ -19,8 +19,8 @@ func ServeStaticFolder() {
 		http.StripPrefix("/js/", http.FileServer(http.Dir("frontend/js"))),
 		middleware.SetCSPHeaders,
 	))
-	// http.Handle("/uploads/", middleware.ApplyMiddleware(
-	// 	http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))),
-	// 	middleware.SetCSPHeaders,
-	// ))
+	http.Handle("/uploads/", middleware.ApplyMiddleware(
+		http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))),
+		middleware.SetCSPHeaders,
+	))
 }
