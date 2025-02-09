@@ -12,6 +12,7 @@ import (
 func SessionAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if the user is authenticated
+		logger.Info("SessionAuthMiddleware called")
 		sessionCookie, err := r.Cookie("session_token")
 		if err != nil || sessionCookie == nil || sessionCookie.Value == "" {
 			logger.Warning("Unauthorized attempt  nil sessionCookie - remote_addr: %s, method: %s, path: %s",
