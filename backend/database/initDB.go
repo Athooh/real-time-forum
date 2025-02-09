@@ -36,7 +36,8 @@ func InitializeDatabase() (*sql.DB, error) {
 			last_name TEXT,
 			age INTEGER,
 			gender TEXT,
-			profile_img TEXT,
+			profession TEXT,
+			avatar TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 
