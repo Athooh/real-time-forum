@@ -150,14 +150,13 @@ function setupMessageEventListeners() {
             
             try {
                 const userId = messageItem.dataset.userId;
-                // Use the dummy messages directly without parsing
                 const user = dummyMessages.find(msg => msg.user.id.toString() === userId)?.user;
                 
                 if (!user) {
                     throw new Error('User not found');
                 }
                 
-                await openChatWindow(user);
+                await openChat(userId);
             } catch (error) {
                 console.error('Error opening chat:', error);
                 showNotification('Failed to load chat', NotificationType.ERROR);
@@ -520,15 +519,13 @@ async function searchMessages(query) {
 }
 
 async function openChat(userId) {
-    // Implement chat opening logic
     try {
-        // Fetch chat history and open chat interface
-        const response = await fetch(`/api/messages/chat/${userId}`);
-        if (!response.ok) throw new Error('Failed to open chat');
-        const chatData = await response.json();
+        // Find user in dummy messages
+        const userMessage = dummyMessages.find(msg => msg.user.id.toString() === userId);
+        if (!userMessage) throw new Error('User not found');
         
-        // You'll need to implement the chat interface opening logic
-        console.log('Opening chat with user:', userId, chatData);
+        // Open chat window with user data
+        await openChatWindow(userMessage.user);
         
     } catch (error) {
         console.error('Error opening chat:', error);
@@ -587,19 +584,45 @@ function createChatWindow(user) {
     `;
 }
 
+// Add this function to manage multiple chat windows
+function positionChatWindow(chatWindow, userId) {
+    const existingChats = document.querySelectorAll('.chat-window.active');
+    const windowWidth = 320; // Width of chat window
+    const gap = 20; // Gap between windows
+    const baseRight = 400; // Base right position (after slider)
+    
+    // Calculate new position based on number of active chats
+    const position = baseRight + (windowWidth + gap) * existingChats.length;
+    
+    chatWindow.style.right = `${position}px`;
+}
+
 async function openChatWindow(user) {
     try {
-        // Remove existing chat window for this user if it exists
+        // Check if window already exists
         const existingChat = document.getElementById(`chat-window-${user.id}`);
         if (existingChat) {
             existingChat.classList.add('active');
             return;
         }
 
+        // Limit number of open chat windows
+        const activeChats = document.querySelectorAll('.chat-window.active');
+        if (activeChats.length >= 3) {
+            // Close the oldest chat window
+            activeChats[0].classList.remove('active');
+            setTimeout(() => activeChats[0].remove(), 300);
+        }
+
         // Create and append new chat window
         const chatWindow = document.createElement('div');
         chatWindow.innerHTML = createChatWindow(user);
         document.body.appendChild(chatWindow.firstElementChild);
+
+        const newChatWindow = document.getElementById(`chat-window-${user.id}`);
+        
+        // Position the new chat window
+        positionChatWindow(newChatWindow, user.id);
 
         // Load initial chat messages
         await loadChatHistory(user.id);
@@ -609,11 +632,11 @@ async function openChatWindow(user) {
 
         // Show the chat window with animation
         setTimeout(() => {
-            const newChatWindow = document.getElementById(`chat-window-${user.id}`);
             if (newChatWindow) {
                 newChatWindow.classList.add('active');
             }
         }, 50);
+
     } catch (error) {
         throw new Error('Failed to open chat window');
     }
