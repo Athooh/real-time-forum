@@ -7,8 +7,9 @@ import (
 
 type Post struct {
 	ID        int            `json:"id"`
-	Title     string         `json:"title"`
+	User      User           `json:"user"`
 	Author    string         `json:"author"`
+	Title     string         `json:"title"`
 	UserID    int            `json:"user_id"`
 	Category  string         `json:"category"`
 	Likes     int            `json:"likes"`
@@ -17,4 +18,5 @@ type Post struct {
 	Timestamp time.Time      `json:"timestamp"`
 	VideoUrl  sql.NullString `json:"video_url"`
 	Images    []string       `json:"images"`
+	Comments  []Comment      `json:"comments"`
 }
