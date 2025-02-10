@@ -1,5 +1,4 @@
 import { NotificationType, showNotification } from '../../utils/notifications.js';
-import { DUMMY_DATA } from '../../utils/dummy-data.js';
 import { forumState } from '../../state.js';
 import { authenticatedFetch } from '../../security.js';
 import { renderPosts, closePostModal, closeModals } from './posts.js';
