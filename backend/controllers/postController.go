@@ -378,3 +378,17 @@ func (pc *PostController) IsPostAuthor(postID, userID int) (bool, error) {
 	// Compare the post's author ID with the provided userID
 	return authorID == userID, nil
 }
+
+func (pc *PostController) GetUserPostCount(userID int) (int, error) {
+	var count int
+	err := pc.DB.QueryRow(`
+		SELECT COUNT(*) 
+		FROM posts 
+		WHERE user_id = ?
+	`, userID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user post count: %w", err)
+	}
+
+	return count, nil
+}
