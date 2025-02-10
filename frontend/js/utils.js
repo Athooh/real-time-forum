@@ -1,4 +1,5 @@
 import { forumState } from './state.js';
+import { fetchPosts } from './components/posts/postsApi.js';
 
 // Utility functions (e.g., throttling, debouncing)
 function throttle(func, limit) {
@@ -134,7 +135,7 @@ function setupInfiniteScroll() {
                 fetchPosts(forumState.currentPage, true);
             }
         }
-    }, 500); // Throttle to once every 500ms
+    }, 500); 
 
     window.addEventListener('scroll', handleScroll);
 }
