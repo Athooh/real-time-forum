@@ -161,9 +161,11 @@ function closeModals() {
 }
 
 
-function renderPosts(posts, append = false) {
+function renderPosts(posts, append = false, singlePost = false) {
     const postsContainer = document.getElementById('posts-container');
     if (!postsContainer) return;
+
+    
 
     // Add type checking and error handling
     if (!Array.isArray(posts)) {
@@ -181,7 +183,9 @@ function renderPosts(posts, append = false) {
         </div>
     `).join('');
 
-    if (append) {
+    if (append && singlePost) {
+        postsContainer.innerHTML  = postsHTML + postsContainer.innerHTML;
+    } else if (append){
         postsContainer.innerHTML += postsHTML;
     } else {
         postsContainer.innerHTML = postsHTML;
