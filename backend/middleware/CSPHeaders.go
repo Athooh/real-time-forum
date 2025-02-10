@@ -1,6 +1,9 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // Middleware to set Content Security Policy headers
 func SetCSPHeaders(next http.Handler) http.Handler {
@@ -16,6 +19,10 @@ func SetCSPHeaders(next http.Handler) http.Handler {
 				"base-uri 'self'; "+
 				"form-action 'self';",
 		)
+		// Set Content-Type for .js files
+		if strings.HasSuffix(r.URL.Path, ".js") {
+			w.Header().Set("Content-Type", "application/javascript")
+		}
 		next.ServeHTTP(w, r)
 	})
 }
