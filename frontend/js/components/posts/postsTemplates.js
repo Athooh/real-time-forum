@@ -261,11 +261,19 @@ function createPostContent(post) {
 }
 
 function createPostCategories(post) {
-    if (!post.categories || post.categories.length === 0) return '';
+  
+    if (!post.category) return '';
+    
+    // Handle both array and comma-separated string formats
+    const categoryArray = Array.isArray(post.category) 
+        ? post.category 
+        : post.category.split(',').map(cat => cat.trim());
+
+    if (categoryArray.length === 0) return '';
     
     return `
         <div class="post-categories">
-            ${post.categories.map(category => `
+            ${categoryArray.map(category => `
                 <span class="category-tag">${escapeHTML(category)}</span>
             `).join('')}
         </div>
