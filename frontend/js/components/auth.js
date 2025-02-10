@@ -176,6 +176,9 @@ async function handleLogin(e) {
             // Use the imported app instance
             app.showForumSection();
             await app.initializeForumFeatures();
+
+            // Initialize the messenger after successful login
+            initializeMessenger();
         } else {
             console.log("Attempt failed")
             const errorMessage = data.error || 'Invalid credentials';
