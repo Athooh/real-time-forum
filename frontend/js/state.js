@@ -4,3 +4,5 @@ export const forumState = {
     currentPage: 1,
     hasMorePosts: true
 }; 
+
+export const BASE_URL = "http://localhost:8080"
