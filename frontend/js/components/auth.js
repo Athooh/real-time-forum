@@ -1,6 +1,6 @@
 import { NotificationType, showNotification } from '../utils/notifications.js';
 import { app } from '../app.js';
-
+import { initializeMessenger } from './messages.js';
 
 export function createAuthSection() {
     return `
