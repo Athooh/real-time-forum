@@ -281,7 +281,7 @@ async function handleLogout() {
         // Show auth section
         const authSection = document.getElementById('auth-section');
         if (authSection) {
-            authSection.style.display = 'block';
+            authSection.style.display = 'flex';
         }
         showNotification('Logged out successfully', NotificationType.SUCCESS);
     } catch (error) {

@@ -362,9 +362,12 @@
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
-    margin-bottom: 20px;
     height: auto;
     width: auto;
+}
+
+.post-card:last-child {
+    margin-bottom: 20px;
 }
 
 .post-header {
