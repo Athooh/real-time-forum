@@ -74,6 +74,7 @@ func main() {
 	routes.UserRegAndLogin(db)
 	routes.MainRoute(db)
 	routes.PostRoute(db)
+	routes.WebScokcetRoute()
 
 	logger.Info("Starting Application...")
 
