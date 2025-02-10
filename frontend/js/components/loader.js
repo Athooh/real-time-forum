@@ -21,7 +21,4 @@ function hideLoader() {
     }
 }
 
-// Export for use in other components
-window.createLoader = createLoader;
-window.showLoader = showLoader;
-window.hideLoader = hideLoader; 
+export { createLoader, showLoader, hideLoader };
