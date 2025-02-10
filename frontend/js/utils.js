@@ -140,6 +140,12 @@ function setupInfiniteScroll() {
     window.addEventListener('scroll', handleScroll);
 }
 
+function formatNumber(num) {
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'k';
+    }
+    return num.toString();
+}
 // Export utilities to window object
 export {
     throttle,
@@ -148,5 +154,6 @@ export {
     rateLimiter,
     escapeHTML,
     formatTimeAgo,
-    setupInfiniteScroll
+    setupInfiniteScroll,
+    formatNumber
 };
