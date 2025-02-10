@@ -10,5 +10,6 @@ import (
 func WebScokcetRoute() {
 	http.Handle("/ws", middleware.ApplyMiddleware(
 		http.HandlerFunc(handlers.WebSocketHandler),
+		middleware.JWTAuthMiddleware,
 	))
 }
