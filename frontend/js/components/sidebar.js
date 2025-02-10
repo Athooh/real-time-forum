@@ -1,12 +1,32 @@
+import { authenticatedFetch } from '../security.js';
 import { escapeHTML } from '../utils.js';
+import { createLoader } from './loader.js';
+import { showNotification , NotificationType} from '../utils/notifications.js';
+import { throttle, formatNumber } from '../utils.js';
+
+
+// Add these variables at the top of the file
+let currentPage = 1;
+let isLoadingUsers = false;
+let allUsersLoaded = false;
 
 export function createLeftSidebar() {
-    return `
+    // Check for authentication
+    
+
+    const sidebarHTML = `
         <aside class="sidebar sidebar-left">
             ${createUserProfileCard()}
             ${createSidebarNav()}
         </aside>
     `;
+    
+    // After the sidebar is created, fetch the stats
+    setTimeout(() => {
+        createProfileStats();
+    }, 0);
+    
+    return sidebarHTML;
 }
 
 function createUserProfileCard() {
@@ -23,30 +43,69 @@ function createUserProfileCard() {
                 <h3 class="user-name">${escapeHTML(userData.nickname || 'John Doe')}</h3>
                 <p class="user-profession">${escapeHTML(userData.profession || 'Software Engineer')}</p>
                 <p class="user-tagline">Building the future, one line of code at a time</p>
-                ${createProfileStats()}
+                <div id="profile-stats-container">
+                    ${createLoader()}
+                </div>
             </div>
         </div>
     `;
 }
 
-function createProfileStats() {
-    return `
+async function createProfileStats() {
+    if (!localStorage.getItem('token')) {
+        return;
+    }
+
+    let stats = {
+        followers: '0',
+        following: '0',
+        posts: '0'
+    };
+
+    try {
+        const response = await authenticatedFetch(`/api/users/stats`);
+        
+        if (response.ok) {
+            const rawText = await response.text();
+            const apiStats = JSON.parse(rawText);
+            
+            stats = {
+                followers: apiStats.followers_count,
+                following: apiStats.following_count,
+                posts: apiStats.posts_count
+            };
+        }
+    } catch (error) {
+        if (error.message === 'No authentication token found') {
+            return;
+        }
+        console.error('Failed to fetch user stats', error);
+        showNotification('Failed to fetch user stats', NotificationType.ERROR);
+    }
+
+    const statsHTML = `
         <div class="profile-stats">
-                                <div class="stat-item">
-                                    <span class="stat-value">1.2k</span>
-                                    <span class="stat-label">Followers</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-value">843</span>
-                                    <span class="stat-label">Following</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-value">132</span>
-                                    <span class="stat-label">Posts</span>
-                                </div>
+            <div class="stat-item">
+                <span class="stat-value">${formatNumber(stats.followers)}</span>
+                <span class="stat-label">Followers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">${formatNumber(stats.following)}</span>
+                <span class="stat-label">Following</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">${formatNumber(stats.posts)}</span>
+                <span class="stat-label">Posts</span>
+            </div>
         </div>
     `;
+
+    const container = document.getElementById('profile-stats-container');
+    if (container) {
+        container.innerHTML = statsHTML;
+    }
 }
+
 
 function createSidebarNav() {
     return `
@@ -88,6 +147,9 @@ function createSidebarNav() {
 }
 
 export function createRightSidebar() {
+    // Check for authentication
+    
+
     return `
         <aside class="sidebar sidebar-right">
             ${createWhoToFollowSection()}
@@ -100,34 +162,124 @@ export function createRightSidebar() {
 function createWhoToFollowSection() {
     return `
         <div class="sidebar-card who-to-follow">
-        <div class="who-to-follow-header">
-            <img src="images/add-friend.png" alt="follow me">
-            <h3>Who to Follow</h3>
-        </div>
-            <div class="follow-suggestions">
-                ${createSuggestionItems()}
+            <div class="who-to-follow-header">
+                <img src="images/add-friend.png" alt="follow me">
+                <h3>Who to Follow</h3>
             </div>
-            <button class="load-more">View More...</button>
+            <div class="follow-suggestions" id="follow-suggestions">
+                ${createLoader()}
+            </div>
         </div>
     `;
 }
 
-function createSuggestionItems() {
-    // This could be dynamically populated from the server
-    return Array(3).fill(null).map(() => `
-        <div class="suggestion-item">
-            <div class="user-suggestions">
-                <img src="images/avatar1.png" alt="User" class="user-avatar">
-                <div class="suggestion-info">
-                    <h4>Mike Wilson</h4>
-                    <p>UI/UX Designer</p>
+// Modify the setTimeout section
+setTimeout(async () => {
+    try {
+        const suggestions = await createSuggestionItems(currentPage);
+        const suggestionsContainer = document.querySelector('.follow-suggestions');
+        if (suggestionsContainer) {
+            suggestionsContainer.innerHTML = suggestions;
+            
+            // Add scroll event listener with throttling
+            const handleScroll = throttle(async (e) => {
+                const container = e.target;
+                if (
+                    !isLoadingUsers && 
+                    !allUsersLoaded && 
+                    container.scrollHeight - container.scrollTop <= container.clientHeight + 50
+                ) {
+                    isLoadingUsers = true;
+                    currentPage++;
+                    
+                    // Append loading indicator
+                    container.insertAdjacentHTML('beforeend', createLoader());
+                    
+                    // Fetch next batch of users
+                    const newSuggestions = await createSuggestionItems(currentPage);
+                    
+                    // Remove loading indicator
+                    const loader = container.querySelector('.loader-container');
+                    if (loader) loader.remove();
+                    
+                    // Append new suggestions
+                    if (newSuggestions !== '<div class="no-suggestions">No suggestions available</div>') {
+                        container.insertAdjacentHTML('beforeend', newSuggestions);
+                        setupFollowEventListeners();
+                    } else {
+                        allUsersLoaded = true;
+                    }
+                    
+                    isLoadingUsers = false;
+                }
+            }, 500); // Throttle to 500ms
+
+            suggestionsContainer.addEventListener('scroll', handleScroll);
+            setupFollowEventListeners();
+        }
+    } catch (error) {
+        console.error('Error updating suggestions:', error);
+    }
+}, 0);
+
+// Modify createSuggestionItems to accept page parameter
+async function createSuggestionItems(page = 1) {
+    try {
+        const limit = 5; // Users per page
+        const response = await authenticatedFetch(`/api/users?page=${page}&limit=${limit}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch user suggestions: ${response.status}`);
+        }
+        
+        // Fetch current user's following list
+        const followingResponse = await authenticatedFetch('/api/followers/following');
+        if (!followingResponse.ok) {
+            throw new Error('Failed to fetch following list');
+        }
+        
+        const users = await response.json();
+        const followingList = await followingResponse.json();
+        
+        if (!Array.isArray(users) || users.length === 0) {
+            return '<div class="no-suggestions">No suggestions available</div>';
+        }
+        
+        return users.map(user => {
+            const isFollowing = followingList.some(followingId => followingId === user.id);
+            
+            return `
+                <div class="suggestion-item" data-user-id="${user.id}">
+                    <div class="user-suggestions">
+                        <div class="avatar-wrapper">
+                            <img src="${user.avatar || 'images/avatar1.png'}" alt="${user.nickname}" class="user-avatar">
+                            <span class="status-indicator ${user.is_online ? 'online' : 'offline'}"></span>
+                        </div>
+                        <div class="suggestion-info">
+                            <h4>${escapeHTML(user.nickname)}</h4>
+                            <p>${escapeHTML(user.profession || 'Member')}</p>
+                        </div>
+                    </div>
+                    <button class="story-add ${isFollowing ? 'following' : ''}" 
+                            title="${isFollowing ? 'Following' : 'Follow user'}"
+                            ${isFollowing ? 'disabled' : ''}>
+                        <i class="fas ${isFollowing ? 'fa-check' : 'fa-plus'}"></i>
+                    </button>
                 </div>
-            </div>
-            <div class="story-add">
-                <i class="fas fa-plus"></i>
-            </div>
-        </div>
-    `).join('');
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        showNotification('Failed to load user suggestions', NotificationType.ERROR);
+        return '<div class="error">Failed to load suggestions</div>';
+    }
+}
+
+// Add helper function to setup follow event listeners
+function setupFollowEventListeners() {
+    document.querySelectorAll('.story-add').forEach(btn => {
+        btn.removeEventListener('click', handleFollow);
+        btn.addEventListener('click', handleFollow);
+    });
 }
 
 function createOnlineUsersSection() {
@@ -215,6 +367,48 @@ async function handleFollow(e) {
         showNotification(`Now following ${userName}`, NotificationType.SUCCESS);
     } catch (error) {
         showNotification('Failed to follow user', NotificationType.ERROR);
+    }
+}
+
+async function followUser(userName) {
+    try {
+        // Find the suggestion item by iterating through all h4 elements
+        const h4Elements = document.querySelectorAll('.suggestion-item h4');
+        const suggestionItem = Array.from(h4Elements)
+            .find(element => element.textContent === userName)
+            ?.closest('.suggestion-item');
+
+        if (!suggestionItem) {
+            throw new Error('User not found');
+        }
+        
+        const userId = suggestionItem.dataset.userId;
+        
+        const response = await fetch('/api/followers/follow', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                following_id: parseInt(userId)
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to follow user');
+        }
+
+        // Update UI to reflect the new follow status
+        const button = suggestionItem.querySelector('.story-add');
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        button.title = 'Following';
+        button.disabled = true;
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error following user:', error);
+        throw error;
     }
 }
 
