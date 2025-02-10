@@ -1,7 +1,7 @@
 import { fetchOnlineUsers, initializeMessages, initializeMessenger } from './components/messages.js';
 import { initializeWebSocket } from './websocket/websocket.js';
 import { NotificationType, showNotification } from './utils/notifications.js';
-import { authenticatedFetch } from './utils/fetch.js';
+import { authenticatedFetch } from './security.js';
 
 import { createAuthSection, setupAuthEventListeners } from './components/auth.js';
 import { setupNotificationEventListeners } from './components/notifications.js';
