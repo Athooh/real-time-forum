@@ -589,7 +589,7 @@ function positionChatWindow(chatWindow, userId) {
     const existingChats = document.querySelectorAll('.chat-window.active');
     const windowWidth = 320; // Width of chat window
     const gap = 20; // Gap between windows
-    const baseRight = 390; // Base right position (after slider)
+    const baseRight = 10; // Base right position (after slider)
     
     // Calculate new position based on number of active chats
     const position = baseRight + (windowWidth + gap) * existingChats.length;
@@ -608,7 +608,7 @@ async function openChatWindow(user) {
 
         // Limit number of open chat windows
         const activeChats = document.querySelectorAll('.chat-window.active');
-        if (activeChats.length >= 4) {
+        if (activeChats.length >= 1) {
             // Close the oldest chat window
             activeChats[0].classList.remove('active');
             setTimeout(() => activeChats[0].remove(), 300);
