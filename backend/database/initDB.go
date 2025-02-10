@@ -41,6 +41,19 @@ func InitializeDatabase() (*sql.DB, error) {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 
+		CREATE TABLE IF NOT EXISTS followers (
+			follower_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			following_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			followed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (follower_id, following_id)
+		);
+
+		CREATE TABLE IF NOT EXISTS user_status (
+			user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+			is_online BOOLEAN NOT NULL DEFAULT FALSE,
+			last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+
 		CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
