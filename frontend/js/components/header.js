@@ -283,6 +283,13 @@ async function handleLogout() {
         if (authSection) {
             authSection.style.display = 'flex';
         }
+
+        // Remove messenger container
+        const messengerContainer = document.getElementById('messenger-container');
+        if (messengerContainer) {
+            messengerContainer.remove();
+        }
+
         showNotification('Logged out successfully', NotificationType.SUCCESS);
     } catch (error) {
         console.error('Logout error:', error);
