@@ -11,7 +11,6 @@ import (
 	"forum/backend/logger"
 	"forum/backend/models"
 	"forum/backend/utils"
-	// "github.com/go-chi/chi"
 )
 
 // User struct definition
@@ -174,7 +173,7 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 		}
 
 		userName, err := controllers.GetUsernameByID(pc.DB, userID)
-		if err != nil {
+		if err != nil || userName == "" {
 			logger.Error("Failed to get username: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -196,7 +195,7 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 		}
 
 		// Insert post
-		_, err = pc.InsertPost(post)
+		postID, err := pc.InsertPost(post)
 		if err != nil {
 			logger.Error("Failed to insert post: %v", err)
 			w.Header().Set("Content-Type", "application/json")
@@ -206,6 +205,18 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 			})
 			return
 		}
+
+		createdPost, err := pc.GetPostByID(postID)
+		if err != nil {
+			logger.Error("Failed to get Post by ID: %v", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to create post",
+			})
+		}
+
+		BroadcastNewPost(createdPost)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -218,7 +229,18 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 func UpdatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value("userID").(int)
-		postID := r.URL.Query().Get("postID")
+		postIDStr := r.URL.Query().Get("postID")
+
+		postID, err := strconv.Atoi(postIDStr)
+		if err != nil {
+			logger.Error("Failed to convertpostId to int - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
 		// Parse multipart form
 		if err := r.ParseMultipartForm(10 << 20); err != nil {
