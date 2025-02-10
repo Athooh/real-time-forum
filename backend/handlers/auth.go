@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"forum/backend/controllers"
 	"forum/backend/database"
@@ -54,6 +55,23 @@ func RegisterHandler(ac *controllers.AuthController) http.HandlerFunc {
 
 		logger.Info("User registered successfully userID: %d (nickname: %s, email: %s)", userID, user.Nickname, user.Email)
 
+		// After successful registration, broadcast new user
+		newUserEvent := map[string]interface{}{
+			"type": "new_user",
+			"payload": map[string]interface{}{
+				"id":         userID,
+				"nickname":   user.Nickname,
+				"profession": user.Profession,
+				"avatar":     user.Avatar,
+			},
+		}
+		msgBytes, err := json.Marshal(newUserEvent)
+		if err != nil {
+			logger.Error("Failed to marshal new user event: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		Broadcast(msgBytes)
 		// Set headers first
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -138,6 +156,14 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userIDStr := r.Context().Value(models.UserIDKey).(string)
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		logger.Error("Failed to convert userID to int: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	// Delete the session from the database
 	sessionToken := cookie.Value
 	err = controllers.DeleteSession(database.GloabalDB, sessionToken)
@@ -145,6 +171,35 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Failed to delete session: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+	// Remove user from WebSocket connections and mark as offline
+	mutex.Lock()
+	for conn, usrID := range clients {
+		if usrID == userID {
+			conn.Close()
+			delete(clients, conn)
+			break
+		}
+	}
+	mutex.Unlock()
+
+	// Mark user as offline in database and broadcast status
+	MarkUserOffline(userID)
+
+	// Broadcast offline status
+	offlineEvent := map[string]interface{}{
+		"type": "user_offline",
+		"payload": map[string]interface{}{
+			"userId":   userID,
+			"isOnline": false,
+		},
+	}
+	msgBytes, err := json.Marshal(offlineEvent)
+	if err != nil {
+		logger.Error("Error creating offline message: %v", err)
+	} else {
+		Broadcast(msgBytes)
 	}
 
 	// Clear the session cookie on the client
@@ -162,7 +217,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "User is logged out succesfully",
+		"message": "User is logged out successfully",
 	})
 }
 
