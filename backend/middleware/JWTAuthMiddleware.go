@@ -12,8 +12,6 @@ import (
 
 func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("JWTAuthMiddleware called")
-
 		// Try to get the token from the Authorization header
 		authHeader := r.Header.Get("Authorization")
 		var tokenString string
@@ -47,9 +45,6 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
-
-		// Log the user ID for debugging purposes
-		logger.Info("Authenticated user ID: %s", claims.UserID)
 
 		// Attach the user ID to the request context
 		ctx := context.WithValue(r.Context(), models.UserIDKey, claims.UserID)
