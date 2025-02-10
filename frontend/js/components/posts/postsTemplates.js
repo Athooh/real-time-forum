@@ -1,5 +1,5 @@
 import { escapeHTML, formatTimeAgo } from '../../utils.js';
-
+import { BASE_URL } from '../../state.js';
 
 // Helper functions
 function createStorySection() {
@@ -226,7 +226,7 @@ function createPostContent(post) {
             <div class="post-media-grid ${gridClass}">
                 ${images.slice(0, 5).map((image, index) => `
                     <div class="grid-item">
-                        <img src="http://localhost:8080/${normalizeImagePath(image)}" alt="Post Image ${index + 1}" class="post-image">
+                        <img src="${BASE_URL}/${normalizeImagePath(image)}" alt="Post Image ${index + 1}" class="post-image">
                         ${images.length > 5 && index === 4 ? `
                             <div class="more-overlay">+${images.length - 5}</div>
                         ` : ''}
