@@ -75,6 +75,8 @@ func main() {
 	routes.MainRoute(db)
 	routes.PostRoute(db)
 	routes.WebScokcetRoute()
+	routes.SetupFollowersRoutes(db)
+	routes.SetupUserRoutes(db)
 
 	logger.Info("Starting Application...")
 
