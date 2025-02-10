@@ -339,6 +339,8 @@ function createMessageItem(message) {
 }
 
 export function initializeMessenger() {
+    // Logic to initialize the messenger
+    console.log('Messenger initialized');
     // Check if user is logged in
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('userData');
