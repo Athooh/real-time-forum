@@ -218,6 +218,29 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 
 		BroadcastNewPost(createdPost)
 
+		// After successfully creating the post and broadcasting it
+		postCount, err := pc.GetUserPostCount(userID)
+		if err != nil {
+			logger.Error("Failed to get user post count: %v", err)
+		} else {
+			// Create post count update message
+			postCountEvent := map[string]interface{}{
+				"type":    "post_count_update",
+				"payload": map[string]interface{}{
+					"postCount": postCount,
+				},
+			}
+
+			// Convert to JSON
+			msgBytes, err := json.Marshal(postCountEvent)
+			if err != nil {
+				logger.Error("Error creating post count message: %v", err)
+			} else {
+				// Send only to the post creator
+				SendToUser(userID, msgBytes)
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
