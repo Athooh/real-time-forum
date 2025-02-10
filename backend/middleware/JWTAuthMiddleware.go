@@ -13,23 +13,33 @@ import (
 func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("JWTAuthMiddleware called")
+
+		// Try to get the token from the Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			logger.Warning("Unauthorized attempt  Authorization header missing - remote_addr: %s, method: %s, path: %s",
+		var tokenString string
+
+		if authHeader != "" {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		} else {
+			// If no Authorization header, try to get the token from the query parameters
+			tokenString = r.URL.Query().Get("token")
+		}
+
+		// If no token is found in either location, deny access
+		if tokenString == "" {
+			logger.Warning("Unauthorized attempt - Token missing - remote_addr: %s, method: %s, path: %s",
 				r.RemoteAddr,
 				r.Method,
 				r.URL.Path,
 			)
-			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+			http.Error(w, "Token missing", http.StatusUnauthorized)
 			return
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		logger.Info("tokenString: %s", tokenString)
+		// Validate the token
 		claims, err := utils.ValidateJWT(tokenString)
-		logger.Info("claims: %v", claims)
 		if err != nil || claims.UserID == "" {
-			logger.Warning("Unauthorized attempt  Invalid token - remote_addr: %s, method: %s, path: %s",
+			logger.Warning("Unauthorized attempt - Invalid token - remote_addr: %s, method: %s, path: %s",
 				r.RemoteAddr,
 				r.Method,
 				r.URL.Path,
@@ -38,9 +48,14 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Log the user ID for debugging purposes
+		logger.Info("Authenticated user ID: %s", claims.UserID)
+
+		// Attach the user ID to the request context
 		ctx := context.WithValue(r.Context(), models.UserIDKey, claims.UserID)
 		r = r.WithContext(ctx)
 
+		// Pass the request to the next handler
 		next.ServeHTTP(w, r)
 	})
 }

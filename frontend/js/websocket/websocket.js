@@ -1,4 +1,6 @@
-import { NotificationType, showNotification } from './utils/notifications.js';
+import { NotificationType, showNotification } from '../utils/notifications.js';
+import { escapeHTML } from '../utils.js';
+import { handleWebsocketUpdatePost } from './websocketUpdates.js';
 
 export function initializeWebSocket() {
     const token = localStorage.getItem('token');
@@ -10,6 +12,8 @@ export function initializeWebSocket() {
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
+        console.log('WebSocket message received:', data);
         handleWebSocketMessage(data);
     };
 
@@ -36,32 +40,27 @@ function sendMessage(message) {
 export function handleWebSocketMessage(data) {
     switch (data.type) {
         case 'new_post':
-            // Handle new post
+            try {
+                // Decode the base64 payload
+                const decodedPayload = atob(data.payload);
+                
+         
+                const post = JSON.parse(decodedPayload);
+               
+                // Handle the new post
+                handleWebsocketUpdatePost(post);
+                showNotification(`New Post Created by ${post.user.nickname}`);
+            } catch (error) {
+                console.error('Error processing new_post payload:', error);
+            }
             break;
         case 'new_comment':
-            handleNewComment(data.payload);
-            showNotification('New Comment', `${data.payload.user} commented on a post`);
+            // Handle new comment logic here
             break;
         case 'new_message':
-            // Handle new message
+            // Handle new message logic here
             break;
         default:
             console.log('Unknown message type:', data.type);
-    }
-}
-
-// Handle new comment from WebSocket
-function handleNewComment(comment) {
-    const postElement = document.querySelector(`#post-${comment.post_id}`);
-    if (postElement) {
-        const commentsContainer = postElement.querySelector('.comments');
-        const commentElement = document.createElement('div');
-        commentElement.className = 'comment';
-        commentElement.innerHTML = `
-            <strong>${escapeHTML(comment.user)}</strong>
-            <p>${escapeHTML(comment.content)}</p>
-            <small>${new Date(comment.timestamp).toLocaleString()}</small>
-        `;
-        commentsContainer.insertBefore(commentElement, commentsContainer.firstChild);
     }
 }
