@@ -160,6 +160,11 @@ export function createRightSidebar() {
 }
 
 function createWhoToFollowSection() {
+    // Initialize suggestions loading when the component is created
+    setTimeout(async () => {
+        await loadSuggestions();
+    }, 0);
+
     return `
         <div class="sidebar-card who-to-follow">
             <div class="who-to-follow-header">
@@ -173,8 +178,8 @@ function createWhoToFollowSection() {
     `;
 }
 
-// Modify the setTimeout section
-setTimeout(async () => {
+// New function to handle suggestions loading
+async function loadSuggestions() {
     try {
         const suggestions = await createSuggestionItems(currentPage);
         const suggestionsContainer = document.querySelector('.follow-suggestions');
@@ -212,18 +217,27 @@ setTimeout(async () => {
                     
                     isLoadingUsers = false;
                 }
-            }, 500); // Throttle to 500ms
+            }, 500);
 
             suggestionsContainer.addEventListener('scroll', handleScroll);
             setupFollowEventListeners();
         }
     } catch (error) {
         console.error('Error updating suggestions:', error);
+        const suggestionsContainer = document.querySelector('.follow-suggestions');
+        if (suggestionsContainer) {
+            suggestionsContainer.innerHTML = '<div class="error">Failed to load suggestions</div>';
+        }
     }
-}, 0);
+}
 
 // Modify createSuggestionItems to accept page parameter
 async function createSuggestionItems(page = 1) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return '<div class="no-suggestions">Please log in to see suggestions</div>';
+    }
+
     try {
         const limit = 5; // Users per page
         const response = await authenticatedFetch(`/api/users?page=${page}&limit=${limit}`);
@@ -269,6 +283,9 @@ async function createSuggestionItems(page = 1) {
         }).join('');
     } catch (error) {
         console.error('Error fetching suggestions:', error);
+        if (error.message === 'No authentication token found') {
+            return '<div class="no-suggestions">Please log in to see suggestions</div>';
+        }
         showNotification('Failed to load user suggestions', NotificationType.ERROR);
         return '<div class="error">Failed to load suggestions</div>';
     }
