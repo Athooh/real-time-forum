@@ -50,7 +50,6 @@ function createHeaderNav() {
             <ul class="nav-links">
                 <li><a href="/" class="nav-link" data-route="/">Home</a></li>
                 <li><a href="/profile" class="nav-link" data-route="/profile">Profile</a></li>
-                <li><a href="/messages" class="nav-link" data-route="/messages">Messages</a></li>
             </ul>
         </nav>
     `;
@@ -69,7 +68,7 @@ function createHeaderActions() {
 
 function createMessageButton() {
     return `
-        <button class="icon-btn" title="Messages">
+        <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messages">
             <i class="fas fa-envelope"></i>
             <span class="badge">3</span>
         </button>
@@ -216,6 +215,15 @@ export function setupHeaderEventListeners() {
     const clearAllBtn = document.querySelector('.clear-all');
     if (clearAllBtn) {
         clearAllBtn.addEventListener('click', clearAllNotifications);
+    }
+
+    // Add messages button click handler
+    const messagesBtn = document.getElementById('messages-btn');
+    if (messagesBtn) {
+        messagesBtn.addEventListener('click', () => {
+            const router = new Router();
+            router.navigate('/messages');
+        });
     }
 }
 
