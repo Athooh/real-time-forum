@@ -216,7 +216,7 @@
     width: 100%;
     max-width: 700px;
     padding-inline: 20px; 
-    height: 100vh;
+    height: calc(100vh - 70px);
 }
 
 /* Stories Section */
