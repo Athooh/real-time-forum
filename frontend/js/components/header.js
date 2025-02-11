@@ -142,69 +142,47 @@ function createProfileMenu() {
 
 async function handleLogout() {
     try {
-        // Prevent multiple logouts
-        const logoutBtn = document.getElementById('logout');
-        if (logoutBtn) {
-            logoutBtn.disabled = true;
-        }
-
         // Remove token and user data from local storage first
-        localStorage.clear(); // Clear all storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
 
-        // Clean up WebSocket connection
-        if (window.webSocket) {
-            window.webSocket.close();
+        // Try to notify the server, but don't wait for it
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+        } catch (serverError) {
+            console.warn('Server logout failed, but continuing with local logout:', serverError);
         }
 
-        // Clean up UI elements
+        // Hide forum section
         const forumSection = document.getElementById('forum-section');
         if (forumSection) {
             forumSection.style.display = 'none';
         }
 
+        // Remove messenger container
         const messengerContainer = document.getElementById('messenger-container');
         if (messengerContainer) {
             messengerContainer.remove();
         }
 
-        // Navigate only once
+        // Get router instance and navigate
         const router = new Router();
         router.navigate('/loginPage');
 
         showNotification('Logged out successfully', NotificationType.SUCCESS);
-
-        // Optional: Try to notify the server
-        try {
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-        } catch (serverError) {
-            console.warn('Server logout notification failed:', serverError);
-        }
-
     } catch (error) {
         console.error('Error during logout:', error);
-        showNotification('An error occurred during logout', NotificationType.ERROR);
+        showNotification('An error occurred during logout. Please try again.', NotificationType.ERROR);
     }
 }
 
 export function setupHeaderEventListeners() {
-    // Remove existing event listeners first
-    const existingLogoutBtn = document.getElementById('logout');
-    if (existingLogoutBtn) {
-        existingLogoutBtn.removeEventListener('click', handleLogout);
-    }
-
-    // Add new event listener
-    const logoutBtn = document.getElementById('logout');
-    if (logoutBtn) {
-        console.log('Logout button found');
-        logoutBtn.addEventListener('click', handleLogout, { once: true }); // Use once: true
-    }
-
     // Add click handlers for navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -220,6 +198,19 @@ export function setupHeaderEventListeners() {
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearch);
     }
+
+    if (document.getElementById('logout')) {
+        console.log('Logout button found');
+    } else {
+        console.log('Logout button not found');
+    }
+    // Logout functionality - Use event delegation for dynamically added elements
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#logout')) {
+            e.preventDefault();
+            handleLogout();
+        }
+    });
 
     // Notification clear functionality
     const clearAllBtn = document.querySelector('.clear-all');
