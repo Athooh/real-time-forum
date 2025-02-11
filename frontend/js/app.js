@@ -1,4 +1,4 @@
-import { fetchOnlineUsers, initializeMessages, initializeMessenger } from './components/messages.js';
+import { initializeMessages, fetchOnlineUsers } from './components/messages/messages.js';
 import { initializeWebSocket } from './websocket/websocket.js';
 import { NotificationType, showNotification } from './utils/notifications.js';
 import { authenticatedFetch } from './security.js';
@@ -20,6 +20,7 @@ class App {
         this.router = new Router({
             '/': () => this.renderHome(),
             '/loginPage': () => this.renderAuth(),
+            '/messages': () => this.renderMessages(),
             '*': () => this.render404()
         });
 
@@ -94,6 +95,34 @@ class App {
         `;
     }
 
+    renderMessages() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found, navigating to login');
+            this.router.navigate('/loginPage');
+            return;
+        }
+
+        // Create container with header and messages section
+        this.root.innerHTML = `
+            <div id="app">
+                ${createHeader()}
+                <div class="messages-container">
+                    <div id="messages-content"></div>
+                </div>
+            </div>
+        `;
+
+        // Initialize messages component
+        const messagesContent = document.getElementById('messages-content');
+        if (messagesContent) {
+            initializeMessages(messagesContent);
+        }
+
+        // Setup header event listeners
+        setupHeaderEventListeners();
+    }
+
     attachEventListeners() {
         // Attach all necessary event listeners
         setupAuthEventListeners();
@@ -121,7 +150,6 @@ let appInstance;
 
 document.addEventListener('DOMContentLoaded', () => {
     appInstance = new App();
-    initializeMessenger();
 });
 
 export { appInstance as app };
