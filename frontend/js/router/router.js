@@ -1,40 +1,38 @@
-export default class Router {
+class Router {
     static instance = null;
     
-    constructor() {
+    constructor(routes = {}) {
         if (Router.instance) {
             return Router.instance;
         }
-        Router.instance = this;
-        this.routes = new Map();
-        this.currentRoute = null;
+        
+        this.routes = routes;
+        this.currentPath = window.location.pathname;
         
         // Handle browser back/forward buttons
         window.addEventListener('popstate', () => {
-            this.handleRoute();
+            this.handleRoute(window.location.pathname);
         });
+        
+        Router.instance = this;
     }
 
     navigate(path) {
-        // Prevent navigation if we're already on this route
-        if (this.currentRoute === path) {
-            return;
-        }
-        
-        this.currentRoute = path;
-        history.pushState(null, '', path);
-        this.handleRoute();
+        window.history.pushState({}, '', path);
+        this.handleRoute(path);
     }
 
-    handleRoute() {
-        console.log('Handling route:', this.currentRoute);
-        console.log('Available routes:', Array.from(this.routes.keys()));
-        const route = this.routes.get(this.currentRoute) || this.routes.get('*');
+    handleRoute(pathname) {
+        console.log('Handling route:', pathname);
+        console.log('Available routes:', Object.keys(this.routes));
+        const route = this.routes[pathname] || this.routes['*'];
         if (route) {
-            console.log('Executing route handler for:', this.currentRoute);
+            console.log('Executing route handler for:', pathname);
             route();
         } else {
-            console.log('No route handler found for:', this.currentRoute);
+            console.log('No route handler found for:', pathname);
         }
     }
-} 
+}
+
+export default Router; 
