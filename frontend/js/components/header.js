@@ -1,8 +1,9 @@
 import { escapeHTML, formatTimeAgo } from '../utils.js';
 import { showNotification, NotificationType } from '../utils/notifications.js';
-import { app } from '../app.js';
+import Router from '../router/router.js';
 
 export function createHeader() {
+    console.log("Creating header");
     return `
         <header class="main-header">
             ${createHeaderLeft()}
@@ -47,9 +48,9 @@ function createHeaderNav() {
     return `
         <nav class="header-nav">
             <ul class="nav-links">
-                <li><a href="#" class="active">Home</a></li>
-                <li><a href="#">Networks <i class="fas fa-chevron-down"></i></a></li>
-                <li><a href="#">Pages <i class="fas fa-chevron-down"></i></a></li>
+                <li><a href="/" class="nav-link" data-route="/">Home</a></li>
+                <li><a href="/profile" class="nav-link" data-route="/profile">Profile</a></li>
+                <li><a href="/messages" class="nav-link" data-route="/messages">Messages</a></li>
             </ul>
         </nav>
     `;
@@ -140,7 +141,7 @@ function createProfileMenu() {
     `;
 }
 
-async function logout() {
+async function handleLogout() {
     try {
         // Send a request to the backend to invalidate the session
         const response = await fetch('/logout', {
@@ -159,10 +160,22 @@ async function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('userData');
 
-        // Show auth section and hide forum section using app instance
-        app.showAuthSection();
+        // Hide forum section
+        const forumSection = document.getElementById('forum-section');
+        if (forumSection) {
+            forumSection.style.display = 'none';
+        }
+        // Get router instance and navigate
+        const router = new Router();
+        router.navigate('/loginPage');
 
-        showNotification('You have been logged out successfully.', NotificationType.INFO);
+        // Remove messenger container
+        const messengerContainer = document.getElementById('messenger-container');
+        if (messengerContainer) {
+            messengerContainer.remove();
+        }
+
+        showNotification('Logged out successfully', NotificationType.SUCCESS);
     } catch (error) {
         console.error('Error during logout:', error);
         showNotification('An error occurred during logout. Please try again.', NotificationType.ERROR);
@@ -170,6 +183,16 @@ async function logout() {
 }
 
 export function setupHeaderEventListeners() {
+    // Add click handlers for navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const route = e.target.dataset.route;
+            const router = new Router();  // Create new router instance
+            router.navigate(route);
+        });
+    });
+    
     // Search functionality
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
@@ -270,30 +293,5 @@ function getNotificationTypeIcon(type) {
     return icons[type] || icons.default;
 }
 
-async function handleLogout() {
-    try {
-        await logout();
-        // Hide forum section
-        const forumSection = document.getElementById('forum-section');
-        if (forumSection) {
-            forumSection.style.display = 'none';
-        }
-        // Show auth section
-        const authSection = document.getElementById('auth-section');
-        if (authSection) {
-            authSection.style.display = 'flex';
-        }
 
-        // Remove messenger container
-        const messengerContainer = document.getElementById('messenger-container');
-        if (messengerContainer) {
-            messengerContainer.remove();
-        }
-
-        showNotification('Logged out successfully', NotificationType.SUCCESS);
-    } catch (error) {
-        console.error('Logout error:', error);
-        showNotification('Logout failed', NotificationType.ERROR);
-    }
-}
 
