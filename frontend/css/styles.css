@@ -43,6 +43,7 @@ body {
     padding: 0;
     background-color: var(--background-color);
     color: var(--text-color);
+    height: calc(100vh - 70px);
 }
 
 p {
