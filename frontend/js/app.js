@@ -9,38 +9,81 @@ import { createHeader, setupHeaderEventListeners } from './components/header.js'
 import { createLeftSidebar, createRightSidebar } from './components/sidebar.js';
 import { createMainContent, setupPostEventListeners } from './components/posts/posts.js';
 import { fetchPosts } from './components/posts/postsApi.js';
+import Router from './router/router.js';
 
 class App {
     constructor() {
         this.root = document.getElementById('root');
         this.state = window.forumState;
+        
+        // Initialize router with routes
+        this.router = new Router({
+            '/': () => this.renderHome(),
+            '/loginPage': () => this.renderAuth(),
+            '*': () => this.render404()
+        });
+
         this.init();
     }
 
     init() {
-        // Initialize the app
-        this.render();
-        this.checkAuthState();
-        initializeMessenger();
+        const token = localStorage.getItem('token');
+        if (!token) {
+            this.router.navigate('/loginPage');
+            return;
+        }
+        
+        this.router.handleRoute(window.location.pathname);
     }
 
-    render() {
+    renderHome() {
+        console.log('Rendering home section');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('No token found, navigating to login');
+            this.router.navigate('/loginPage');
+            return;
+        }
+
+        console.log("Token found, rendering forum section");
         this.root.innerHTML = `
             <div id="app">
-                ${this.renderAuthSection()}
                 ${this.renderForumSection()}
             </div>
         `;
         this.attachEventListeners();
+        this.initializeForumFeatures();
     }
 
-    renderAuthSection() {
-        return createAuthSection();
+    renderAuth(type = 'login') {
+        console.log('Rendering auth section');
+        this.root.innerHTML = `
+            <div id="app">
+                ${createAuthSection(type)}
+            </div>
+        `;
+        // Show auth section explicitly
+        const authSection = document.getElementById('auth-section');
+        if (authSection) {
+            authSection.style.display = 'flex';
+        }
+        console.log('Auth section rendered');
+        setupAuthEventListeners();
+    }
+
+    render404() {
+        this.root.innerHTML = `
+            <div class="error-page">
+                <h1>404 - Page Not Found</h1>
+                <a href="/" class="back-home">Back to Home</a>
+            </div>
+        `;
     }
 
     renderForumSection() {
+        console.log("Rendering forum section");
         return `
-            <div id="forum-section" style="display: none;">
+            <div id="forum-section">
                 ${createHeader()}
                 <div class="dashboard-container">
                     ${createLeftSidebar()}
@@ -57,52 +100,6 @@ class App {
         setupHeaderEventListeners();
         setupPostEventListeners();
         setupNotificationEventListeners();
-    }
-
-    checkAuthState() {
-        const token = localStorage.getItem('token');
-        if (token) {
-            this.validateAndInitialize(token);
-        }
-    }
-
-    async validateAndInitialize(token) {
-        try {
-            const response = await authenticatedFetch('/validate-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.valid) {
-                    this.showForumSection();
-                    await this.initializeForumFeatures();
-                }
-            } else {
-                this.showAuthSection();
-            }
-        } catch (error) {
-            console.error('Token validation error:', error);
-            this.showAuthSection();
-        }
-    }
-
-    showForumSection() {
-        document.getElementById('auth-section').style.display = 'none';
-        document.getElementById('forum-section').style.display = 'block';
-        
-        // Initialize messages after the forum section is visible
-        const messagesContainer = document.querySelector('.messages-container');
-        if (messagesContainer) {
-            initializeMessages(messagesContainer);
-        }
-    }
-
-    showAuthSection() {
-        document.getElementById('auth-section').style.display = 'flex';
-        document.getElementById('forum-section').style.display = 'none';
     }
 
     async initializeForumFeatures() {
