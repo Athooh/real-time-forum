@@ -37,8 +37,68 @@ async function handleSearchInput(event) {
 }
 
 function handleNewMessage() {
-    // Implement new message functionality
-    console.log('New message button clicked');
+    // Create modal HTML
+    const modalHTML = `
+        <div class="new-message-modal">
+            <div class="new-message-header">
+                <h3>New message</h3>
+                <button class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="recipient-search">
+                <label>To:</label>
+                <input type="text" placeholder="Search users...">
+            </div>
+            <div class="new-message-content">
+                <textarea class="new-message-input" placeholder="Type your message..."></textarea>
+            </div>
+            <div class="new-message-actions">
+                <button class="attachment-btn">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <button class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Create modal container
+    const modalContainer = document.createElement('div');
+    modalContainer.className = 'modal-overlay';
+    modalContainer.style.display = 'flex';
+    modalContainer.innerHTML = modalHTML;
+
+    // Add to document
+    document.body.appendChild(modalContainer);
+
+    // Setup event listeners
+    const closeBtn = modalContainer.querySelector('.close-btn');
+    const sendBtn = modalContainer.querySelector('.send-btn');
+
+    closeBtn.addEventListener('click', () => {
+        modalContainer.remove();
+    });
+
+    sendBtn.addEventListener('click', () => {
+        const recipient = modalContainer.querySelector('.recipient-search input').value;
+        const message = modalContainer.querySelector('.new-message-input').value;
+        
+        if (message.trim()) {
+            // Handle message sending here
+            console.log('Sending message to:', recipient);
+            console.log('Message:', message);
+            modalContainer.remove();
+        }
+    });
+
+    // Close on outside click
+    modalContainer.addEventListener('click', (e) => {
+        if (e.target === modalContainer) {
+            modalContainer.remove();
+        }
+    });
 }
 
 function handleMessageItemClick(event) {
