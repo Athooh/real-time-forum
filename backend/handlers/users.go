@@ -127,7 +127,58 @@ func GetUserStatsHandler(uc *controllers.UsersController) http.HandlerFunc {
 func RegisterUserHandler(uc *controllers.UsersController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// ... existing registration code ...
+	}
+}
 
-		
+func SearchUsersHandler(uc *controllers.UsersController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Get the search query from URL parameters
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Search query is required",
+			})
+			return
+		}
+
+		// Get the current user ID from context
+		userID := r.Context().Value(models.UserIDKey).(string)
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Invalid user ID",
+			})
+			return
+		}
+
+		// Get pagination parameters
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 || limit > 50 {
+			limit = 10
+		}
+
+		// Perform the search
+		users, err := uc.SearchUsers(query, userIDInt, page, limit)
+		if err != nil {
+			logger.Error("Failed to search users: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to search users",
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(users)
 	}
 }
