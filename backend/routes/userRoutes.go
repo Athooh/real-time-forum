@@ -29,4 +29,11 @@ func SetupUserRoutes(db *sql.DB) {
 		middleware.ErrorHandler(handlers.ServeErrorPage),
 		middleware.ValidatePathAndMethod("/api/users", http.MethodGet),
 	))
+
+	http.Handle("/api/users/search", middleware.ApplyMiddleware(
+		http.HandlerFunc(handlers.SearchUsersHandler(userController)),
+		middleware.CORSMiddleware,
+		middleware.JWTAuthMiddleware,
+		middleware.SessionAuthMiddleware,
+	))
 }
