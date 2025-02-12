@@ -1,43 +1,43 @@
-import { createMessagesSection } from './messagesTemplates.js';
+import { createMessagesSection , loadMessagesList} from './messagesTemplates.js';
 import { setupMessageEventListeners } from './messagesEvents.js';
 import { fetchMessages } from './messagesApi.js';
 
+
 // Main initialization function
-export function initializeMessages(container) {
-    // Render the initial messages structure
-    container.innerHTML = createMessagesSection();
-    
-    // Setup event listeners
-    setupMessageEventListeners();
-    
-    // Load initial messages data
-    loadInitialMessages();
-}
-
-// Online users functionality
-export function fetchOnlineUsers() {
-    // Implementation for fetching online users
-    console.log('Fetching online users...');
-    return [];
-}
-
-// Initial messages load
-async function loadInitialMessages() {
+export async function initializeMessages(container) {
     try {
+        // Fetch messages first
         const messages = await fetchMessages();
-        renderMessages(messages);
+        
+        // Create the section with the messages
+        const messagesSection = await createMessagesSection(messages);
+        
+        // Update container content
+        container.innerHTML = messagesSection;
+        
+        // Load the messages list after the DOM is updated
+        loadMessagesList(messages);
+        
+        // Setup event listeners
+        setupMessageEventListeners();
+        
     } catch (error) {
-        console.error('Error loading messages:', error);
+        console.error('Error initializing messages:', error);
+        container.innerHTML = '<div class="error">Failed to load messages</div>';
     }
 }
+
+
 
 // Render messages to the DOM
 export function renderMessages(messages) {
     const messagesList = document.querySelector('.messages-list');
     if (!messagesList) return;
 
-    messagesList.innerHTML = messages.length 
-        ? messages.map(msg => createMessageItem(msg)).join('')
+    const messageArray = Array.isArray(messages) ? messages : [];
+    
+    messagesList.innerHTML = messageArray.length 
+        ? messageArray.map(msg => createMessageItem(msg)).join('')
         : '<div class="no-messages">No messages yet</div>';
 }
 
