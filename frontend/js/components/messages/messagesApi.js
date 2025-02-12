@@ -41,11 +41,22 @@ export const dummyMessages = [
     }
 ];
 
-export async function fetchMessages() {
+export async function fetchMessages(page = 1, limit = 10) {
     try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return dummyMessages;
+        const response = await authenticatedFetch(`${BASE_URL}/messages?page=${page}&limit=${limit}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch messages');
+        }
+
+        const messages = await response.json();
+        return messages;
+
     } catch (error) {
         console.error('Error fetching messages:', error);
         throw error;
@@ -54,16 +65,90 @@ export async function fetchMessages() {
 
 export async function searchMessages(query) {
     try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Filter messages based on search query
-        return dummyMessages.filter(msg => 
-            msg.user.nickname.toLowerCase().includes(query.toLowerCase()) ||
-            msg.content.toLowerCase().includes(query.toLowerCase())
-        );
+        const response = await authenticatedFetch(`${BASE_URL}/messages/search?query=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to search messages');
+        }
+
+        const messages = await response.json();
+        return messages;
+
     } catch (error) {
         console.error('Error searching messages:', error);
+        throw error;
+    }
+}
+
+export async function sendMessage(recipientId, content) {
+    try {
+        const response = await authenticatedFetch(`${BASE_URL}/messages/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipient_id: recipientId,
+                content: content
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send message');
+        }
+
+        const result = await response.json();
+        return result;
+
+    } catch (error) {
+        console.error('Error sending message:', error);
+        throw error;
+    }
+}
+
+export async function markMessageAsRead(messageId) {
+    try {
+        const response = await authenticatedFetch(`${BASE_URL}/messages/mark-as-read?msgID=${messageId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to mark message as read');
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+        throw error;
+    }
+}
+
+export async function fetchConversation(userId) {
+    try {
+        const response = await authenticatedFetch(`${BASE_URL}/messages/conversation?recipient_id=${userId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch conversation');
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error('Error fetching conversation:', error);
         throw error;
     }
 } 
