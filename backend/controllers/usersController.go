@@ -117,3 +117,96 @@ func (uc *UsersController) GetUserStats(userID int) (models.UserStats, error) {
 
 	return stats, nil
 }
+
+func (uc *UsersController) SearchUsers(query string, currentUserID, page, limit int) ([]models.User, error) {
+	offset := (page - 1) * limit
+	// Add % for LIKE pattern matching
+	searchPattern := "%" + query + "%"
+
+	sqlQuery := `
+		SELECT DISTINCT
+			u.id, u.nickname, u.email, u.first_name, u.last_name, 
+			u.age, u.gender, u.profession, u.avatar,
+			COALESCE(us.is_online, FALSE) as is_online,
+			COALESCE(us.last_seen, datetime(u.created_at)) as last_seen
+		FROM users u
+		LEFT JOIN user_status us ON u.id = us.user_id
+		WHERE u.id != ? AND (
+			u.nickname LIKE ? OR
+			u.first_name LIKE ? OR
+			u.last_name LIKE ?
+		)
+		ORDER BY 
+			CASE 
+				WHEN u.nickname LIKE ? THEN 1
+				WHEN u.first_name LIKE ? THEN 2
+				WHEN u.last_name LIKE ? THEN 3
+				ELSE 4
+			END,
+			u.nickname ASC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := uc.db.Query(
+		sqlQuery,
+		currentUserID,
+		searchPattern, searchPattern, searchPattern, // for WHERE clause
+		searchPattern, searchPattern, searchPattern, // for ORDER BY clause
+		limit, offset,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+		var avatar, profession, gender sql.NullString
+		var lastSeenStr sql.NullString
+
+		err := rows.Scan(
+			&user.ID,
+			&user.Nickname,
+			&user.Email,
+			&user.FirstName,
+			&user.LastName,
+			&user.Age,
+			&gender,
+			&profession,
+			&avatar,
+			&user.IsOnline,
+			&lastSeenStr,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+
+		// Handle NULL values
+		if gender.Valid {
+			user.Gender = gender.String
+		}
+		if profession.Valid {
+			user.Profession = profession.String
+		}
+		if avatar.Valid {
+			avatarStr := avatar.String
+			user.Avatar = &avatarStr
+		}
+		if lastSeenStr.Valid {
+			parsedTime, err := time.Parse("2006-01-02 15:04:05", lastSeenStr.String)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse last_seen timestamp: %w", err)
+			}
+			user.LastSeen = parsedTime
+		}
+
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %w", err)
+	}
+
+	return users, nil
+}
