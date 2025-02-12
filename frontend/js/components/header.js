@@ -223,7 +223,7 @@ export function setupHeaderEventListeners() {
     if (messagesBtn) {
         messagesBtn.addEventListener('click', () => {
             const router = new Router();
-            router.navigate('/messages');
+            router.navigate('/messagesPage');
         });
     }
 }
