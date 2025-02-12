@@ -41,6 +41,10 @@ func InitializeDatabase() (*sql.DB, error) {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 
+		CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
+		CREATE INDEX IF NOT EXISTS idx_users_first_name ON users(first_name);
+		CREATE INDEX IF NOT EXISTS idx_users_last_name ON users(last_name);
+
 		CREATE TABLE IF NOT EXISTS followers (
 			follower_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			following_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -84,16 +88,6 @@ func InitializeDatabase() (*sql.DB, error) {
 			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 		);
 
-		CREATE TABLE IF NOT EXISTS messages (
-			message_id TEXT PRIMARY KEY,
-			sender_id INTEGER,
-			receiver_id INTEGER,
-			content TEXT,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (sender_id) REFERENCES users(id),
-			FOREIGN KEY (receiver_id) REFERENCES users(id)
-		);
-
 		CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER NOT NULL,
@@ -123,6 +117,30 @@ func InitializeDatabase() (*sql.DB, error) {
 			expires_at DATETIME NOT NULL,
 			PRIMARY KEY (session_token),
 			FOREIGN KEY (session_token) REFERENCES sessions (session_token) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS conversations (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user1_id INTEGER NOT NULL,
+			user2_id INTEGER NOT NULL,
+			latest_message_id INTEGER,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user1_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY(user2_id) REFERENCES users(id) ON DELETE CASCADE,
+			UNIQUE(user1_id, user2_id)
+		);
+
+		CREATE TABLE IF NOT EXISTS messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			sender_id INTEGER NOT NULL,
+			recipient_id INTEGER NOT NULL,
+			conversation_id INTEGER,
+			content TEXT NOT NULL,
+			sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			is_read BOOLEAN DEFAULT FALSE,
+			FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY(recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 		);
 	`)
 	return db, err
