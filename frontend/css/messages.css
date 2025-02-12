@@ -508,3 +508,104 @@
     border-bottom-right-radius: 5px;
     padding: 10px;
 }
+
+.new-message-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    z-index: 10002;
+}
+
+.new-message-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.new-message-header h3 {
+    margin: 0;
+    color: var(--notification-header-color);
+    font-size: 1.2rem;
+}
+
+.new-message-header .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.recipient-search {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recipient-search label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.recipient-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 8px;
+    background: var(--search-input-color);
+    border-radius: 5px;
+}
+
+.new-message-content {
+    padding: 20px;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.new-message-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 10px;
+    background: var(--search-input-color);
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.new-message-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.new-message-actions button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 8px;
+    transition: color 0.3s ease;
+}
+
+.new-message-actions button:hover {
+    color: var(--primary-color);
+}
+
+.new-message-actions .send-btn {
+    color: var(--primary-color);
+}
