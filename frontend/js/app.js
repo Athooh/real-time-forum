@@ -1,4 +1,4 @@
-import { initializeMessages, fetchOnlineUsers } from './components/messages/messages.js';
+import { initializeMessages } from './components/messages/messages.js';
 import { initializeWebSocket } from './websocket/websocket.js';
 import { NotificationType, showNotification } from './utils/notifications.js';
 import { authenticatedFetch } from './security.js';
@@ -20,7 +20,7 @@ class App {
         this.router = new Router({
             '/': () => this.renderHome(),
             '/loginPage': () => this.renderAuth(),
-            '/messages': () => this.renderMessages(),
+            '/messagesPage': () => this.renderMessages(),
             '*': () => this.render404()
         });
 
