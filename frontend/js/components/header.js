@@ -1,6 +1,7 @@
 import { escapeHTML, formatTimeAgo } from '../utils.js';
 import { showNotification, NotificationType } from '../utils/notifications.js';
 import Router from '../router/router.js';
+import { authenticatedFetch } from '../security.js';
 
 export function createHeader() {
     console.log("Creating header");
@@ -142,21 +143,21 @@ function createProfileMenu() {
 
 async function handleLogout() {
     try {
-        // Remove token and user data from local storage first
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
+        
 
+    
         // Try to notify the server, but don't wait for it
         try {
-            await fetch('/api/auth/logout', {
+            await authenticatedFetch('/logout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
         } catch (serverError) {
-            console.warn('Server logout failed, but continuing with local logout:', serverError);
+            console.error('Failed to logout from server:', serverError);
+            showNotification('Failed to logout from server', NotificationType.ERROR);
+            return;
         }
 
         // Hide forum section
@@ -170,6 +171,9 @@ async function handleLogout() {
         if (messengerContainer) {
             messengerContainer.remove();
         }
+        // Remove token and user data from local storage first
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
 
         // Get router instance and navigate
         const router = new Router();
@@ -199,11 +203,7 @@ export function setupHeaderEventListeners() {
         searchBtn.addEventListener('click', handleSearch);
     }
 
-    if (document.getElementById('logout')) {
-        console.log('Logout button found');
-    } else {
-        console.log('Logout button not found');
-    }
+  
     // Logout functionality - Use event delegation for dynamically added elements
     document.addEventListener('click', (e) => {
         if (e.target.closest('#logout')) {
