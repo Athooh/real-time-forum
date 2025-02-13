@@ -3,27 +3,6 @@ import {
     createPostCard,
     createPostsFeed
 } from '../posts/postsTemplates.js';
-// import {
-//     handleCreatePost,
-//     handlePostSubmit,
-//     handlePostReaction,
-//     handleCommentSubmit,
-//     handleSavePost
-// } from '../posts/postsApi.js';
-// import {
-//     handleCategorySelection,
-//     setupVideoDropZone,
-//     handleImageUpload,
-//     setupDropZone,
-//     handleVideoUpload
-// } from '../posts/postsEvent.js';
-// import {
-//     showCreatePostModal,
-//     showTextPostModal,
-//     showVideoPostModal,
-//     closeModals,
-//     setupPostEventListeners
-// } from '../posts/posts.js';
 
 export function createProfilePage() {
     const userData = JSON.parse(localStorage.getItem('userData')) || {};
