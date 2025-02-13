@@ -413,5 +413,8 @@ export {
     createPostComments,
     createComment,
     createPostsFeed,
-    createStorySection
+    createStorySection,
+    createImagePostModal,
+    createTextPostModal,
+    createVideoPostModal
 };
