@@ -143,6 +143,37 @@ func InitializeDatabase() (*sql.DB, error) {
 			FOREIGN KEY(recipient_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 		);
+
+		CREATE TABLE IF NOT EXISTS user_about (
+			user_id INTEGER PRIMARY KEY,
+			bio TEXT,
+			date_of_birth DATE,
+			relationship_status TEXT CHECK(relationship_status IN ('single', 'married', 'divorced', 'widowed', 'in_relationship')),
+			location TEXT,
+			github_url TEXT,
+			linkedin_url TEXT,
+			twitter_url TEXT,
+			phone_number TEXT,
+			interests TEXT,
+			is_profile_public BOOLEAN DEFAULT TRUE,
+			show_email BOOLEAN DEFAULT FALSE,
+			show_phone BOOLEAN DEFAULT FALSE,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS user_experience (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			company_name TEXT NOT NULL,
+			role TEXT NOT NULL,
+			category TEXT NOT NULL,
+			location TEXT,
+			start_date DATE NOT NULL,
+			end_date DATE,
+			is_current BOOLEAN DEFAULT FALSE,
+			description TEXT,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
 	`)
 	return db, err
 }
