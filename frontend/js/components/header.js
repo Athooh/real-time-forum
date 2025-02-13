@@ -49,7 +49,7 @@ function createHeaderNav() {
         <nav class="header-nav">
             <ul class="nav-links">
                 <li><a href="/" class="nav-link" data-route="/">Home</a></li>
-                <li><a href="/profile" class="nav-link" data-route="/profile">Profile</a></li>
+                <li><a href="/profilePage" class="nav-link" data-route="/profilePage">Profile</a></li>
             </ul>
         </nav>
     `;
