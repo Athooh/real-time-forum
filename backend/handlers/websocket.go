@@ -33,15 +33,22 @@ func SendToUser(userID int, message []byte) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
+	found := false
 	for conn, connUserID := range clients {
 		if connUserID == userID {
+			found = true
+			logger.Info("Sending message to user %d", userID)
 			err := conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
-				log.Printf("Error sending message to user %d: %v", userID, err)
+				logger.Error("Error sending message to user %d: %v", userID, err)
 				conn.Close()
 				delete(clients, conn)
 			}
 		}
+	}
+
+	if !found {
+		logger.Warning("No active WebSocket connection found for user %d", userID)
 	}
 }
 
