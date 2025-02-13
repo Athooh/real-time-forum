@@ -125,6 +125,7 @@ func InitializeDatabase() (*sql.DB, error) {
 			user2_id INTEGER NOT NULL,
 			latest_message_id INTEGER,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY(user1_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY(user2_id) REFERENCES users(id) ON DELETE CASCADE,
 			UNIQUE(user1_id, user2_id)
