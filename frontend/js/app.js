@@ -14,6 +14,7 @@ import {
     setupDropZone, 
     setupVideoDropZone 
 } from './components/posts/postsEvent.js';
+import { ensureWebSocketConnection } from './websocket/websocket.js';
 
 class App {
     constructor() {
@@ -107,6 +108,7 @@ class App {
             this.router.navigate('/loginPage');
             return;
         }
+        ensureWebSocketConnection();
 
         // Create container with header and messages section
         this.root.innerHTML = `
@@ -134,6 +136,7 @@ class App {
             this.router.navigate('/loginPage');
             return;
         }
+        ensureWebSocketConnection();
 
         this.root.innerHTML = `
             <div id="app">
