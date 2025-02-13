@@ -1,7 +1,11 @@
 import { NotificationType, showNotification } from '../utils/notifications.js';
 import { escapeHTML } from '../utils.js';
 import { handleWebsocketUpdatePost } from './websocketUpdates.js';
-import { formatNumber } from '../utils.js';
+import { formatNumber, formatTimeAgo } from '../utils.js';
+
+import {formatMessageTime} from '../components/messages/messagesTemplates.js';
+
+let globalSocket = null;
 
 export function initializeWebSocket() {
     let reconnectAttempts = 0;
@@ -12,7 +16,14 @@ export function initializeWebSocket() {
     function connect() {
         const token = localStorage.getItem('token');
         console.log('Token websocket:', token);
+        
+        // If there's already an active connection, close it
+        if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
+            globalSocket.close();
+        }
+
         const socket = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+        globalSocket = socket; // Store socket in global variable
         
         // Keep connection alive with ping-pong
         const pingInterval = setInterval(() => {
@@ -77,16 +88,26 @@ export function initializeWebSocket() {
         if (socket.readyState === WebSocket.OPEN) {
             socket.close();
         }
+        globalSocket = null;
     };
 
     // Return both the socket and cleanup function
     return { socket, cleanup };
 }
 
+// Add a function to check and reinitialize the connection if needed
+export function ensureWebSocketConnection() {
+    console.log("Ensuring WebSocket connection");
+    if (!globalSocket || globalSocket.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket connection not open, initializing...");
+        initializeWebSocket();
+    }
+}
+
 // Send a message via WebSocket
 function sendMessage(message) {
-    if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'message', content: message }));
+    if (globalSocket.readyState === WebSocket.OPEN) {
+        globalSocket.send(JSON.stringify({ type: 'message', content: message }));
     } else {
         console.error('WebSocket is not open');
     }
@@ -99,11 +120,13 @@ export const WebSocketMessageType = {
     USER_FOLLOWED: 'user_followed',
     USER_UNFOLLOWED: 'user_unfollowed',
     NEW_USER: 'new_user',
-    POST_COUNT_UPDATE: 'post_count_update'
+    POST_COUNT_UPDATE: 'post_count_update',
+    NEW_MESSAGE: 'new_message'
 };
 
 export function handleWebSocketMessage(data) {
     let payload = data.payload;
+    console.log("Payload from type: ", data.type, payload);
     
     // Decode base64 payload if it exists and is for a new post
     if (data.type === WebSocketMessageType.NEW_POST && typeof data.payload === 'string') {
@@ -119,6 +142,10 @@ export function handleWebSocketMessage(data) {
     switch (data.type) {
         case WebSocketMessageType.NEW_POST:
             handleWebsocketUpdatePost(payload);
+            break;
+        case WebSocketMessageType.NEW_MESSAGE:
+            console.log("New message received");
+            handleWebsocketNewMessage(payload);
             break;
         case WebSocketMessageType.POST_COUNT_UPDATE:
             updatePostCount(payload);
@@ -145,6 +172,13 @@ function updateUserOnlineStatus(data) {
     document.querySelectorAll(`[data-user-id="${userId}"] .status-indicator`).forEach(indicator => {
         indicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
     });
+
+    // Update chat header status if present
+    const chatHeader = document.querySelector(`.user-info[data-user-id="${userId}"] [data-status-indicator]`);
+    if (chatHeader) {
+        chatHeader.className = `status ${isOnline ? 'online' : 'offline'}`;
+        chatHeader.textContent = isOnline ? 'Online' : 'Offline';
+    }
 }
 
 function updateFollowStats(data) {
@@ -213,5 +247,67 @@ function updatePostCount(payload) {
     const postCountElement = document.querySelector('.profile-stats .stat-item:nth-child(3) .stat-value');
     if (postCountElement) {
         postCountElement.textContent = formatNumber(payload.postCount);
+    }
+}
+
+function handleWebsocketNewMessage(payload) {
+    const { sender_id, content, timestamp } = payload;
+
+    console.log("New message: ", payload);
+    
+    // Find the active chat window if it exists
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages && chatMessages.dataset.userId === sender_id.toString()) {
+        // Add the new message to the chat
+        const newMessageHTML = `
+            <div class="chat-message received">
+                <div class="message-avatar">
+                    <img src="${payload.user.avatar || 'images/avatar.png'}" alt="${payload.user.nickname}">
+                </div>
+                <div class="message-bubble">
+                    <div class="message-content">
+                        <p>${escapeHTML(content)}</p>
+                        <span class="message-time">${formatTimeAgo(timestamp || new Date())}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatMessages.insertAdjacentHTML('beforeend', newMessageHTML);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Update the messages list if it exists
+    const messagesList = document.getElementById('messages-list');
+    if (messagesList) {
+        const existingThread = messagesList.querySelector(`[data-user-id="${sender_id}"]`);
+        if (existingThread) {
+            // Update existing thread with new message preview
+            const previewElement = existingThread.querySelector('.message-preview');
+            const timeElement = existingThread.querySelector('.message-time');
+            if (previewElement && timeElement) {
+                previewElement.textContent = content;
+                timeElement.textContent = formatTimeAgo(timestamp || new Date());
+            }
+            // Move thread to top
+            messagesList.insertBefore(existingThread, messagesList.firstChild);
+        } else {
+            // Create new thread
+            const newThreadHTML = `
+                <div class="message-item" data-user-id="${sender_id}">
+                    <div class="user-avatar-wrapper">
+                        <img src="${payload.user.avatar || 'images/avatar.png'}" alt="${payload.user.nickname}" class="user-avatar">
+                        <span class="status-indicator ${payload.user.isOnline ? 'online' : 'offline'}"></span>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <h4>${escapeHTML(payload.user.nickname)}</h4>
+                            <span class="message-time">${formatTimeAgo(timestamp || new Date())}</span>
+                        </div>
+                        <p class="message-preview">${escapeHTML(content)}</p>
+                    </div>
+                </div>
+            `;
+            messagesList.insertAdjacentHTML('afterbegin', newThreadHTML);
+        }
     }
 }
