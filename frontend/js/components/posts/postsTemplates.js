@@ -341,64 +341,7 @@ function createPostsFeed() {
     return `
         <div class="posts-feed" id="posts-container">
             <!-- Post 1 -->
-            <div class="post-card">
-                <div class="post-header">
-                    <div class="post-user">
-                        <img src="images/avatar.png" alt="User" class="user-avatar">
-                        <div class="user-info">
-                            <h4>John Doe</h4>
-                            <span class="post-meta">Software Engineer • 2h ago</span>
-                        </div>
-                    </div>
-                    <button class="post-menu-btn">
-                        <i class="fas fa-ellipsis"></i>
-                    </button>
-                </div>
-                <div class="post-content">
-                    <div class="post-title">
-                        <h3>Just launched my new project! 🚀</h3>
-                    </div>
-                    <img src="images/project.png" alt="Post Image" class="post-image">
-                    <div class="post-description">
-                        <p>Check out this amazing UI design for a modern forum.</p>
-                    </div>
-                </div>
-                <div class="post-categories">
-                    <span class="category-tag">Design</span>
-                    <span class="category-tag">UI/UX</span>
-                    <span class="category-tag">Web Development</span>
-                </div>
-                <div class="post-actions">
-                    <li class="action-like-btn">
-                        <i class="fa-solid fa-thumbs-up"></i>
-                        <span>Like (1.2k)</span>
-                    </li>
-                    <li class="action-dislike-btn">
-                        <i class="fa-solid fa-thumbs-down"></i>
-                        <span>Dislike (2)</span>
-                    </li>
-                    <li class="action-btn">
-                        <i class="far fa-comment"></i>
-                        <span>Comments (84)</span>
-                    </li>
-                    <li class="action-btn">
-                        <i class="far fa-bookmark"></i>
-                        <span>Save</span>
-                    </li>
-                </div>
-                <div class="post-comments">
-                    <div class="comment-input-wrapper">
-                        <img src="images/avatar.png" alt="User" class="user-avatar">
-                        <div class="comment-input-container">
-                            <input type="text" placeholder="Write a comment..." class="comment-input">
-                            <button class="comment-submit-btn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+                        
             <!-- Post 2 & 3 with similar structure but different content -->
         </div>
     `;

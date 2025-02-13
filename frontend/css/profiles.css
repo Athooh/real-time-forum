@@ -62,8 +62,14 @@
 
 .profile-details h1 {
     margin: 0;
-    color: var(--text-color);
-    font-size: 24px;
+    font-size: var(--font-size-large);
+    color: var(--notification-header-color);
+}
+
+.profile-username {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .profile-title {
@@ -111,6 +117,7 @@
 }
 
 .profile-page-left-column {
+    background: var(--background-color);
     width: 70%;
 }
 
@@ -118,35 +125,30 @@
     width: 30%;
 }   
 
-.profile-content {
-    background: var(--white-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    /* margin-top: 20px; */
-}
 
 .profile-nav {
     display: flex;
     gap: 10px;
-    padding: 20px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 3px 20px;
+    background: var(--white-color);
+    border-radius: var(--border-radius);
 }
 
 .profile-nav-link {
-    padding: 10px 20px;
+    padding: 10px;
     color: var(--text-color);
     text-decoration: none;
-    border-radius: var(--border-radius);
     transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .profile-nav-link:hover {
-    background: var(--search-input-color);
+    color: var(--primary-color);
 }
 
 .profile-nav-link.active {
-    background: var(--primary-color);
-    color: white;
+    border-bottom: 4px solid var(--primary-color);
+    color: var(--primary-color);
 }
 
 .profile-nav-link.danger {
@@ -159,13 +161,14 @@
 }
 
 .profile-nav-link.danger.active {
-    background: var(--notification-color);
+    background-color: var(--notification-color);
     color: var(--notification-text-color);
+    border-bottom: 4px solid var(--notification-text-color);
 }
 
 .profile-section {
     display: none;
-    padding: 20px;
+    padding: 20px 0;
 }
 
 .profile-section.active {
@@ -177,6 +180,11 @@
     background: var(--white-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);  
+    margin-bottom: 20px;
+}
+
+.about-me-section h3 {
+    color: var(--notification-header-color);
 }
 
 .about-me-text {
@@ -201,6 +209,18 @@
     padding: 10px 20px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
+}
+
+.profile-page-right-column .profile-detail-item {
+    border: none;
+    border-radius: none;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+
 }
 /* 
 .profile-detail-item:last-child {
@@ -885,10 +905,10 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 /* Common Sidebar Section Styles */
 .sidebar-section {
     background: var(--white-color);
-    border-radius: 15px;
+    border-radius: var(--border-radius);
     padding: 20px;
     margin-bottom: 24px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--box-shadow);
 }
 
 .section-header {
@@ -900,7 +920,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 .section-header h3 {
     font-size: 1.1rem;
-    color: var(--text-color);
+    color: var(--notification-header-color);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -919,6 +939,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 .experience-item {
     display: flex;
+    align-items: center;
     gap: 16px;
     padding: 16px;
     border-radius: 12px;
@@ -942,14 +963,18 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 }
 
 .company-logo i {
-    font-size: 24px;
-    color: var(--primary-color);
+    font-size: 35px;
+    color: var(--text-color);
 }
 
 .experience-details h4 {
     font-size: 1rem;
     color: var(--text-color);
     margin-bottom: 4px;
+}
+
+p.company {
+    text-align: start;
 }
 
 .experience-details .company {

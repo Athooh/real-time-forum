@@ -49,7 +49,7 @@ function createHeaderNav() {
         <nav class="header-nav">
             <ul class="nav-links">
                 <li><a href="/" class="nav-link" data-route="/">Home</a></li>
-                <li><a href="/profile" class="nav-link" data-route="/profile">Profile</a></li>
+                <li><a href="/profilePage" class="nav-link" data-route="/profilePage">Profile</a></li>
             </ul>
         </nav>
     `;
@@ -68,7 +68,7 @@ function createHeaderActions() {
 
 function createMessageButton() {
     return `
-        <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messages">
+        <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messagesPage">
             <i class="fas fa-envelope"></i>
             <span class="badge">3</span>
         </button>
@@ -223,7 +223,7 @@ export function setupHeaderEventListeners() {
     if (messagesBtn) {
         messagesBtn.addEventListener('click', () => {
             const router = new Router();
-            router.navigate('/messages');
+            router.navigate('/messagesPage');
         });
     }
 }

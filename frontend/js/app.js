@@ -1,7 +1,6 @@
-import { initializeMessages, fetchOnlineUsers } from './components/messages/messages.js';
+import { initializeMessages } from './components/messages/messages.js';
 import { initializeWebSocket } from './websocket/websocket.js';
 import { NotificationType, showNotification } from './utils/notifications.js';
-import { authenticatedFetch } from './security.js';
 
 import { createAuthSection, setupAuthEventListeners } from './components/auth.js';
 import { setupNotificationEventListeners } from './components/notifications.js';
@@ -25,8 +24,8 @@ class App {
         this.router = new Router({
             '/': () => this.renderHome(),
             '/loginPage': () => this.renderAuth(),
-            '/messages': () => this.renderMessages(),
-            '/profile': () => this.renderProfile(),
+            '/messagesPage': () => this.renderMessages(),
+            '/profilePage': () => this.renderProfile(),
             '*': () => this.render404()
         });
 

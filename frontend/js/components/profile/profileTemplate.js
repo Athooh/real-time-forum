@@ -3,27 +3,27 @@ import {
     createPostCard,
     createPostsFeed
 } from '../posts/postsTemplates.js';
-import {
-    handleCreatePost,
-    handlePostSubmit,
-    handlePostReaction,
-    handleCommentSubmit,
-    handleSavePost
-} from '../posts/postsApi.js';
-import {
-    handleCategorySelection,
-    setupVideoDropZone,
-    handleImageUpload,
-    setupDropZone,
-    handleVideoUpload
-} from '../posts/postsEvent.js';
-import {
-    showCreatePostModal,
-    showTextPostModal,
-    showVideoPostModal,
-    closeModals,
-    setupPostEventListeners
-} from '../posts/posts.js';
+// import {
+//     handleCreatePost,
+//     handlePostSubmit,
+//     handlePostReaction,
+//     handleCommentSubmit,
+//     handleSavePost
+// } from '../posts/postsApi.js';
+// import {
+//     handleCategorySelection,
+//     setupVideoDropZone,
+//     handleImageUpload,
+//     setupDropZone,
+//     handleVideoUpload
+// } from '../posts/postsEvent.js';
+// import {
+//     showCreatePostModal,
+//     showTextPostModal,
+//     showVideoPostModal,
+//     closeModals,
+//     setupPostEventListeners
+// } from '../posts/posts.js';
 
 export function createProfilePage() {
     const userData = JSON.parse(localStorage.getItem('userData')) || {};
@@ -40,12 +40,15 @@ export function createProfilePage() {
                             <img src="images/avatar.png" alt="Profile Picture">
                         </div>
                         <div class="profile-details-header">
-                            <h1>${escapeHTML(userData.nickname || 'User Name')} <i class="fa-solid fa-badge-check"></i></h1>
+                        <div class="profile-username">
+                            <h1>${escapeHTML(userData.nickname || 'User Name')}</h1>
+                              <img src="images/verified.png" alt="verified" class="verified-image">
+                            </div>
                             <p><span>230</span> Followers</p>
                         </div>
                     </div>
                     <div class="profile-actions">
-                        <button class="edit-profile-btn"><i class="fa-solid fa-pen-to-square"></i> Edit Profile</button>
+                        <div class="edit-profile-btn"><i class="fa-solid fa-pen-to-square"></i> Edit Profile</div>
                     </div>
                 </div>
             </div>
@@ -68,30 +71,28 @@ export function createProfileContent() {
             <div class="profile-page-left-column">
                 <div class="profile-content">
                     <div class="profile-nav">
-                        <button class="profile-nav-link active" data-section="posts">
+                        <div class="profile-nav-link active" data-section="posts">
                             <i class="fa-solid fa-newspaper"></i> Posts
-                        </button>
-                        <button class="profile-nav-link" data-section="about">
+                        </div>
+                        <div class="profile-nav-link" data-section="about">
                             <i class="fa-solid fa-user"></i> About
-                        </button>
-                        <button class="profile-nav-link" data-section="connections">
+                        </div>
+                        <div class="profile-nav-link" data-section="connections">
                             <i class="fa-solid fa-users"></i> Connections
-                        </button>
-                        <button class="profile-nav-link" data-section="settings">
+                        </div>
+                        <div class="profile-nav-link" data-section="settings">
                             <i class="fa-solid fa-gear"></i> Account Settings
-                        </button>
-                        <button class="profile-nav-link danger" data-section="delete">
+                        </div>
+                        <div class="profile-nav-link danger" data-section="delete">
                             <i class="fa-solid fa-trash"></i> Delete Account
-                        </button>
+                        </div>
                     </div>
                     <div class="profile-sections">
                         <div id="posts-section" class="profile-section active">
-                            <h3>Posts</h3>
                             ${createPostCard()}
                             ${createPostsFeed()}
                         </div>
                         <div id="about-section" class="profile-section">
-                            <h3>About</h3>
                             <div class="about-content">
                                 <p>${escapeHTML(userData.bio || 'No bio available')}</p>
                                 <div class="profile-info">
@@ -102,9 +103,9 @@ export function createProfileContent() {
                                             <span>Born: ${escapeHTML(userData.birthDate || 'October 20, 1990')}</span>
                                             </div>
                                             <div class="profile-detail-item-actions">
-                                                <button class="action-dropdown-btn">
+                                                <div class="action-dropdown-btn">
                                                     <i class="fa-solid fa-ellipsis"></i>
-                                                </button>
+                                                </div>
                                                 <div class="action-dropdown-content">
                                                     <a href="#" class="dropdown-item">
                                                         <i class="fa-solid fa-pen"></i> Edit
@@ -121,9 +122,9 @@ export function createProfileContent() {
                                             <span>Status: ${escapeHTML(userData.relationshipStatus || 'Single')}</span>
                                             </div>
                                              <div class="profile-detail-item-actions">
-                                                <button class="action-dropdown-btn">
+                                                <div class="action-dropdown-btn">
                                                     <i class="fa-solid fa-ellipsis"></i>
-                                                </button>
+                                                </div>
                                                 <div class="action-dropdown-content">
                                                     <a href="#" class="dropdown-item">
                                                         <i class="fa-solid fa-pen"></i> Edit
@@ -140,9 +141,9 @@ export function createProfileContent() {
                                             <span>${escapeHTML(userData.profession || 'Lead Developer')}</span>
                                             </div>
                                              <div class="profile-detail-item-actions">
-                                                <button class="action-dropdown-btn">
+                                                <div class="action-dropdown-btn">
                                                     <i class="fa-solid fa-ellipsis"></i>
-                                                </button>
+                                                </div>
                                                 <div class="action-dropdown-content">
                                                     <a href="#" class="dropdown-item">
                                                         <i class="fa-solid fa-pen"></i> Edit
@@ -159,9 +160,9 @@ export function createProfileContent() {
                                             <span>Lives in: ${escapeHTML(userData.location || 'New Hampshire')}</span>
                                             </div>
                                              <div class="profile-detail-item-actions">
-                                                <button class="action-dropdown-btn">
+                                                <div class="action-dropdown-btn">
                                                     <i class="fa-solid fa-ellipsis"></i>
-                                                </button>
+                                                </div>
                                                 <div class="action-dropdown-content">
                                                     <a href="#" class="dropdown-item">
                                                         <i class="fa-solid fa-pen"></i> Edit
@@ -178,9 +179,9 @@ export function createProfileContent() {
                                             <span>Joined on: ${escapeHTML(userData.joined || 'Nov 26, 2019')}</span>
                                             </div>
                                              <div class="profile-detail-item-actions">
-                                                <button class="action-dropdown-btn">
+                                                <div class="action-dropdown-btn">
                                                     <i class="fa-solid fa-ellipsis"></i>
-                                                </button>
+                                                </div>
                                                 <div class="action-dropdown-content">
                                                     <a href="#" class="dropdown-item">
                                                         <i class="fa-solid fa-pen"></i> Edit
@@ -197,9 +198,9 @@ export function createProfileContent() {
                                             <span>Email: ${escapeHTML(userData.email || 'example@abc.com')}</span>
                                             </div>
                                              <div class="profile-detail-item-actions">
-                                                <button class="action-dropdown-btn">
+                                                <div class="action-dropdown-btn">
                                                     <i class="fa-solid fa-ellipsis"></i>
-                                                </button>
+                                                </div>
                                                 <div class="action-dropdown-content">
                                                     <a href="#" class="dropdown-item">
                                                         <i class="fa-solid fa-pen"></i> Edit
@@ -255,11 +256,10 @@ export function createProfileContent() {
                             </div>
                         </div>
                         <div id="connections-section" class="profile-section">
-                            <h3>Connections</h3>
                             <div class="connections-container">
                                 <div class="connections-tabs">
-                                    <button class="connection-tab active" data-type="followers">Followers</button>
-                                    <button class="connection-tab" data-type="following">Following</button>
+                                    <div class="connection-tab active" data-type="followers">Followers</div>
+                                    <div class="connection-tab" data-type="following">Following</div>
                                 </div>
                                 <div class="connections-list" id="connections-list">
                                     <!-- Connections will be loaded dynamically -->
@@ -270,7 +270,6 @@ export function createProfileContent() {
                             </div>
                         </div>
                         <div id="settings-section" class="profile-section">
-                            <h3>Account Settings</h3>
                             <div class="settings-container">
                                 <!-- Profile Images Section -->
                                 <div class="settings-group">
@@ -375,9 +374,9 @@ export function createProfileContent() {
                                     <h4>Interests & Skills</h4>
                                     <div class="interests-input-container">
                                         <input type="text" id="interest-input" placeholder="Add an interest or skill">
-                                        <button id="add-interest" class="add-interest-btn">
+                                        <div id="add-interest" class="add-interest-btn">
                                             <i class="fa-solid fa-plus"></i>
-                                        </button>
+                                        </div>
                                     </div>
                                     <div class="interests-tags" id="interests-tags">
                                         <!-- Interests will be added here dynamically -->
@@ -417,13 +416,12 @@ export function createProfileContent() {
 
                                 <!-- Save Changes -->
                                 <div class="settings-actions">
-                                    <button type="button" class="cancel-btn">Cancel</button>
-                                    <button type="button" class="save-settings-btn">Save Changes</button>
+                                    <div type="div" class="cancel-btn">Cancel</div>
+                                    <div type="div" class="save-settings-btn">Save Changes</div>
                                 </div>
                             </div>
                         </div>
                         <div id="delete-section" class="profile-section">
-                            <h3>Delete Account</h3>
                             <div class="delete-account-container">
                                 <div class="delete-warning-card">
                                     <div class="warning-icon">
@@ -447,12 +445,12 @@ export function createProfileContent() {
                                         </label>
                                     </div>
                                     <div class="delete-actions">
-                                        <button class="cancel-delete-btn">
+                                        <div class="cancel-delete-btn">
                                             <i class="fa-solid fa-arrow-left"></i> Go Back
-                                        </button>
-                                        <button class="delete-account-btn" disabled>
+                                        </div>
+                                        <div class="delete-account-btn" disabled>
                                             <i class="fa-solid fa-trash"></i> Delete Account
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -483,9 +481,9 @@ export function createProfileContent() {
                     <div class="experience-section sidebar-section">
                         <div class="section-header">
                             <h3><i class="fa-solid fa-briefcase"></i> Experience</h3>
-                            <button class="add-experience-btn">
+                            <div class="add-experience-btn">
                                 <i class="fa-solid fa-plus"></i>
-                            </button>
+                            </div>
                         </div>
                         <div class="experience-list">
                             <div class="experience-item">
@@ -520,24 +518,25 @@ export function createProfileContent() {
                         </div>
                         <div class="photos-grid">
                             <div class="photo-item">
-                                <img src="./assets/images/default-post.jpg" alt="User photo">
+                                <img src="./images/gallary1.jpg" alt="User photo">
                                 <div class="photo-overlay">
                                     <i class="fa-solid fa-heart"></i> 45
                                 </div>
                             </div>
                             <div class="photo-item">
-                                <img src="./assets/images/default-post.jpg" alt="User photo">
+                                <img src="./images/gallary2.webp" alt="User photo">
                                 <div class="photo-overlay">
                                     <i class="fa-solid fa-heart"></i> 32
                                 </div>
                             </div>
                             <div class="photo-item">
-                                <img src="./assets/images/default-post.jpg" alt="User photo">
+                                <img src="./images/gallary3.jpg" alt="User photo">
                                 <div class="photo-overlay">
                                     <i class="fa-solid fa-heart"></i> 67
                                 </div>
                             </div>
                             <div class="photo-item more-photos">
+                            <img src="./images/gallary4.jpg" alt="User photo">
                                 <div class="more-overlay">
                                     <i class="fa-solid fa-plus"></i>
                                     <span>21 more</span>
@@ -553,7 +552,7 @@ export function createProfileContent() {
                         </div>
                         <div class="friends-grid">
                             <div class="friend-item">
-                                <img src="./assets/images/default-avatar.jpg" alt="Friend">
+                                <img src="./images/avatar2.png" alt="Friend">
                                 <div class="friend-info">
                                     <h4>Sarah Connor</h4>
                                     <p>12 mutual friends</p>
@@ -561,7 +560,7 @@ export function createProfileContent() {
                                 <div class="friend-status online"></div>
                             </div>
                             <div class="friend-item">
-                                <img src="./assets/images/default-avatar.jpg" alt="Friend">
+                                <img src="./images/avatar1.png" alt="Friend">
                                 <div class="friend-info">
                                     <h4>John Smith</h4>
                                     <p>8 mutual friends</p>
@@ -569,7 +568,7 @@ export function createProfileContent() {
                                 <div class="friend-status"></div>
                             </div>
                             <div class="friend-item">
-                                <img src="./assets/images/default-avatar.jpg" alt="Friend">
+                                <img src="./images/avatar3.png" alt="Friend">
                                 <div class="friend-info">
                                     <h4>Emma Wilson</h4>
                                     <p>15 mutual friends</p>
@@ -577,9 +576,9 @@ export function createProfileContent() {
                                 <div class="friend-status online"></div>
                             </div>
                             <div class="view-all-friends">
-                                <button class="view-all-btn">
+                                <div class="view-all-btn">
                                     View All Friends <i class="fa-solid fa-arrow-right"></i>
-                                </button>
+                                </div>
                             </div>
                         </div>
                     </div>
