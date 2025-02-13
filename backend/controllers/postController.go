@@ -99,26 +99,11 @@ func (pc *PostController) GetAllPosts(offset, limit int) ([]models.Post, error) 
 
 		post.User = user
 
-		// Fetch images for this post
-		imageQuery := `
-			SELECT image_url 
-			FROM post_images 
-			WHERE post_id = ?
-		`
-		imageRows, err := pc.DB.Query(imageQuery, post.ID)
+		images, err := pc.GetPostImages(post.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch images: %w", err)
+			return posts, err
 		}
-		defer imageRows.Close()
 
-		var images []string
-		for imageRows.Next() {
-			var imagePath string
-			if err := imageRows.Scan(&imagePath); err != nil {
-				return nil, fmt.Errorf("failed to scan image path: %w", err)
-			}
-			images = append(images, imagePath)
-		}
 		post.Images = images
 
 		// Fetch comments for this post
@@ -132,6 +117,31 @@ func (pc *PostController) GetAllPosts(offset, limit int) ([]models.Post, error) 
 	}
 
 	return posts, nil
+}
+
+func (pc *PostController) GetPostImages(postId int) ([]string, error) {
+	// Fetch images for this post
+	imageQuery := `
+	SELECT image_url 
+	FROM post_images 
+	WHERE post_id = ?
+`
+	imageRows, err := pc.DB.Query(imageQuery, postId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch images: %w", err)
+	}
+	defer imageRows.Close()
+
+	var images []string
+	for imageRows.Next() {
+		var imagePath string
+		if err := imageRows.Scan(&imagePath); err != nil {
+			return nil, fmt.Errorf("failed to scan image path: %w", err)
+		}
+		images = append(images, imagePath)
+	}
+
+	return images, nil
 }
 
 func (pc *PostController) GetPostComments(postID int) ([]models.Comment, error) {
@@ -169,21 +179,70 @@ func (pc *PostController) GetPostComments(postID int) ([]models.Comment, error) 
 	return comments, nil
 }
 
-func (pc *PostController) GetPostByID(postID string) (models.Post, error) {
+func (pc *PostController) GetPostByID(postID int) (models.Post, error) {
+	// Query to fetch the post details along with user details
+	query := `
+        SELECT 
+            p.id, p.title, p.content, p.category, p.likes, p.dislikes, p.timestamp, p.video_url,
+            u.id, u.nickname, u.profession, u.avatar
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?;
+    `
+
+	row := pc.DB.QueryRow(query, postID)
+
 	var post models.Post
-	err := pc.DB.QueryRow(`
-        SELECT id, title, user_id, author, category, likes, dislikes, 
-               content, timestamp, video_url
-        FROM posts 
-        WHERE id = ?
-    `, postID).Scan(
-		&post.ID, &post.Title, &post.UserID, &post.Author,
-		&post.Category, &post.Likes, &post.Dislikes,
-		&post.Content, &post.Timestamp, &post.VideoUrl,
+	var user models.User
+	var profession, avatar sql.NullString // Use sql.NullString for nullable fields
+
+	err := row.Scan(
+		&post.ID, &post.Title, &post.Content, &post.Category,
+		&post.Likes, &post.Dislikes, &post.Timestamp, &post.VideoUrl,
+		&user.ID, &user.Nickname, &profession, &avatar,
 	)
 	if err != nil {
 		return post, fmt.Errorf("failed to fetch post: %w", err)
 	}
+
+	// Set the values only if they are valid
+	if avatar.Valid {
+		avatarStr := avatar.String
+		user.Avatar = &avatarStr
+	}
+	if profession.Valid {
+		user.Profession = profession.String
+	}
+	post.User = user
+
+	// Fetch images for this post
+	imageQuery := `
+        SELECT image_url 
+        FROM post_images 
+        WHERE post_id = ?;
+    `
+	rows, err := pc.DB.Query(imageQuery, post.ID)
+	if err != nil {
+		return post, fmt.Errorf("failed to fetch images: %w", err)
+	}
+	defer rows.Close()
+
+	var images []string
+	for rows.Next() {
+		var imagePath string
+		if err := rows.Scan(&imagePath); err != nil {
+			return post, fmt.Errorf("failed to scan image path: %w", err)
+		}
+		images = append(images, imagePath)
+	}
+	post.Images = images
+
+	comments, err := pc.GetPostComments(post.ID)
+	if err != nil {
+		return post, err
+	}
+	post.Comments = comments
+
 	return post, nil
 }
 
@@ -318,4 +377,18 @@ func (pc *PostController) IsPostAuthor(postID, userID int) (bool, error) {
 
 	// Compare the post's author ID with the provided userID
 	return authorID == userID, nil
+}
+
+func (pc *PostController) GetUserPostCount(userID int) (int, error) {
+	var count int
+	err := pc.DB.QueryRow(`
+		SELECT COUNT(*) 
+		FROM posts 
+		WHERE user_id = ?
+	`, userID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user post count: %w", err)
+	}
+
+	return count, nil
 }

@@ -14,6 +14,11 @@
     max-height: 56px;
 }
 
+li {
+    list-style: none;
+    text-decoration: none;
+}
+
 .main-header h1 {
     padding-block: 0;
     margin-block: 0;

@@ -339,23 +339,33 @@ function createMessageItem(message) {
 }
 
 export function initializeMessenger() {
-    // Remove any existing messenger elements
-    const existingMessenger = document.getElementById('messenger-container');
-    if (existingMessenger) {
-        existingMessenger.remove();
+    // Logic to initialize the messenger
+    console.log('Messenger initialized');
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('userData');
+
+    // Check if the current page is the homepage
+    const isHomePage = window.location.pathname === '/home' || window.location.pathname === '/'; // Adjust the path as needed
+
+    if (token && userData && isHomePage) {
+        // Remove any existing messenger elements
+        const existingMessenger = document.getElementById('messenger-container');
+        if (existingMessenger) {
+            existingMessenger.remove();
+        }
+
+        // Create and append the messenger container
+        const messengerContainer = document.createElement('div');
+        messengerContainer.id = 'messenger-container';
+        messengerContainer.innerHTML = createFloatingMessenger();
+        document.body.appendChild(messengerContainer);
+
+        // Initialize event listeners and load messages
+        setupMessengerEventListeners();
+        loadInitialMessages();
     }
-
-    // Create and append the messenger container
-    const messengerContainer = document.createElement('div');
-    messengerContainer.id = 'messenger-container';
-    messengerContainer.innerHTML = createFloatingMessenger();
-    document.body.appendChild(messengerContainer);
-
-    // Initialize event listeners and load messages
-    setupMessengerEventListeners();
-    loadInitialMessages();
 }
-
 function setupMessengerEventListeners() {
     // Toggle messenger panel
     const messengerBtn = document.getElementById('floating-messenger-btn');

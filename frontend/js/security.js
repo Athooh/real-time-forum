@@ -21,7 +21,7 @@ function authenticatedFetch(url, options = {}) {
     if (!token) {
         throw new Error('No authentication token found');
     }
-
+ console.log("Token: ", token)
     return fetch(url, {
         ...options,
         headers: {

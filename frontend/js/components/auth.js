@@ -1,6 +1,6 @@
 import { NotificationType, showNotification } from '../utils/notifications.js';
-import { app } from '../app.js';
-
+import Router from '../router/router.js';
+import { initializeMessenger } from './messages.js';
 
 export function createAuthSection() {
     return `
@@ -137,7 +137,7 @@ export function setupAuthEventListeners() {
     }
 }
 
-async function handleLogin(e) {
+export async function handleLogin(e) {
     e.preventDefault();
     try {
         const identifier = document.getElementById('login-email').value;
@@ -163,19 +163,14 @@ async function handleLogin(e) {
         const data = await response.json();
 
         if (response.ok) {
-            // Store auth data
             localStorage.setItem('token', data.token);
             localStorage.setItem('userData', JSON.stringify(data.userData));
             
-            // Show success message
-            showNotification('Login successful!', NotificationType.SUCCESS);
+            // Get router instance and navigate
+            const router = new Router();
+            router.navigate('/');
             
-            // Reset form
-            e.target.reset();
-
-            // Use the imported app instance
-            app.showForumSection();
-            await app.initializeForumFeatures();
+            showNotification('Login successful!', NotificationType.SUCCESS);
         } else {
             console.log("Attempt failed")
             const errorMessage = data.error || 'Invalid credentials';
@@ -247,4 +242,12 @@ async function handleRegister(e) {
         console.error('Error during registration:', error);
         showNotification('An error occurred during registration. Please try again.', NotificationType.ERROR);
     }
+}
+
+export function handleLogout() {
+    // ... your existing logout logic ...
+    
+    // Get router instance and navigate
+    const router = new Router();
+    router.navigate('/loginPage');
 } 

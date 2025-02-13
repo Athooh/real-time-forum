@@ -43,6 +43,7 @@ body {
     padding: 0;
     background-color: var(--background-color);
     color: var(--text-color);
+    height: calc(100vh - 70px);
 }
 
 p {
@@ -67,7 +68,7 @@ a:hover {
 
 /* Auth Section */
 #auth-section {
-    display: flex;
+    display: none;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
@@ -248,7 +249,9 @@ select option[value=""][disabled] {
 
 /* Forum Section */
 #forum-section {
-    display: none;
+    display: block;
+    width: 100%;
+    min-height: 100vh;
 }
 
 header {

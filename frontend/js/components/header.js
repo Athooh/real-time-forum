@@ -1,8 +1,9 @@
 import { escapeHTML, formatTimeAgo } from '../utils.js';
 import { showNotification, NotificationType } from '../utils/notifications.js';
-import { app } from '../app.js';
+import Router from '../router/router.js';
 
 export function createHeader() {
+    console.log("Creating header");
     return `
         <header class="main-header">
             ${createHeaderLeft()}
@@ -47,9 +48,8 @@ function createHeaderNav() {
     return `
         <nav class="header-nav">
             <ul class="nav-links">
-                <li><a href="#" class="active">Home</a></li>
-                <li><a href="#">Networks <i class="fas fa-chevron-down"></i></a></li>
-                <li><a href="#">Pages <i class="fas fa-chevron-down"></i></a></li>
+                <li><a href="/" class="nav-link" data-route="/">Home</a></li>
+                <li><a href="/profile" class="nav-link" data-route="/profile">Profile</a></li>
             </ul>
         </nav>
     `;
@@ -68,7 +68,7 @@ function createHeaderActions() {
 
 function createMessageButton() {
     return `
-        <button class="icon-btn" title="Messages">
+        <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messages">
             <i class="fas fa-envelope"></i>
             <span class="badge">3</span>
         </button>
@@ -130,7 +130,7 @@ function createProfileMenu() {
         <div class="profile-menu">
             <img src="images/avatar.png" alt="Profile" class="avatar">
             <div class="dropdown-menu">
-                <a href="#"><i class="fas fa-user"></i> Profile</a>
+                <a href="#profile"><i class="fas fa-user"></i> Profile</a>
                 <a href="#"><i class="fas fa-cog"></i> Settings</a>
                 <button id="logout" class="dropdown-btn">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -140,29 +140,42 @@ function createProfileMenu() {
     `;
 }
 
-async function logout() {
+async function handleLogout() {
     try {
-        // Send a request to the backend to invalidate the session
-        const response = await fetch('/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to log out from the server');
-        }
-
-        // Remove token and user data from local storage
+        // Remove token and user data from local storage first
         localStorage.removeItem('token');
         localStorage.removeItem('userData');
 
-        // Show auth section and hide forum section using app instance
-        app.showAuthSection();
+        // Try to notify the server, but don't wait for it
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+        } catch (serverError) {
+            console.warn('Server logout failed, but continuing with local logout:', serverError);
+        }
 
-        showNotification('You have been logged out successfully.', NotificationType.INFO);
+        // Hide forum section
+        const forumSection = document.getElementById('forum-section');
+        if (forumSection) {
+            forumSection.style.display = 'none';
+        }
+
+        // Remove messenger container
+        const messengerContainer = document.getElementById('messenger-container');
+        if (messengerContainer) {
+            messengerContainer.remove();
+        }
+
+        // Get router instance and navigate
+        const router = new Router();
+        router.navigate('/loginPage');
+
+        showNotification('Logged out successfully', NotificationType.SUCCESS);
     } catch (error) {
         console.error('Error during logout:', error);
         showNotification('An error occurred during logout. Please try again.', NotificationType.ERROR);
@@ -170,6 +183,16 @@ async function logout() {
 }
 
 export function setupHeaderEventListeners() {
+    // Add click handlers for navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const route = e.target.dataset.route;
+            const router = new Router();  // Create new router instance
+            router.navigate(route);
+        });
+    });
+    
     // Search functionality
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
@@ -193,6 +216,15 @@ export function setupHeaderEventListeners() {
     const clearAllBtn = document.querySelector('.clear-all');
     if (clearAllBtn) {
         clearAllBtn.addEventListener('click', clearAllNotifications);
+    }
+
+    // Add messages button click handler
+    const messagesBtn = document.getElementById('messages-btn');
+    if (messagesBtn) {
+        messagesBtn.addEventListener('click', () => {
+            const router = new Router();
+            router.navigate('/messages');
+        });
     }
 }
 
@@ -270,23 +302,5 @@ function getNotificationTypeIcon(type) {
     return icons[type] || icons.default;
 }
 
-async function handleLogout() {
-    try {
-        await logout();
-        // Hide forum section
-        const forumSection = document.getElementById('forum-section');
-        if (forumSection) {
-            forumSection.style.display = 'none';
-        }
-        // Show auth section
-        const authSection = document.getElementById('auth-section');
-        if (authSection) {
-            authSection.style.display = 'block';
-        }
-        showNotification('Logged out successfully', NotificationType.SUCCESS);
-    } catch (error) {
-        console.error('Logout error:', error);
-        showNotification('Logout failed', NotificationType.ERROR);
-    }
-}
+
 
