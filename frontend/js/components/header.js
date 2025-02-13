@@ -68,7 +68,7 @@ function createHeaderActions() {
 
 function createMessageButton() {
     return `
-        <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messages">
+        <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messagesPage">
             <i class="fas fa-envelope"></i>
             <span class="badge">3</span>
         </button>
@@ -223,7 +223,7 @@ export function setupHeaderEventListeners() {
     if (messagesBtn) {
         messagesBtn.addEventListener('click', () => {
             const router = new Router();
-            router.navigate('/messages');
+            router.navigate('/messagesPage');
         });
     }
 }
