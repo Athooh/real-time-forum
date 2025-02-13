@@ -32,25 +32,44 @@ func SendMessageHandler(mc *controllers.MessageController) http.HandlerFunc {
 			return
 		}
 
-		msgID, err := mc.SendMessageController(userIDInt, req.RecipientID, req.Content)
+		_, timestamp, err := mc.SendMessageController(userIDInt, req.RecipientID, req.Content)
 		if err != nil {
 			logger.Error("Failed to send message in SendMessageHandler %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		// Notify the recipient via WebSocket
-		payload := map[string]interface{}{
-			"type":       "new_message",
-			"sender_id":  userIDInt,
-			"content":    req.Content,
-			"message_id": msgID,
+		// Get sender's information
+		senderInfo, err := mc.GetUserInfo(userIDInt)
+		if err != nil {
+			logger.Error("Failed to get sender info in SendMessageHandler %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+
+		// Modified WebSocket payload
+		payload := map[string]interface{}{
+			"type": "new_message",
+			"payload": map[string]interface{}{
+				"sender_id": userIDInt,
+				"content":   req.Content,
+				"timestamp": timestamp,
+				"user": map[string]interface{}{
+					"id":       senderInfo.ID,
+					"nickname": senderInfo.Nickname,
+					"avatar":   senderInfo.Avatar,
+					"isOnline": senderInfo.IsOnline,
+				},
+			},
+		}
+
 		payloadBytes, _ := json.Marshal(payload)
 		SendToUser(req.RecipientID, payloadBytes)
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]int{"message_id": msgID})
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Message sent successfully",
+		})
 	}
 }
 
