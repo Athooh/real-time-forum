@@ -100,29 +100,17 @@ function escapeHTML(str) {
 }
 
 // Format time ago utility
-function formatTimeAgo(timestamp) {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const seconds = Math.floor((now - date) / 1000);
-    
-    let interval = Math.floor(seconds / 31536000);
-    if (interval >= 1) return interval + ' year' + (interval === 1 ? '' : 's') + ' ago';
-    
-    interval = Math.floor(seconds / 2592000);
-    if (interval >= 1) return interval + ' month' + (interval === 1 ? '' : 's') + ' ago';
-    
-    interval = Math.floor(seconds / 86400);
-    if (interval >= 1) return interval + ' day' + (interval === 1 ? '' : 's') + ' ago';
-    
-    interval = Math.floor(seconds / 3600);
-    if (interval >= 1) return interval + ' hour' + (interval === 1 ? '' : 's') + ' ago';
-    
-    interval = Math.floor(seconds / 60);
-    if (interval >= 1) return interval + ' minute' + (interval === 1 ? '' : 's') + ' ago';
-    
-    return Math.floor(seconds) + ' second' + (seconds === 1 ? '' : 's') + ' ago';
-}
 
+function formatTimeAgo(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return date.toLocaleDateString();
+}
 function setupInfiniteScroll() {
     const handleScroll = throttle(() => {
         const scrollPosition = window.innerHeight + window.scrollY;
@@ -146,6 +134,12 @@ function formatNumber(num) {
     }
     return num.toString();
 }
+
+export function getCurrentUserId() {
+    const user = JSON.parse(localStorage.getItem('userData'));
+    return user?.id || null;
+}
+
 // Export utilities to window object
 export {
     throttle,
