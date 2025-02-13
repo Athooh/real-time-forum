@@ -30,7 +30,7 @@
 
 .profile-info-section {
     padding: 20px 20px 0;
-    margin-top: -70px;
+    margin-top: -40px;
     position: relative;
     display: flex;
     justify-content: space-between;
@@ -183,6 +183,18 @@
     display: block;
 }
 
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.empty-state button {
+    display: none;
+}
+
 .about-me-section {
     padding: 20px;
     background: var(--white-color);
@@ -331,11 +343,18 @@
 }
 
 .education-section, .workplace-section {
-    width: 45%; 
+    width: 45%;
+    
+}
+
+.workplace-section h5, .education-section h5 {
+    margin-bottom: 10px;
 }
 
 a.add-info-link#add-education, a.add-info-link#add-workplace {
+    margin-top: 10px; 
     width: 100%;
+    max-width: 340px;
     padding: 10px 20px;
     border: 2px dashed var(--border-color);
     border-radius: var(--border-radius);
@@ -1177,6 +1196,263 @@ p.company {
     background: var(--primary-color-light);
 }
 
+/* Form Styling */
+.workplace-form, .education-form {
+    border-radius: 12px;
+    margin: 16px 0;
+    transition: all 0.3s ease;
+}
+
+.workplace-form input, 
+.workplace-form textarea,
+.education-form input,
+.education-form textarea {
+    width: 100%;
+    padding: 12px 16px;
+    margin: 8px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.workplace-form input:focus,
+.workplace-form textarea:focus,
+.education-form input:focus,
+.education-form textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.workplace-form textarea,
+.education-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Form Buttons */
+.workplace-form button,
+.education-form button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 8px 8px 0 0;
+}
+
+#save-workplace,
+#save-education {
+    background-color: #007bff;
+    color: white;
+}
+
+#save-workplace:hover,
+#save-education:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+#cancel-workplace,
+#cancel-education {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+#cancel-workplace:hover,
+#cancel-education:hover {
+    background-color: #e2e6ea;
+    color: #4a4a4a;
+}
+
+/* Form Labels (optional) */
+.workplace-form label,
+.education-form label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Form Input Placeholder */
+.workplace-form input::placeholder,
+.workplace-form textarea::placeholder,
+.education-form input::placeholder,
+.education-form textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* Password Change Form Styling */
+#password-change-form {
+    max-width: 600px;
+}
+
+.password-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-group input {
+    padding-right: 40px;
+}
+
+.password-input-group .password-toggle {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.password-input-group .password-toggle:hover {
+    color: #495057;
+}
+
+.password-strength-meter {
+    height: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.strength-bar {
+    height: 100%;
+    width: 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-weak {
+    width: 33%;
+    background-color: #dc3545;
+}
+
+.strength-medium {
+    width: 66%;
+    background-color: #ffc107;
+}
+
+.strength-strong {
+    width: 100%;
+    background-color: #28a745;
+}
+
+.password-requirements {
+    display: block;
+    margin-top: 8px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.password-form-actions {
+    margin-top: 24px;
+}
+
+.change-password-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.change-password-btn:hover {
+    background-color: #0056b3;
+}
+
+.change-password-btn i {
+    font-size: 14px;
+}
+
+/* Animation for form appearance */
+@keyframes formSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.workplace-form,
+.education-form {
+    animation: formSlideDown 0.3s ease forwards;
+}
+
+/* Error state for inputs */
+.workplace-form input:invalid,
+.education-form input:invalid {
+    border-color: #dc3545;
+}
+
+/* Success state for filled inputs */
+.workplace-form input:not(:placeholder-shown):valid,
+.education-form input:not(:placeholder-shown):valid {
+    border-color: #28a745;
+}
+
+.workplace-entry, .education-entry {
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.workplace-entry h3, .education-entry h3 {
+    margin-block: 0;
+}
+
+.workplace-entry h6, .education-entry h6 {
+    margin-block: 0;
+    font-size: 14px;
+}
+
+.workplace-entry p.duration, .education-entry p.duration {
+    padding-block: 10px;
+    background: var(--background-color);
+}
+
+.workplace-entry p.location, .education-entry p.location {
+    padding: 0  0 10px;
+    color: var(--text-color);
+    background: var(--background-color);
+}
+
+
+/* Form Grid Layout for better organization */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .workplace-form,
+    .education-form {
+        padding: 16px;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .photos-grid {
@@ -1202,3 +1478,5 @@ p.company {
         align-items: flex-start;
     }
 }
+
+
