@@ -25,8 +25,8 @@ class App {
         this.router = new Router({
             '/': () => this.renderHome(),
             '/loginPage': () => this.renderAuth(),
-            '/messages': () => this.renderMessages(),
-            '/profile': () => this.renderProfile(),
+            '/messagesPage': () => this.renderMessages(),
+            '/profilePage': () => this.renderProfile(),
             '*': () => this.render404()
         });
 
