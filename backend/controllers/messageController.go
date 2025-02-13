@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"forum/backend/models"
 )
@@ -51,40 +52,52 @@ func max(a, b int) int {
 	return b
 }
 
-func (mc *MessageController) SendMessageController(senderID, recipientID int, content string) (int, error) {
+func (mc *MessageController) SendMessageController(senderID, recipientID int, content string) (int, string, error) {
 	// Step 1: Ensure the conversation exists
 	convID, err := mc.CreateConversationIfNotExists(senderID, recipientID)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	// Step 2: Insert the message
 	query := `
-        INSERT INTO messages (sender_id, recipient_id, conversation_id, content)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO messages (sender_id, recipient_id, conversation_id, content, sent_at)
+        VALUES (?, ?, ?, ?, ?)
     `
-	result, err := mc.db.Exec(query, senderID, recipientID, convID, content)
+	result, err := mc.db.Exec(query, senderID, recipientID, convID, content, time.Now())
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	msgID, err := result.LastInsertId()
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
-	// Step 3: Update the latest_message_id in the conversation
+	// Step 3: Update the latest_message_id and updated_at in the conversation
 	query = `
         UPDATE conversations
-        SET latest_message_id = ?
+        SET latest_message_id = ?, updated_at = ?
         WHERE id = ?
     `
-	_, err = mc.db.Exec(query, msgID, convID)
+	_, err = mc.db.Exec(query, msgID, time.Now(), convID)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
-	return int(msgID), nil
+	// Step 4: Get the message timestamp
+	var sentAt string
+	query = `
+        SELECT sent_at 
+        FROM messages 
+        WHERE id = ?
+    `
+	err = mc.db.QueryRow(query, msgID).Scan(&sentAt)
+	if err != nil {
+		return 0, "", err
+	}
+
+	return int(msgID), sentAt, nil
 }
 
 func (mc *MessageController) GetMessagesInConversation(user1ID, user2ID, offset, limit int) ([]models.Message, error) {
@@ -121,8 +134,8 @@ func (mc *MessageController) GetMessagesInConversation(user1ID, user2ID, offset,
         ORDER BY m.sent_at ASC
         LIMIT ? OFFSET ?
     `
-    
-	rows, err := mc.db.Query(query, 
+
+	rows, err := mc.db.Query(query,
 		user1ID, user1ID, user1ID, // For the CASE statements
 		user1ID, user2ID, user2ID, user1ID, // For the WHERE clause
 		limit, offset,
@@ -170,7 +183,20 @@ func (mc *MessageController) GetMessagesInConversation(user1ID, user2ID, offset,
 
 		messages = append(messages, msg)
 	}
-	
+	// for i, msg := range messages {
+	// 	fmt.Printf("Message %d:\n", i)
+	// 	fmt.Printf("  ID: %d\n", msg.ID)
+	// 	fmt.Printf("  SenderID: %d\n", msg.SenderID)
+	// 	fmt.Printf("  RecipientID: %d\n", msg.RecipientID)
+	// 	fmt.Printf("  ConversationID: %d\n", msg.ConversationID)
+	// 	fmt.Printf("  Content: %s\n", msg.Content)
+	// 	fmt.Printf("  SentAt: %v\n", msg.SentAt)
+	// 	fmt.Printf("  IsRead: %v\n", msg.IsRead)
+	// 	fmt.Printf("  User: {ID: %d, Nickname: %s, Avatar: %s, IsOnline: %v}\n",
+	// 		msg.User.ID, msg.User.Nickname, msg.User.Avatar, msg.User.IsOnline)
+	// 	fmt.Println()
+	// }
+
 	return messages, nil
 }
 
@@ -210,7 +236,7 @@ func (mc *MessageController) GetAllMessages(userID, limit, offset int) ([]models
         LIMIT ? OFFSET ?
     `
 
-	rows, err := mc.db.Query(query, 
+	rows, err := mc.db.Query(query,
 		userID, userID, userID, // For the CASE statements
 		userID, userID, // For the WHERE clause
 		limit, offset,
@@ -260,4 +286,28 @@ func (mc *MessageController) GetAllMessages(userID, limit, offset int) ([]models
 	}
 
 	return messages, nil
+}
+
+func (mc *MessageController) GetUserInfo(userID int) (models.MessageUser, error) {
+	var userInfo models.MessageUser
+	var avatarNull sql.NullString
+
+	err := mc.db.QueryRow(`
+		SELECT u.id, u.nickname, u.avatar, COALESCE(us.is_online, false) 
+		FROM users u 
+		LEFT JOIN user_status us ON u.id = us.user_id 
+		WHERE u.id = ?`, userID).Scan(
+		&userInfo.ID,
+		&userInfo.Nickname,
+		&avatarNull,
+		&userInfo.IsOnline,
+	)
+	if err != nil {
+		return models.MessageUser{}, err
+	}
+
+	// Convert NullString to string, empty string if NULL
+	userInfo.Avatar = avatarNull.String
+
+	return userInfo, nil
 }
