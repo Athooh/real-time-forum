@@ -5,7 +5,7 @@
     height: calc(100vh - 80px);
 }
 .profile-page {
-    max-width: 1350px;
+    max-width: 1300px;
     margin: 20px auto;
     background: var(--white-color);
     border-radius: var(--border-radius);
@@ -30,7 +30,7 @@
 
 .profile-info-section {
     padding: 20px 20px 0;
-    margin-top: -40px;
+    margin-top: -70px;
     position: relative;
     display: flex;
     justify-content: space-between;
@@ -62,8 +62,14 @@
 
 .profile-details h1 {
     margin: 0;
-    color: var(--text-color);
-    font-size: 24px;
+    font-size: var(--font-size-large);
+    color: var(--notification-header-color);
+}
+
+.profile-username {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .profile-title {
@@ -84,6 +90,13 @@
     padding-left: 20px;
 }
 
+.profile-info {
+    padding: 20px;
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    margin-top: 20px;
+}
+
 .profile-actions {
     display: flex;
     gap: 10px;
@@ -102,7 +115,7 @@
 
 
 .profile-container-brief {
-    max-width: 1350px;
+    max-width: 1300px;
     display: flex;
     justify-content: space-between;
     gap: 20px;
@@ -111,6 +124,7 @@
 }
 
 .profile-page-left-column {
+    background: var(--background-color);
     width: 70%;
 }
 
@@ -118,35 +132,31 @@
     width: 30%;
 }   
 
-.profile-content {
-    background: var(--white-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    /* margin-top: 20px; */
-}
 
 .profile-nav {
     display: flex;
     gap: 10px;
-    padding: 20px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 3px 20px;
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
 }
 
 .profile-nav-link {
-    padding: 10px 20px;
+    padding: 10px;
     color: var(--text-color);
     text-decoration: none;
-    border-radius: var(--border-radius);
     transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .profile-nav-link:hover {
-    background: var(--search-input-color);
+    color: var(--primary-color);
 }
 
 .profile-nav-link.active {
-    background: var(--primary-color);
-    color: white;
+    border-bottom: 4px solid var(--primary-color);
+    color: var(--primary-color);
 }
 
 .profile-nav-link.danger {
@@ -159,13 +169,14 @@
 }
 
 .profile-nav-link.danger.active {
-    background: var(--notification-color);
+    background-color: var(--notification-color);
     color: var(--notification-text-color);
+    border-bottom: 4px solid var(--notification-text-color);
 }
 
 .profile-section {
     display: none;
-    padding: 20px;
+    padding: 20px 0;
 }
 
 .profile-section.active {
@@ -177,10 +188,22 @@
     background: var(--white-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);  
+    margin-bottom: 20px;
+}
+
+.about-me-section h3 {
+    color: var(--notification-header-color);
 }
 
 .about-me-text {
     margin-bottom: 20px;
+}
+
+.about-content p {
+    background: var(--white-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin: 0;
 }
 
 .profile-details-list {
@@ -201,6 +224,18 @@
     padding: 10px 20px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
+}
+
+.profile-page-right-column .profile-detail-item {
+    border: none;
+    border-radius: none;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+
 }
 /* 
 .profile-detail-item:last-child {
@@ -342,10 +377,14 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 /* Interest Tags Section */
 .interests-section {
-    /* display: flex;
-    flex-wrap: wrap; */
-    /* gap: 10px; */
-    padding: 15px 0;
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.interests-section h3 {
+    color: var(--notification-header-color);
 }
 
 .interest-tag {
@@ -363,25 +402,29 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
     font-size: 14px;
     width: 16px;
     text-align: center;
+    background: var(--primary-color);
+    border-radius: 50%;
+    padding: 20px;
+    color: var(--white-color);
 }
 
 .interest-tag-item {
     gap: 5px;
-    padding: 8px 15px;
-    background: var(--search-input-color);
-    border-radius: 20px;
     font-size: 14px;
-    color: var(--text-color);
+    color: var(--notification-header-color);
+    font-weight: 600;
     transition: all 0.3s ease;
     cursor: default;
     margin-block: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
 }
 
 .interest-tag-item:hover {
-    background: var(--primary-color);
-    color: white;
+    color: var(--primary-color);
     transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Add some responsive adjustments */
@@ -401,11 +444,11 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
     background: var(--white-color);
     border-radius: var(--border-radius);
     overflow: hidden;
+    box-shadow: var(--box-shadow);
 }
 
 .connections-tabs {
     display: flex;
-    border-bottom: 1px solid var(--border-color);
     background: var(--search-input-color);
 }
 
@@ -422,7 +465,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 .connection-tab.active {
     background: var(--white-color);
     color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
+    border-bottom: 4px solid var(--primary-color);
 }
 
 .connections-list {
@@ -495,15 +538,16 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 /* Settings Section Styles */
 .settings-container {
-    background: var(--white-color);
+    background: var(--background-color);
     border-radius: var(--border-radius);
-    padding: 20px;
 }
 
 .settings-group {
-    margin-bottom: 30px;
-    padding-bottom: 30px;
-    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    padding: 20px;
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
 }
 
 .settings-group:last-child {
@@ -514,7 +558,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 .settings-group h4 {
     margin-bottom: 20px;
-    color: var(--text-color);
+    color: var(--notification-header-color);
     font-size: 18px;
 }
 
@@ -707,24 +751,22 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 /* Delete Account Section Styles */
 .delete-account-container {
-    max-width: 600px;
+    width: 100%;
     margin: 0 auto;
-    padding: 20px;
 }
 
 .delete-warning-card {
     background: var(--white-color);
     border-radius: var(--border-radius);
-    padding: 30px;
+    padding: 10px;
     text-align: center;
     box-shadow: var(--box-shadow);
-    border: 1px solid var(--border-color);
 }
 
 .warning-icon {
     width: 80px;
     height: 80px;
-    margin: 0 auto 20px;
+    margin: 0 auto;
     background: var(--danger-color-light);
     border-radius: 50%;
     display: flex;
@@ -741,6 +783,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
     color: var(--danger-color);
     font-size: 24px;
     margin-bottom: 15px;
+    margin-top: 0;
 }
 
 .warning-text {
@@ -885,10 +928,10 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 /* Common Sidebar Section Styles */
 .sidebar-section {
     background: var(--white-color);
-    border-radius: 15px;
+    border-radius: var(--border-radius);
     padding: 20px;
     margin-bottom: 24px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--box-shadow);
 }
 
 .section-header {
@@ -900,7 +943,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 .section-header h3 {
     font-size: 1.1rem;
-    color: var(--text-color);
+    color: var(--notification-header-color);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -919,6 +962,7 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 
 .experience-item {
     display: flex;
+    align-items: center;
     gap: 16px;
     padding: 16px;
     border-radius: 12px;
@@ -942,14 +986,18 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
 }
 
 .company-logo i {
-    font-size: 24px;
-    color: var(--primary-color);
+    font-size: 35px;
+    color: var(--text-color);
 }
 
 .experience-details h4 {
     font-size: 1rem;
     color: var(--text-color);
     margin-bottom: 4px;
+}
+
+p.company {
+    text-align: start;
 }
 
 .experience-details .company {
@@ -1154,4 +1202,3 @@ a.add-info-link#add-education, a.add-info-link#add-workplace {
         align-items: flex-start;
     }
 }
-
