@@ -283,6 +283,23 @@
     margin-right: 10px;
 }
 
+.chat-header .status {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.chat-header .status.online {
+    color: #44b700;
+    background: rgba(68, 183, 0, 0.1);
+}
+
+.chat-header .status.offline {
+    color: #888;
+    background: rgba(0, 0, 0, 0.1);
+}
+
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -814,4 +831,24 @@
     font-size: 0.9rem;
     margin-top: 8px;
     color: var(--text-muted);
+}
+
+.message-loading {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
