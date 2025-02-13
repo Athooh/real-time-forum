@@ -3,6 +3,17 @@ import {
     createPostCard,
     createPostsFeed
 } from '../posts/postsTemplates.js';
+import {
+    showWorkplaceForm,
+    hideWorkplaceForm,
+    addWorkplace,
+    showEducationForm,
+    hideEducationForm,
+    addEducation,
+    handlePasswordToggle,
+    handlePasswordStrength,
+    handlePasswordSubmit
+} from './profileHandlers.js';
 
 export function createProfilePage() {
     const userData = JSON.parse(localStorage.getItem('userData')) || {};
@@ -45,7 +56,7 @@ export function createProfilePage() {
 export function createProfileContent() {
     const userData = JSON.parse(localStorage.getItem('userData')) || {};
     
-    return `
+    const content = `
         <div class="profile-container-brief">
             <div class="profile-page-left-column">
                 <div class="profile-content">
@@ -194,23 +205,39 @@ export function createProfileContent() {
 
                                     <div class="additional-info">
                                         <div class="workplace-section">
-                                            <h5>Work Experience</h5>
+                                            <h4>Work Experience</h4>
                                             <div id="workplace-list">
                                                 <!-- Workplace entries will be added here dynamically -->
                                             </div>
-                                            <a href="#" class="add-info-link" id="add-workplace">
+                                            <a href="javascript:void(0)" class="add-info-link" id="add-workplace">
                                                 <i class="fa-solid fa-plus"></i> Add Workplace
                                             </a>
+                                            <div class="workplace-form" style="display: none;">
+                                                <input type="text" id="company-name" placeholder="Company Name">
+                                                <input type="text" id="job-title" placeholder="Job Title">
+                                                <input type="text" id="work-duration" placeholder="Duration (e.g. 2020-2023)">
+                                                <input type="text" id="work-location" placeholder="Location (e.g. San Francisco, CA)">
+                                                <button id="save-workplace">Save</button>
+                                                <button id="cancel-workplace">Cancel</button>
+                                            </div>
                                         </div>
 
                                         <div class="education-section">
-                                            <h5>Education</h5>
+                                            <h4>Education</h4>
                                             <div id="education-list">
                                                 <!-- Education entries will be added here dynamically -->
                                             </div>
-                                            <a href="#" class="add-info-link" id="add-education">
+                                            <a href="javascript:void(0)" class="add-info-link" id="add-education">
                                                 <i class="fa-solid fa-plus"></i> Add Education
                                             </a>
+                                            <div class="education-form" style="display: none;">
+                                                <input type="text" id="school-name" placeholder="School Name">
+                                                <input type="text" id="degree" placeholder="Degree">
+                                                <input type="text" id="education-duration" placeholder="Duration (e.g. 2016-2020)">
+                                                <input type="text" id="education-location" placeholder="Location (e.g. San Francisco, CA)">
+                                                <button id="save-education">Save</button>
+                                                <button id="cancel-education">Cancel</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -325,6 +352,69 @@ export function createProfileContent() {
                                                 <label for="phone">Phone</label>
                                                 <input type="tel" id="phone" name="phone" placeholder="Your phone number">
                                             </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Password Settings -->
+                                <div class="settings-group">
+                                    <h4>Change Password</h4>
+                                    <form id="password-change-form" class="settings-form">
+                                        <div class="form-group">
+                                            <label for="current-password">
+                                                <i class="fas fa-lock"></i> Current Password
+                                            </label>
+                                            <div class="password-input-group">
+                                                <input 
+                                                    type="password" 
+                                                    id="current-password" 
+                                                    name="currentPassword" 
+                                                    placeholder="Enter your current password"
+                                                    required
+                                                >
+                                                <i class="password-toggle fas fa-eye"></i>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="new-password">
+                                                <i class="fas fa-key"></i> New Password
+                                            </label>
+                                            <div class="password-input-group">
+                                                <input 
+                                                    type="password" 
+                                                    id="new-password" 
+                                                    name="newPassword" 
+                                                    placeholder="Enter your new password"
+                                                    required
+                                                >
+                                                <i class="password-toggle fas fa-eye"></i>
+                                            </div>
+                                            <div class="password-strength-meter">
+                                                <div class="strength-bar"></div>
+                                            </div>
+                                            <small class="password-requirements">
+                                                Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters
+                                            </small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="confirm-password">
+                                                <i class="fas fa-check-double"></i> Confirm Password
+                                            </label>
+                                            <div class="password-input-group">
+                                                <input 
+                                                    type="password" 
+                                                    id="confirm-password" 
+                                                    name="confirmPassword" 
+                                                    placeholder="Confirm your new password"
+                                                    required
+                                                >
+                                                <i class="password-toggle fas fa-eye"></i>
+                                            </div>
+                                        </div>
+                                        <div class="password-form-actions">
+                                            <button type="submit" class="change-password-btn">
+                                                <i class="fas fa-save"></i> Update Password
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
@@ -460,9 +550,7 @@ export function createProfileContent() {
                     <div class="experience-section sidebar-section">
                         <div class="section-header">
                             <h3><i class="fa-solid fa-briefcase"></i> Experience</h3>
-                            <div class="add-experience-btn">
-                                <i class="fa-solid fa-plus"></i>
-                            </div>
+                            
                         </div>
                         <div class="experience-list">
                             <div class="experience-item">
@@ -564,7 +652,31 @@ export function createProfileContent() {
                 </div>
             </div>
         </div>
-
-        
     `;
+
+    // Update the setTimeout block
+    setTimeout(() => {
+        // Workplace form listeners
+        document.getElementById('add-workplace')?.addEventListener('click', showWorkplaceForm);
+        document.getElementById('save-workplace')?.addEventListener('click', addWorkplace);
+        document.getElementById('cancel-workplace')?.addEventListener('click', hideWorkplaceForm);
+
+        // Education form listeners
+        document.getElementById('add-education')?.addEventListener('click', showEducationForm);
+        document.getElementById('save-education')?.addEventListener('click', addEducation);
+        document.getElementById('cancel-education')?.addEventListener('click', hideEducationForm);
+
+        // Password toggle listeners
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => handlePasswordToggle(toggle));
+        });
+
+        document.getElementById('new-password')?.addEventListener('input', (e) => 
+            handlePasswordStrength(e.target)
+        );
+
+        document.getElementById('password-change-form')?.addEventListener('submit', handlePasswordSubmit);
+    }, 0);
+
+    return content;
 }
