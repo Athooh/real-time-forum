@@ -130,7 +130,7 @@ function createProfileMenu() {
         <div class="profile-menu">
             <img src="images/avatar.png" alt="Profile" class="avatar">
             <div class="dropdown-menu">
-                <a href="#"><i class="fas fa-user"></i> Profile</a>
+                <a href="#profile"><i class="fas fa-user"></i> Profile</a>
                 <a href="#"><i class="fas fa-cog"></i> Settings</a>
                 <button id="logout" class="dropdown-btn">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -223,7 +223,7 @@ export function setupHeaderEventListeners() {
     if (messagesBtn) {
         messagesBtn.addEventListener('click', () => {
             const router = new Router();
-            router.navigate('/messagesPage');
+            router.navigate('/messages');
         });
     }
 }
