@@ -9,13 +9,14 @@ import { createLeftSidebar, createRightSidebar } from './components/sidebar.js';
 import { createMainContent, setupPostEventListeners } from './components/posts/posts.js';
 import { fetchPosts } from './components/posts/postsApi.js';
 import Router from './router/router.js';
-import { createProfilePage, createProfileContent } from './components/profile/profileTemplate.js';
+import {  createProfileContent } from './components/profile/profile.js';
+import { createProfilePage } from './components/profile/profileTemplate.js';
 import { 
     setupDropZone, 
     setupVideoDropZone 
 } from './components/posts/postsEvent.js';
 import { ensureWebSocketConnection } from './websocket/websocket.js';
-import { fetchUserSettings } from './components/profile/profileHandlers.js';
+import { fetchUserSettings } from './components/profile/profileApi.js';
 
 class App {
     constructor() {
