@@ -3,6 +3,15 @@ import { BASE_URL } from '../../state.js';
 
 // Helper functions
 function createStorySection() {
+    const stories = [
+        { user: 'Alice', image: 'images/avatar.png' },
+        { user: 'Bob', image: 'images/avatar1.png' },
+        { user: 'Charlie', image: 'images/avatar2.png' },
+        { user: 'Allan', image: 'images/avatar3.png' },
+        { user: 'Mel', image: 'images/avatar4.png' },
+        { user: 'Charlie', image: 'images/avatar2.png' }
+    ];
+    
     return `
         <div class="stories-section">
             <div class="story-cards">
@@ -12,7 +21,24 @@ function createStorySection() {
                     </div>
                     <p>Create Story</p>
                 </div>
+                <!-- Stories will be dynamically inserted here -->
+                ${createStoriesSlider(stories)}
             </div>
+        </div>
+    `;
+}
+
+function createStoriesSlider(stories) {
+    return `
+        <div class="stories-slider auto-scroll">
+            ${stories.map(story => `
+                <div class="story-card">
+                    <div class="story-overlay">
+                        <p class="story-username">${story.user}</p>
+                    </div>
+                    <img src="${story.image}" alt="${story.user}'s story">
+                </div>
+            `).join('')}
         </div>
     `;
 }
@@ -307,7 +333,7 @@ function createPostComments(post) {
     return `
         <div class="post-comments">
             <div class="comment-input-wrapper">
-                <img src="images/avatar.png" alt="User" class="user-avatar">
+                <img src="${post.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
                 <div class="comment-input-container">
                     <input type="text" placeholder="Write a comment..." class="comment-input" data-post-id="${post.id}">
                     <button class="comment-submit-btn">
@@ -357,5 +383,6 @@ export {
     createStorySection,
     createImagePostModal,
     createTextPostModal,
-    createVideoPostModal
+    createVideoPostModal,
+    createStoriesSlider
 };
