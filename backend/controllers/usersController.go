@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"forum/backend/models"
@@ -236,11 +237,20 @@ func (uc *UsersController) SearchUsers(query string, currentUserID, page, limit 
 // GetUserAbout retrieves user's about information
 func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
 	var about models.UserAbout
-	// Use NullString for fields that can be NULL
+
+	// Use NullString for nullable string fields
 	var bio, relationshipStatus, location, githubURL, linkedinURL,
 		twitterURL, phoneNumber, interests, website sql.NullString
 
-	query := `SELECT * FROM user_about WHERE user_id = ?`
+	query := `
+        SELECT 
+            user_id, bio, date_of_birth, relationship_status, location, 
+            github_url, linkedin_url, twitter_url, phone_number, interests, 
+            is_profile_public, show_email, show_phone, website 
+        FROM user_about 
+        WHERE user_id = ?
+    `
+
 	err := uc.db.QueryRow(query, userID).Scan(
 		&about.UserID,
 		&bio,
@@ -264,7 +274,7 @@ func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
 		return nil, fmt.Errorf("failed to get user about: %w", err)
 	}
 
-	// Handle NULL values
+	// Assign nullable fields
 	if bio.Valid {
 		about.Bio = bio.String
 	}
@@ -287,7 +297,12 @@ func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
 		about.PhoneNumber = phoneNumber.String
 	}
 	if interests.Valid {
-		about.Interests = interests.String
+		if interests.String == "true" || interests.String == "false" {
+			log.Printf("Warning: 'interests' column contains unexpected boolean-like value: %v", interests.String)
+			about.Interests = "" // Handle as needed
+		} else {
+			about.Interests = interests.String
+		}
 	}
 	if website.Valid {
 		about.Website = website.String
@@ -583,22 +598,20 @@ func (uc *UsersController) DeleteUser(userID int) error {
 	// Note: Some of these deletes might be handled by ON DELETE CASCADE in the database
 	tables := []string{
 		"sessions",
-		"csrf_tokens",
 		"user_votes",
-		"post_images",
-		"comments",
 		"posts",
-		"messages",
-		"conversations",
-		"followers",
 		"user_status",
 		"user_about",
 		"user_experience",
 		"users", // Delete the user last
 	}
-
+	var query string
 	for _, table := range tables {
-		query := fmt.Sprintf("DELETE FROM %s WHERE user_id = ?", table)
+		if table == "users" {
+			query = fmt.Sprintf("DELETE FROM %s WHERE id = ?", table)
+		} else {
+			query = fmt.Sprintf("DELETE FROM %s WHERE user_id = ?", table)
+		}
 		_, err := tx.Exec(query, userID)
 		if err != nil {
 			return fmt.Errorf("failed to delete from %s: %w", table, err)
