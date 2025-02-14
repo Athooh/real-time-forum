@@ -130,8 +130,34 @@ func UnfollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 		if err != nil {
 			logger.Error("Failed to get counts: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to fetch user stats",
+			})
 			return
 		}
+
+		// Create the unfollow event message
+		unfollowEvent := map[string]interface{}{
+			"type": "user_unfollowed",
+			"payload": map[string]interface{}{
+				"followerId":     followerID,
+				"followingId":    requestBody.FollowingID,
+				"followersCount": followersCount,
+				"followingCount": followingCount,
+			},
+		}
+
+		// Convert the event to JSON
+		msgBytes, err := json.Marshal(unfollowEvent)
+		if err != nil {
+			logger.Error("Error creating message: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Send the message to both users involved
+		SendToUser(followerID, msgBytes) // Send to the follower
+		SendToUser(requestBody.FollowingID, msgBytes)
 
 		response := map[string]interface{}{
 			"message":         "Successfully unfollowed user",
