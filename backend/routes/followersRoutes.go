@@ -43,4 +43,20 @@ func SetupFollowersRoutes(db *sql.DB) {
 		middleware.ErrorHandler(handlers.ServeErrorPage),
 		middleware.ValidatePathAndMethod("/api/followers/following", http.MethodGet),
 	))
+
+	http.Handle("/api/users/followers", middleware.ApplyMiddleware(
+		http.HandlerFunc(handlers.GetUserFollowersHandler(followerController)),
+		middleware.JWTAuthMiddleware,
+		middleware.SessionAuthMiddleware,
+		middleware.ErrorHandler(handlers.ServeErrorPage),
+		middleware.ValidatePathAndMethod("/api/users/followers", http.MethodGet),
+	))
+
+	http.Handle("/api/users/following", middleware.ApplyMiddleware(
+		http.HandlerFunc(handlers.GetUserFollowingHandler(followerController)),
+		middleware.JWTAuthMiddleware,
+		middleware.SessionAuthMiddleware,
+		middleware.ErrorHandler(handlers.ServeErrorPage),
+		middleware.ValidatePathAndMethod("/api/users/following", http.MethodGet),
+	))
 }
