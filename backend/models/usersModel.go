@@ -10,6 +10,14 @@ type UserStats struct {
 	FollowingCount int `json:"following_count"`
 }
 
+type UserProfile struct {
+	Nickname   string  `json:"nickname"`
+	Email      string  `json:"email"`
+	Avatar     *string `json:"avatar"`
+	CoverImage *string `json:"cover_image"`
+	Profession string  `json:"profession"`
+}
+
 type UserAbout struct {
 	UserID             int       `json:"user_id"`
 	Bio                string    `json:"bio"`
@@ -24,6 +32,7 @@ type UserAbout struct {
 	IsProfilePublic    bool      `json:"is_profile_public"`
 	ShowEmail          bool      `json:"show_email"`
 	ShowPhone          bool      `json:"show_phone"`
+	Website            string    `json:"website"`
 }
 
 type UserExperience struct {
