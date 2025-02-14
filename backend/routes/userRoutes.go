@@ -96,4 +96,18 @@ func SetupUserRoutes(db *sql.DB) {
 		middleware.JWTAuthMiddleware,
 		middleware.SessionAuthMiddleware,
 	))
+
+	http.Handle("/api/users/photos", middleware.ApplyMiddleware(
+		handlers.GetUserPhotosHandler(userController),
+		middleware.JWTAuthMiddleware,
+		middleware.CORSMiddleware,
+		middleware.SessionAuthMiddleware,
+	))
+
+	http.Handle("/api/users/password", middleware.ApplyMiddleware(
+		http.HandlerFunc(handlers.UpdatePasswordHandler(userController)),
+		middleware.CORSMiddleware,
+		middleware.JWTAuthMiddleware,
+		middleware.SessionAuthMiddleware,
+	))
 }
