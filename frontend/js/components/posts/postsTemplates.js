@@ -30,11 +30,13 @@ function createStorySection() {
 
 function createStoriesSlider(stories) {
     return `
-        <div class="stories-slider">
+        <div class="stories-slider auto-scroll">
             ${stories.map(story => `
                 <div class="story-card">
+                    <div class="story-overlay">
+                        <p class="story-username">${story.user}</p>
+                    </div>
                     <img src="${story.image}" alt="${story.user}'s story">
-                    <p>${story.user}</p>
                 </div>
             `).join('')}
         </div>
