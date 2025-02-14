@@ -58,3 +58,10 @@ type FriendInfo struct {
 	Nickname string  `json:"nickname"`
 	Avatar   *string `json:"avatar"`
 }
+
+type UserFollower struct {
+	ID         int     `json:"id"`
+	Nickname   string  `json:"nickname"`
+	Avatar     *string `json:"avatar"`
+	Profession string  `json:"profession"`
+}
