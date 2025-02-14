@@ -32,10 +32,14 @@ function createPostsSection() {
 }
 
 function createAboutSection(userData) {
+    // Add null checks and default values
+    const about = userData?.about || {};
+    const bio = about.bio || 'No bio available';
+    
     return `
         <div id="about-section" class="profile-section">
             <div class="about-content">
-                <p>${escapeHTML(userData.bio || 'No bio available')}</p>
+                <p>${escapeHTML(bio)}</p>
                 ${createProfileDetailsList(userData)}
                 ${createAdditionalInfo()}
                 ${createInterestsSection()}
@@ -47,9 +51,6 @@ function createAboutSection(userData) {
 async function createSettingsSection() {
     try {
         const { about, profile } = await fetchUserSettings();
-
-        console.log("about", about);
-        console.log("profile", profile);
         
         return `
             <div id="settings-section" class="profile-section">
@@ -126,4 +127,12 @@ export async function createProfileContent() {
     }, 0);
 
     return content;
+}
+
+async function initializeProfile() {
+    const container = document.querySelector('.profile-container');
+    if (container) {
+        const profileContent = await createProfileContent(); // Wait for the Promise to resolve
+        container.innerHTML = profileContent;
+    }
 }

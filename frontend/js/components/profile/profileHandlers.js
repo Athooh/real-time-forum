@@ -1,7 +1,7 @@
-
 import { validatePassword } from '../../utils.js';
 import { showNotification, NotificationType } from '../../utils/notifications.js';
-
+import { followUser, unfollowUser, loadConnections, createWorkExperience } from './profileApi.js';
+import { updateFriendsSection } from './profileTemplate.js';
 
 // Workplace form handlers
 export function showWorkplaceForm() {
@@ -42,6 +42,30 @@ export async function addWorkplace() {
 
         const response = await createWorkExperience(experienceData);
         
+        // Create and append new experience item
+        const experienceList = document.querySelector('.experience-list');
+        const noExperienceMsg = experienceList.querySelector('.no-experience');
+        if (noExperienceMsg) {
+            noExperienceMsg.remove();
+        }
+
+        const newExperienceHTML = `
+            <div class="experience-item">
+                <div class="company-logo">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div class="experience-details">
+                    <h4>${experienceData.role}</h4>
+                    <p class="company">${experienceData.company_name}</p>
+                    <p class="duration">
+                        <i class="fa-regular fa-calendar"></i> 
+                        ${new Date(experienceData.start_date).getFullYear()} - 
+                        ${experienceData.is_current ? 'Present' : new Date(experienceData.end_date).getFullYear()}
+                    </p>
+                </div>
+            </div>
+        `;
+        experienceList.insertAdjacentHTML('afterbegin', newExperienceHTML);
         
         hideWorkplaceForm();
 
@@ -140,3 +164,36 @@ function handleImageUpload(event, previewId) {
 
 
 
+export async function setupConnectionActions() {
+    const connectionsList = document.getElementById('connections-list');
+    if (!connectionsList) return;
+
+    connectionsList.addEventListener('click', handleConnectionAction);
+}
+
+async function handleConnectionAction(e) {
+    const button = e.target.closest('.connection-action-btn');
+    if (!button) return;
+
+    const connectionItem = button.closest('.connection-item');
+    const userId = connectionItem.dataset.userId;
+    const action = button.dataset.action;
+
+    try {
+        if (action === 'follow') {
+            await followUser(userId);
+            await updateFriendsSection();
+            button.style.display = 'none';
+            showNotification('Successfully followed user', NotificationType.SUCCESS);
+        } else if (action === 'unfollow') {
+            await unfollowUser(userId);
+            await updateFriendsSection();
+            // Remove the connection item from the UI
+            connectionItem.remove();
+            showNotification('Successfully unfollowed user', NotificationType.SUCCESS);
+        }
+    } catch (error) {
+        console.error('Error handling connection action:', error);
+        showNotification('Failed to process action', NotificationType.ERROR);
+    }
+}
