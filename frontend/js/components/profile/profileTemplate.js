@@ -1,24 +1,9 @@
-import { escapeHTML,formatNumber } from '../../utils.js';
-import { 
-    createPostCard,
-    createPostsFeed
-} from '../posts/postsTemplates.js';
-import {
-    showWorkplaceForm,
-    hideWorkplaceForm,
-    addWorkplace,
-   
-    handlePasswordToggle,
-    handlePasswordStrength,
-  
-    fetchUserSettings,
-    
-    setupSettingsEventListeners,
-    fetchUserExperience,
+import { escapeHTML, formatNumber } from '../../utils.js';
+import{setupViewAllFriendsListener,currentTab} from './profileEvents.js';
+
+import { fetchUserPhotos, fetchUserFriends, fetchUserExperience} from './profileApi.js';
+
  
-    fetchUserFriends,
-} from './profileHandlers.js';
-import { fetchUserPhotos, handlePasswordSubmit } from './profileApi.js';
 export function createProfilePage() {
     // Get user data with default empty objects for profile and about
     const userDataAbout = JSON.parse(localStorage.getItem('userDataAbout')) || {
@@ -61,7 +46,7 @@ export function createProfilePage() {
     `;
 }
 
-function createProfileNavigation() {
+export function createProfileNavigation() {
     return `
         <div class="profile-nav">
             <div class="profile-nav-link active" data-section="posts">
@@ -83,29 +68,9 @@ function createProfileNavigation() {
     `;
 }
 
-function createPostsSection() {
-    return `
-        <div id="posts-section" class="profile-section active">
-            ${createPostCard()}
-            ${createPostsFeed()}
-        </div>
-    `;
-}
 
-function createAboutSection(userData) {
-    return `
-        <div id="about-section" class="profile-section">
-            <div class="about-content">
-                <p>${escapeHTML(userData.bio || 'No bio available')}</p>
-                ${createProfileDetailsList(userData)}
-                ${createAdditionalInfo()}
-                ${createInterestsSection()}
-            </div>
-        </div>
-    `;
-}
 
-function createConnectionsSection() {
+export function createConnectionsSection() {
     return `
         <div id="connections-section" class="profile-section">
             <div class="connections-container">
@@ -123,40 +88,34 @@ function createConnectionsSection() {
     `;
 }
 
-async function createSettingsSection() {
-    try {
-        const { about, profile } = await fetchUserSettings();
 
-        console.log("about", about);
-        console.log("profile", profile);
-        
-        return `
-            <div id="settings-section" class="profile-section">
-                <div class="settings-container">
-                    ${createProfileImagesSettings(profile)}
-                    ${createBasicInfoSettings(profile, about)}
-                    ${createContactInfoSettings(profile, about)}
-                    ${createPasswordSettings()}
-                    ${createSocialLinksSettings(about)}
-                    ${createInterestsSettings(about)}
-                    ${createPrivacySettings(about)}
-                    ${createSettingsActions()}
+export function createConnectionItem(connection) {
+    return `
+        <div class="connection-item">
+            <div class="connection-user-info">
+                <img src="${connection.avatar || 'images/avatar.png'}" 
+                     alt="${escapeHTML(connection.nickname)}" 
+                     class="connection-avatar">
+                <div class="connection-details">
+                    <h4>${escapeHTML(connection.nickname)}</h4>
+                    <p>${escapeHTML(connection.profession || 'Member')}</p>
                 </div>
             </div>
-        `;
-    } catch (error) {
-        console.error('Error fetching user settings:', error);
-        return `
-            <div id="settings-section" class="profile-section">
-                <div class="error-message">
-                    Failed to load settings. Please try again later.
-                </div>
-            </div>
-        `;
-    }
+            <button class="connection-action-btn">
+                ${currentTab === 'followers' ? 'Follow Back' : 'Unfollow'}
+            </button>
+        </div>
+    `;
 }
 
-function createDeleteSection() {
+
+
+
+
+
+
+
+export function createDeleteSection() {
     return `
         <div id="delete-section" class="profile-section">
             <div class="delete-account-container">
@@ -195,79 +154,9 @@ function createDeleteSection() {
     `;
 }
 
-async function createSidebar(userData) {
-    // Ensure userData and its properties exist with default values
-    const userAbout = userData?.about || {};
-    const userId = userAbout.user_id || JSON.parse(localStorage.getItem('userData')).id || '';
-    
-    const experienceSection = await createExperienceSection(userData);
-    
-    return `
-        <div class="profile-page-right-column">
-            <div class="profile-sidebar">
-                ${createAboutMeSection(userData)}
-                ${experienceSection}
-                ${await createPhotosSection(userId)}
-                ${await createFriendsSection()}
-            </div>
-        </div>
-    `;
-}
 
-export async function createProfileContent() {
-    const userData = JSON.parse(localStorage.getItem('userDataAbout')) || {};
-    
-    // Await the settings section creation
-    const settingsSection = await createSettingsSection();
-    
-    const content = `
-        <div class="profile-container-brief">
-            <div class="profile-page-left-column">
-                <div class="profile-content">
-                    ${createProfileNavigation()}
-                    <div class="profile-sections">
-                        ${createPostsSection()}
-                        ${createAboutSection(userData)}
-                        ${createConnectionsSection()}
-                        ${settingsSection}
-                        ${createDeleteSection()}
-                    </div>
-                </div>
-            </div>
-            ${await createSidebar(userData)}
-        </div>
-    `;
 
-    // Add event listeners after render
-    setTimeout(() => {
-        addEventListeners();
-        setupSettingsEventListeners();
-    }, 0);
-
-    return content;
-}
-
-function addEventListeners() {
-    // Workplace form listeners
-    document.getElementById('add-workplace')?.addEventListener('click', showWorkplaceForm);
-    document.getElementById('save-workplace')?.addEventListener('click', addWorkplace);
-    document.getElementById('cancel-workplace')?.addEventListener('click', hideWorkplaceForm);
-
-   
-
-    // Password toggle listeners
-    document.querySelectorAll('.password-toggle').forEach(toggle => {
-        toggle.addEventListener('click', () => handlePasswordToggle(toggle));
-    });
-
-    document.getElementById('new-password')?.addEventListener('input', (e) => 
-        handlePasswordStrength(e.target)
-    );
-
-    document.getElementById('password-change-form')?.addEventListener('submit', handlePasswordSubmit);
-}
-
-function createProfileDetailsList(userData) {
+export function createProfileDetailsList(userData) {
     // Ensure userData and its properties exist with default values
     const userAbout = userData?.about || {};
     const userProfile = userData?.profile || {};
@@ -321,7 +210,7 @@ function createProfileDetailsList(userData) {
 }
 
 
-function createAdditionalInfo() {
+export function createAdditionalInfo() {
     // Define company categories
     const companyCategories = [
         'Technology',
@@ -395,7 +284,7 @@ function createAdditionalInfo() {
     `;
 }
 
-function createInterestsSection() {
+export function createInterestsSection() {
     // Define interest categories with their icons
     const interestIcons = {
         'Photography': 'fa-camera',
@@ -443,7 +332,7 @@ function createInterestsSection() {
     `;
 }
 
-function createProfileImagesSettings(profile) {
+export function createProfileImagesSettings(profile) {
     return `
         <div class="settings-group">
             <h4>Profile Images</h4>
@@ -477,7 +366,7 @@ function createProfileImagesSettings(profile) {
     `;
 }
 
-function createBasicInfoSettings(profile, about) {
+export function createBasicInfoSettings(profile, about) {
     return `
         <div class="settings-group">
             <h4>Basic Information</h4>
@@ -539,7 +428,7 @@ function createBasicInfoSettings(profile, about) {
     `;
 }
 
-function createContactInfoSettings(profile, about) {
+export function createContactInfoSettings(profile, about) {
     return `
         <div class="settings-group">
             <h4>Contact Information</h4>
@@ -559,7 +448,7 @@ function createContactInfoSettings(profile, about) {
     `;
 }
 
-function createPasswordSettings() {
+export function createPasswordSettings() {
     return `
         <div class="settings-group">
             <h4>Change Password</h4>
@@ -625,7 +514,7 @@ function createPasswordSettings() {
     `;
 }
 
-function createSocialLinksSettings(about) {
+export function createSocialLinksSettings(about) {
     return `
         <div class="settings-group">
             <h4>Social Links</h4>
@@ -647,7 +536,7 @@ function createSocialLinksSettings(about) {
     `;
 }
 
-function createInterestsSettings(about) {
+export function createInterestsSettings(about) {
     const predefinedInterests = [
         { name: 'Photography' },
         { name: 'Web Development' },
@@ -704,78 +593,11 @@ function createInterestsSettings(about) {
     `;
 }
 
-export function setupInterestsDropdown() {
-    const dropdownHeader = document.getElementById('interests-dropdown-header');
-    const dropdownContent = dropdownHeader?.nextElementSibling;
-    
-    if (!dropdownHeader || !dropdownContent) return;
 
-    // Toggle dropdown on header click
-    dropdownHeader.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent event from bubbling up
-        const isHidden = dropdownContent.style.display === 'none';
-        dropdownContent.style.display = isHidden ? 'block' : 'none';
-    });
 
-    // Close dropdown when clicking outside
-    document.addEventListener('click', () => {
-        dropdownContent.style.display = 'none';
-    });
 
-    // Handle dropdown item selection
-    const dropdownItems = dropdownContent.querySelectorAll('.dropdown-item');
-    dropdownItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent event from bubbling up
-            const value = item.dataset.value;
-            
-            // Toggle selected state
-            item.classList.toggle('selected');
-            
-            // Add or remove interest tag
-            if (item.classList.contains('selected')) {
-                addInterestTag(value);
-            } else {
-                removeInterestTag(value);
-            }
-        });
-    });
-}
 
-function addInterestTag(interest) {
-    const tagsContainer = document.getElementById('interests-tags');
-    const existingTag = tagsContainer?.querySelector(`[data-interest="${interest}"]`);
-    
-    if (!existingTag && tagsContainer) {
-        const tagHTML = `
-            <div class="interest-tag" data-interest="${escapeHTML(interest)}">
-                <div class="interest-content">
-                    ${escapeHTML(interest)}
-                </div>
-                <button class="remove-interest" aria-label="Remove interest">
-                    <i class="fa-solid fa-times"></i>
-                </button>
-            </div>
-        `;
-        tagsContainer.insertAdjacentHTML('beforeend', tagHTML);
-        
-        // Add remove event listener to the new tag
-        const newTag = tagsContainer.lastElementChild;
-        newTag?.querySelector('.remove-interest')?.addEventListener('click', () => {
-            removeInterestTag(interest);
-            // Also update dropdown selection
-            const dropdownItem = document.querySelector(`.dropdown-item[data-value="${interest}"]`);
-            dropdownItem?.classList.remove('selected');
-        });
-    }
-}
-
-function removeInterestTag(interest) {
-    const tag = document.querySelector(`.interest-tag[data-interest="${interest}"]`);
-    tag?.remove();
-}
-
-function createPrivacySettings(about) {
+export function createPrivacySettings(about) {
     return `
         <div class="settings-group">
             <h4>Privacy Settings</h4>
@@ -811,7 +633,7 @@ function createPrivacySettings(about) {
     `;
 }
 
-function createSettingsActions() {
+export function createSettingsActions() {
     return `
         <div class="settings-actions">
             <div type="div" class="cancel-btn">Cancel</div>
@@ -820,7 +642,7 @@ function createSettingsActions() {
     `;
 }
 
-function createAboutMeSection(userData) {
+export function createAboutMeSection(userData) {
     // Ensure userData and its properties exist
     const about = userData?.about || {};
     const profile = userData?.profile || {};
@@ -851,7 +673,7 @@ function createAboutMeSection(userData) {
     `;
 }
 
-async function createExperienceSection(userData) {
+export async function createExperienceSection(userData) {
     try {
         const experiences = await fetchUserExperience() || [];
         
@@ -901,7 +723,7 @@ async function createExperienceSection(userData) {
     }
 }
 
-async function createPhotosSection(userId) {
+export async function createPhotosSection(userId) {
     try {
         const photos = await fetchUserPhotos(userId) || [];
         const photoCount = photos.length;
@@ -949,12 +771,9 @@ async function createPhotosSection(userId) {
     }
 }
 
-// Add these variables at the top of the file
-let currentFriendsPage = 1;
-let isLoadingFriends = false;
-let allFriendsLoaded = false;
 
-async function createFriendsSection() {
+
+export async function createFriendsSection() {
     try {
         let { friends = [], totalCount = 0 } = await fetchUserFriends(3);
 
@@ -1015,55 +834,3 @@ async function createFriendsSection() {
     }
 }
 
-function setupViewAllFriendsListener() {
-    const viewAllBtn = document.getElementById('view-all-friends-btn');
-    const friendsGrid = document.getElementById('friends-grid');
-
-    if (!viewAllBtn || !friendsGrid) return;
-
-    viewAllBtn.addEventListener('click', async () => {
-        if (isLoadingFriends || allFriendsLoaded) return;
-
-        try {
-            isLoadingFriends = true;
-            currentFriendsPage++;
-
-            // Show loading state
-            viewAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-
-            const { friends } = await fetchUserFriends(10, currentFriendsPage);
-
-            if (!friends || friends.length < 10) {
-                allFriendsLoaded = true;
-                viewAllBtn.closest('.view-all-friends').remove();
-            }
-
-            if (friends && friends.length > 0) {
-                const newFriendsHTML = friends.map(friend => `
-                    <div class="friend-item">
-                        <img src="${friend.avatar || './images/avatar.png'}" alt="${escapeHTML(friend.nickname)}">
-                        <div class="friend-info">
-                            <h4>${escapeHTML(friend.nickname)}</h4>
-                            <p>${friend.mutual_friends || 0} mutual friends</p>
-                        </div>
-                        <div class="friend-status ${friend.is_online ? 'online' : ''}"></div>
-                    </div>
-                `).join('');
-
-                // Insert new friends before the "View All" button
-                viewAllBtn.closest('.view-all-friends').insertAdjacentHTML('beforebegin', newFriendsHTML);
-            }
-
-            // Reset button text if not all friends are loaded
-            if (!allFriendsLoaded) {
-                viewAllBtn.innerHTML = 'View All Friends <i class="fa-solid fa-arrow-right"></i>';
-            }
-
-        } catch (error) {
-            console.error('Error loading more friends:', error);
-            viewAllBtn.innerHTML = 'Error loading friends';
-        } finally {
-            isLoadingFriends = false;
-        }
-    });
-}
