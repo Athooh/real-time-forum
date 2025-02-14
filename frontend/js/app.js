@@ -236,7 +236,7 @@ class App {
             deleteAccountBtn.addEventListener('click', async () => {
                 if (confirm('Are you absolutely sure you want to delete your account? This cannot be undone.')) {
                     try {
-                        const response = await fetch('/api/v1/users/delete', {
+                        const response = await fetch('/api/users/delete', {
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -244,8 +244,9 @@ class App {
                         });
 
                         if (response.ok) {
+                            showNotification("Account Deleted Succesfully",NotificationType.SUCCESS)
                             localStorage.clear();
-                            window.location.href = '/';
+                            window.location.href = '/loginpage';
                         } else {
                             throw new Error('Failed to delete account');
                         }
