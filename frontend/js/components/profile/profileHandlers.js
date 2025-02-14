@@ -1,7 +1,7 @@
-import { authenticatedFetch } from '../../security.js';
+
 import { validatePassword } from '../../utils.js';
 import { showNotification, NotificationType } from '../../utils/notifications.js';
-import { setupInterestsDropdown } from './profileTemplate.js';
+
 
 // Workplace form handlers
 export function showWorkplaceForm() {
@@ -98,67 +98,6 @@ export function handlePasswordStrength(input) {
 }
 
 
-export async function fetchUserSettings() {
-    try {
-
-        console.log("fetching user settings");
-        const response = await authenticatedFetch('/api/users/about');
-
-       
-        if (!response.ok) {
-            throw new Error('Failed to fetch user settings');
-        }
-
-        const data = await response.json();
-
-        localStorage.setItem('userDataAbout', JSON.stringify(data));
-        return {
-            about: data.about || {},
-            profile: data.profile || {}
-        };
-    } catch (error) {
-        console.error('Error fetching user settings:', error);
-        throw error;
-    }
-}
-
-export async function updateUserSettings(settings) {
-    try {
-        // Create FormData to handle file uploads
-        const formData = new FormData();
-
-        // Add cover photo if changed
-        const coverUpload = document.getElementById('cover-upload');
-        if (coverUpload?.files[0]) {
-            formData.append('cover_photo', coverUpload.files[0]);
-        }
-
-        // Add avatar if changed
-        const avatarUpload = document.getElementById('avatar-upload');
-        if (avatarUpload?.files[0]) {
-            formData.append('avatar', avatarUpload.files[0]);
-        }
-
-        // Add other settings as JSON
-        formData.append('settings', JSON.stringify(settings));
-
-        const response = await authenticatedFetch('/api/users/about', {
-            method: 'POST',
-            body: formData
-            // Note: Don't set Content-Type header, let the browser set it with the boundary
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update user settings');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error updating user settings:', error);
-        throw error;
-    }
-}
-
 export function setupImageUploadHandlers() {
     // Cover photo upload handler
     const coverUpload = document.getElementById('cover-upload');
@@ -199,121 +138,5 @@ function handleImageUpload(event, previewId) {
     reader.readAsDataURL(file);
 }
 
-export function setupSettingsEventListeners() {
-    // Add image upload handlers
-    setupImageUploadHandlers();
 
-    // Add interests dropdown setup
-    setupInterestsDropdown();
 
-    const saveButton = document.querySelector('.save-settings-btn');
-    if (!saveButton) return;
-
-    saveButton.addEventListener('click', async () => {
-        try {
-            // Get all selected interests from the interest tags
-            const interestTags = document.querySelectorAll('.interest-tag');
-            const interests = Array.from(interestTags)
-                .map(tag => tag.dataset.interest)
-                .join(',');
-
-            // Get the date of birth value and convert it to ISO string
-            const dateOfBirthInput = document.getElementById('dateOfBirth');
-            const dateOfBirth = dateOfBirthInput?.value ? 
-                new Date(dateOfBirthInput.value).toISOString() : null;
-            
-
-            const settings = {
-                profile: {
-                    nickname: document.getElementById('nickname')?.value || '',
-                    email: document.getElementById('email')?.value || '',
-                    profession: document.getElementById('profession')?.value || ''
-                },
-                about: {
-                    bio: document.getElementById('bio')?.value || '',
-                    date_of_birth: dateOfBirth,
-                    relationship_status: document.getElementById('relationshipStatus')?.value || '',
-                    location: document.getElementById('location')?.value || '',
-                    website: document.getElementById('website')?.value || '',
-                    github_url: document.getElementById('github')?.value || '',
-                    linkedin_url: document.getElementById('linkedin')?.value || '',
-                    twitter_url: document.getElementById('twitter')?.value || '',
-                    phone_number: document.getElementById('phone')?.value || '',
-                    interests: interests,
-                    is_profile_public: document.getElementById('profile-visibility')?.value === 'public',
-                    show_email: document.getElementById('show-email')?.checked || false,
-                    show_phone: document.getElementById('show-phone')?.checked || false
-                }
-            };
-
-            console.log("sending settings: ", settings);
-
-            await updateUserSettings(settings);
-            showNotification('Settings updated successfully', NotificationType.SUCCESS);
-            
-            // Refresh user data in localStorage
-            const userData = await fetchUserSettings();
-            localStorage.setItem('userDataAbout', JSON.stringify(userData));
-            
-        } catch (error) {
-            console.error('Error updating user settings:', error);
-            showNotification('Failed to update settings', NotificationType.ERROR);
-        }
-    });
-}
-
-export async function createWorkExperience(experienceData) {
-    try {
-        const response = await authenticatedFetch('/api/users/experience', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(experienceData)
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to create work experience');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error creating work experience:', error);
-        throw error;
-    }
-} 
-
-export async function fetchUserExperience() {
-    try {
-        const response = await authenticatedFetch('/api/users/experience', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch user experience');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching user experience:', error);
-        throw error;
-    }
-}
-
-export async function fetchUserFriends(limit = 3, page = 1) {
-    try {
-        const response = await authenticatedFetch(`/api/users/friends?limit=${limit}&page=${page}`);
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch friends');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching friends:', error);
-        throw error;
-    }
-}
