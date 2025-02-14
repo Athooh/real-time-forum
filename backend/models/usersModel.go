@@ -11,11 +11,13 @@ type UserStats struct {
 }
 
 type UserProfile struct {
-	Nickname   string  `json:"nickname"`
-	Email      string  `json:"email"`
-	Avatar     *string `json:"avatar"`
-	CoverImage *string `json:"cover_image"`
-	Profession string  `json:"profession"`
+	Nickname   string    `json:"nickname"`
+	Email      string    `json:"email"`
+	Avatar     *string   `json:"avatar"`
+	CoverImage *string   `json:"cover_image"`
+	Profession string    `json:"profession"`
+	Age        int       `json:"age"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 type UserAbout struct {
