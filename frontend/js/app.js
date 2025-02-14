@@ -15,6 +15,7 @@ import {
     setupVideoDropZone 
 } from './components/posts/postsEvent.js';
 import { ensureWebSocketConnection } from './websocket/websocket.js';
+import { fetchUserSettings } from './components/profile/profileHandlers.js';
 
 class App {
     constructor() {
@@ -130,7 +131,7 @@ class App {
         setupHeaderEventListeners();
     }
 
-    renderProfile() {
+    async renderProfile() {
         const token = localStorage.getItem('token');
         if (!token) {
             this.router.navigate('/loginPage');
@@ -138,19 +139,24 @@ class App {
         }
         ensureWebSocketConnection();
 
+        // Create the initial structure
         this.root.innerHTML = `
             <div id="app">
                 ${createHeader()}
                 <div class="main-container">
                     <div class="profile-container">
                         ${createProfilePage()}
-                        ${createProfileContent()}
+                        <div id="profile-content-container">Loading...</div>
                     </div>
                 </div>
             </div>
         `;
 
-        // Add event listeners for profile navigation
+        // Load the profile content asynchronously
+        const profileContent = await createProfileContent();
+        document.getElementById('profile-content-container').innerHTML = profileContent;
+
+        // Setup event listeners
         this.setupProfileEventListeners();
     }
 
@@ -199,8 +205,6 @@ class App {
                         setupPostEventListeners();
                         setupDropZone();
                         setupVideoDropZone();
-                    } else if (link.dataset.section === 'connections') {
-                        this.loadConnections('followers');
                     }
                 }
             });
@@ -311,60 +315,7 @@ class App {
         }
     }
 
-    async loadConnections(type = 'followers') {
-        try {
-            const userData = JSON.parse(localStorage.getItem('userData'));
-            if (!userData || !userData.id) {
-                console.error('User data not found');
-                return;
-            }
-
-            const response = await fetch(`/api/v1/users/${userData.id}/connections/${type}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const connections = await response.json();
-            const connectionsList = document.getElementById('connections-list');
-            
-            if (connections && connections.length > 0) {
-                const connectionsHTML = connections.map(user => `
-                    <div class="connection-item">
-                        <div class="connection-user-info">
-                            <img src="${user.avatar || 'images/avatar.png'}" alt="${escapeHTML(user.nickname)}" class="connection-avatar">
-                            <div class="connection-details">
-                                <h4>${escapeHTML(user.nickname)}</h4>
-                                <p>${escapeHTML(user.profession || 'No profession listed')}</p>
-                            </div>
-                        </div>
-                        <button class="connection-action-btn" data-user-id="${user.id}">
-                            ${type === 'followers' ? 'Follow Back' : 'Unfollow'}
-                        </button>
-                    </div>
-                `).join('');
-                
-                connectionsList.innerHTML = connectionsHTML;
-            } else {
-                connectionsList.innerHTML = `
-                    <div class="no-connections">
-                        <p>No ${type} yet</p>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error(`Failed to fetch ${type}:`, error);
-            document.getElementById('connections-list').innerHTML = `
-                <div class="error-message">
-                    <p>Failed to load connections. Please try again later.</p>
-                </div>
-            `;
-        }
-    }
+   
 
     attachEventListeners() {
         // Attach all necessary event listeners
@@ -378,7 +329,7 @@ class App {
         try {
             await Promise.all([
                 fetchPosts(),
-                // fetchOnlineUsers()
+               fetchUserSettings()
             ]);
             initializeWebSocket();
         } catch (error) {
