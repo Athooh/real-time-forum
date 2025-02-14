@@ -233,17 +233,28 @@
     position: relative;
 }
 
+.stories-slider {
+    display: flex;
+    gap: 15px;
+    overflow: hidden; /* Changed from overflow-x: auto */
+    position: relative;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+    scrollbar-width: none;  /* Hide scrollbar for Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
 .stories-slider::-webkit-scrollbar {
-    height: 8px; /* For WebKit browsers */
+    display: none;
+}
+
+.stories-slider::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .stories-slider::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
-}
-
-.stories-slider::-webkit-scrollbar-track {
-    background: transparent;
 }
 
 .story-card {
