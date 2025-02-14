@@ -38,6 +38,7 @@ func InitializeDatabase() (*sql.DB, error) {
 			gender TEXT,
 			profession TEXT,
 			avatar TEXT,
+			cover_image TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 
@@ -148,11 +149,12 @@ func InitializeDatabase() (*sql.DB, error) {
 			user_id INTEGER PRIMARY KEY,
 			bio TEXT,
 			date_of_birth DATE,
-			relationship_status TEXT CHECK(relationship_status IN ('single', 'married', 'divorced', 'widowed', 'in_relationship')),
+			relationship_status TEXT,
 			location TEXT,
 			github_url TEXT,
 			linkedin_url TEXT,
 			twitter_url TEXT,
+			website TEXT,
 			phone_number TEXT,
 			interests TEXT,
 			is_profile_public BOOLEAN DEFAULT TRUE,
