@@ -344,20 +344,23 @@ func (uc *UsersController) UpsertUserAbout(about *models.UserAbout) error {
 // GetUserProfile retrieves user's profile information
 func (uc *UsersController) GetUserProfile(userID int) (*models.UserProfile, error) {
 	query := `
-		SELECT nickname, email, avatar, cover_image ,profession
+		SELECT nickname, email, avatar, cover_image ,profession, age, created_at
 		FROM users 
 		WHERE id = ?
 	`
 	var profile models.UserProfile
 	var nickname, email sql.NullString
 	var avatar, coverImage, profession sql.NullString
-
+	var age sql.NullInt32
+	var createdAt sql.NullTime
 	err := uc.db.QueryRow(query, userID).Scan(
 		&nickname,
 		&email,
 		&avatar,
 		&coverImage,
 		&profession,
+		&age,
+		&createdAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -377,6 +380,12 @@ func (uc *UsersController) GetUserProfile(userID int) (*models.UserProfile, erro
 	if profession.Valid {
 		profile.Profession = profession.String
 	}
+	if age.Valid {
+		profile.Age = int(age.Int32)
+	}
+	if createdAt.Valid {
+		profile.CreatedAt = createdAt.Time
+	}
 
 	return &profile, nil
 }
@@ -388,6 +397,7 @@ func (uc *UsersController) UpsertUserProfile(profile *models.UserProfile) error 
 		SET nickname = COALESCE(?, nickname),
 		    email = COALESCE(?, email),
 		    avatar = COALESCE(?, avatar),
+		    age = COALESCE(?, age),
 		    cover_image = COALESCE(?, cover_image),
 		    profession = COALESCE(?, profession)
 		WHERE nickname = ? OR email = ?
@@ -397,6 +407,7 @@ func (uc *UsersController) UpsertUserProfile(profile *models.UserProfile) error 
 		profile.Nickname,
 		profile.Email,
 		profile.Avatar,
+		profile.Age,
 		profile.CoverImage,
 		profile.Profession,
 		profile.Nickname,
@@ -592,30 +603,14 @@ func (uc *UsersController) DeleteUser(userID int) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback() // Rollback if there's an error
+	defer tx.Rollback()
 
-	// Delete user's data from various tables
-	// Note: Some of these deletes might be handled by ON DELETE CASCADE in the database
-	tables := []string{
-		"sessions",
-		"user_votes",
-		"posts",
-		"user_status",
-		"user_about",
-		"user_experience",
-		"users", // Delete the user last
-	}
-	var query string
-	for _, table := range tables {
-		if table == "users" {
-			query = fmt.Sprintf("DELETE FROM %s WHERE id = ?", table)
-		} else {
-			query = fmt.Sprintf("DELETE FROM %s WHERE user_id = ?", table)
-		}
-		_, err := tx.Exec(query, userID)
-		if err != nil {
-			return fmt.Errorf("failed to delete from %s: %w", table, err)
-		}
+	// Since we have ON DELETE CASCADE set up in the database,
+	// we only need to delete from the users table and the rest will cascade
+	query := "DELETE FROM users WHERE id = ?"
+	_, err = tx.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
 	// Commit the transaction
