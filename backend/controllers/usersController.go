@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"forum/backend/models"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UsersController struct {
@@ -14,6 +16,26 @@ type UsersController struct {
 
 func NewUsersController(db *sql.DB) *UsersController {
 	return &UsersController{db: db}
+}
+
+func (uc *UsersController) VerifyPassword(userID int, currentPassword string) error {
+	var hashedPassword string
+	err := uc.db.QueryRow("SELECT password FROM users WHERE id = ?", userID).Scan(&hashedPassword)
+	if err != nil {
+		return err
+	}
+
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(currentPassword))
+}
+
+func (uc *UsersController) UpdatePassword(userID int, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = uc.db.Exec("UPDATE users SET password = ? WHERE id = ?", hashedPassword, userID)
+	return err
 }
 
 func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.User, error) {
@@ -214,21 +236,26 @@ func (uc *UsersController) SearchUsers(query string, currentUserID, page, limit 
 // GetUserAbout retrieves user's about information
 func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
 	var about models.UserAbout
+	// Use NullString for fields that can be NULL
+	var bio, relationshipStatus, location, githubURL, linkedinURL,
+		twitterURL, phoneNumber, interests, website sql.NullString
+
 	query := `SELECT * FROM user_about WHERE user_id = ?`
 	err := uc.db.QueryRow(query, userID).Scan(
 		&about.UserID,
-		&about.Bio,
+		&bio,
 		&about.DateOfBirth,
-		&about.RelationshipStatus,
-		&about.Location,
-		&about.GithubURL,
-		&about.LinkedinURL,
-		&about.TwitterURL,
-		&about.PhoneNumber,
-		&about.Interests,
+		&relationshipStatus,
+		&location,
+		&githubURL,
+		&linkedinURL,
+		&twitterURL,
+		&phoneNumber,
+		&interests,
 		&about.IsProfilePublic,
 		&about.ShowEmail,
 		&about.ShowPhone,
+		&website,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -236,6 +263,36 @@ func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user about: %w", err)
 	}
+
+	// Handle NULL values
+	if bio.Valid {
+		about.Bio = bio.String
+	}
+	if relationshipStatus.Valid {
+		about.RelationshipStatus = relationshipStatus.String
+	}
+	if location.Valid {
+		about.Location = location.String
+	}
+	if githubURL.Valid {
+		about.GithubURL = githubURL.String
+	}
+	if linkedinURL.Valid {
+		about.LinkedinURL = linkedinURL.String
+	}
+	if twitterURL.Valid {
+		about.TwitterURL = twitterURL.String
+	}
+	if phoneNumber.Valid {
+		about.PhoneNumber = phoneNumber.String
+	}
+	if interests.Valid {
+		about.Interests = interests.String
+	}
+	if website.Valid {
+		about.Website = website.String
+	}
+
 	return &about, nil
 }
 
@@ -245,26 +302,104 @@ func (uc *UsersController) UpsertUserAbout(about *models.UserAbout) error {
 		INSERT INTO user_about (
 			user_id, bio, date_of_birth, relationship_status, location,
 			github_url, linkedin_url, twitter_url, phone_number, interests,
-			is_profile_public, show_email, show_phone
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			is_profile_public, show_email, show_phone, website
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(user_id) DO UPDATE SET
 			bio = ?, date_of_birth = ?, relationship_status = ?, location = ?,
 			github_url = ?, linkedin_url = ?, twitter_url = ?, phone_number = ?,
-			interests = ?, is_profile_public = ?, show_email = ?, show_phone = ?
+			interests = ?, is_profile_public = ?, show_email = ?, show_phone = ?,
+			website = ?
 	`
 
 	_, err := uc.db.Exec(query,
 		about.UserID, about.Bio, about.DateOfBirth, about.RelationshipStatus, about.Location,
 		about.GithubURL, about.LinkedinURL, about.TwitterURL, about.PhoneNumber, about.Interests,
-		about.IsProfilePublic, about.ShowEmail, about.ShowPhone,
+		about.IsProfilePublic, about.ShowEmail, about.ShowPhone, about.Website,
 		// Update values
 		about.Bio, about.DateOfBirth, about.RelationshipStatus, about.Location,
 		about.GithubURL, about.LinkedinURL, about.TwitterURL, about.PhoneNumber, about.Interests,
-		about.IsProfilePublic, about.ShowEmail, about.ShowPhone,
+		about.IsProfilePublic, about.ShowEmail, about.ShowPhone, about.Website,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to upsert user about: %w", err)
 	}
+	return nil
+}
+
+// GetUserProfile retrieves user's profile information
+func (uc *UsersController) GetUserProfile(userID int) (*models.UserProfile, error) {
+	query := `
+		SELECT nickname, email, avatar, cover_image ,profession
+		FROM users 
+		WHERE id = ?
+	`
+	var profile models.UserProfile
+	var nickname, email sql.NullString
+	var avatar, coverImage, profession sql.NullString
+
+	err := uc.db.QueryRow(query, userID).Scan(
+		&nickname,
+		&email,
+		&avatar,
+		&coverImage,
+		&profession,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user profile: %w", err)
+	}
+
+	profile.Nickname = nickname.String
+	profile.Email = email.String
+	if avatar.Valid {
+		profile.Avatar = &avatar.String
+	}
+	if coverImage.Valid {
+		profile.CoverImage = &coverImage.String
+	}
+	if profession.Valid {
+		profile.Profession = profession.String
+	}
+
+	return &profile, nil
+}
+
+// UpsertUserProfile updates user's profile information
+func (uc *UsersController) UpsertUserProfile(profile *models.UserProfile) error {
+	query := `
+		UPDATE users 
+		SET nickname = COALESCE(?, nickname),
+		    email = COALESCE(?, email),
+		    avatar = COALESCE(?, avatar),
+		    cover_image = COALESCE(?, cover_image),
+		    profession = COALESCE(?, profession)
+		WHERE nickname = ? OR email = ?
+	`
+
+	result, err := uc.db.Exec(query,
+		profile.Nickname,
+		profile.Email,
+		profile.Avatar,
+		profile.CoverImage,
+		profile.Profession,
+		profile.Nickname,
+		profile.Email,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user profile: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("no user found with nickname %s or email %s", profile.Nickname, profile.Email)
+	}
+
 	return nil
 }
 
@@ -368,63 +503,71 @@ func (uc *UsersController) DeleteExperience(userID, experienceID int) error {
 	return nil
 }
 
-func (uc *UsersController) GetUserFriends(userID, offset, limit int) (models.FriendResponse, error) {
-	// First, get total count of friends
-	var totalFriends int
-	countQuery := `
-		SELECT COUNT(*) FROM (
-			SELECT f1.following_id
-			FROM followers f1
-			JOIN followers f2 ON f1.following_id = f2.follower_id 
-				AND f1.follower_id = f2.following_id
-			WHERE f1.follower_id = ?
-		) mutual_follows
-	`
-	err := uc.db.QueryRow(countQuery, userID).Scan(&totalFriends)
-	if err != nil {
-		return models.FriendResponse{}, fmt.Errorf("failed to count friends: %w", err)
-	}
-
-	// Then get the paginated friends list
+func (uc *UsersController) GetUserFriends(userID, offset, limit int) (map[string]interface{}, error) {
 	query := `
-		SELECT u.id, u.nickname, u.avatar
-		FROM users u
-		JOIN followers f1 ON u.id = f1.following_id
-		JOIN followers f2 ON f1.following_id = f2.follower_id 
-			AND f1.follower_id = f2.following_id
-		WHERE f1.follower_id = ?
-		ORDER BY u.nickname
+		SELECT 
+			u.id, u.nickname, u.avatar, 
+			COALESCE(us.is_online, FALSE) as is_online,
+			(
+				SELECT COUNT(*) 
+				FROM followers f2 
+				WHERE f2.follower_id IN (
+					SELECT follower_id 
+					FROM followers 
+					WHERE following_id = ?
+				)
+				AND f2.following_id IN (
+					SELECT following_id 
+					FROM followers 
+					WHERE follower_id = ?
+				)
+			) as mutual_friends
+		FROM followers f
+		JOIN users u ON f.following_id = u.id
+		LEFT JOIN user_status us ON u.id = us.user_id
+		WHERE f.follower_id = ?
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := uc.db.Query(query, userID, limit, offset)
+	rows, err := uc.db.Query(query, userID, userID, userID, limit, offset)
 	if err != nil {
-		return models.FriendResponse{}, fmt.Errorf("failed to fetch friends: %w", err)
+		return nil, fmt.Errorf("failed to fetch friends: %w", err)
 	}
 	defer rows.Close()
 
-	var friends []models.FriendInfo
+	var friends []map[string]interface{}
 	for rows.Next() {
-		var friend models.FriendInfo
-		var avatar sql.NullString
-		err := rows.Scan(&friend.ID, &friend.Nickname, &avatar)
-		if err != nil {
-			return models.FriendResponse{}, fmt.Errorf("failed to scan friend: %w", err)
+		var friend struct {
+			ID            int
+			Nickname      string
+			Avatar        sql.NullString
+			IsOnline      bool
+			MutualFriends int
 		}
-		if avatar.Valid {
-			avatarStr := avatar.String
-			friend.Avatar = &avatarStr
+
+		if err := rows.Scan(&friend.ID, &friend.Nickname, &friend.Avatar, &friend.IsOnline, &friend.MutualFriends); err != nil {
+			return nil, fmt.Errorf("failed to scan friend: %w", err)
 		}
-		friends = append(friends, friend)
+
+		friends = append(friends, map[string]interface{}{
+			"id":             friend.ID,
+			"nickname":       friend.Nickname,
+			"avatar":         friend.Avatar.String,
+			"is_online":      friend.IsOnline,
+			"mutual_friends": friend.MutualFriends,
+		})
 	}
 
-	if err = rows.Err(); err != nil {
-		return models.FriendResponse{}, fmt.Errorf("error iterating friends: %w", err)
+	// Get total count
+	var totalCount int
+	err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&totalCount)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get total friends count: %w", err)
 	}
 
-	return models.FriendResponse{
-		Friends:      friends,
-		TotalFriends: totalFriends,
+	return map[string]interface{}{
+		"friends":    friends,
+		"totalCount": totalCount,
 	}, nil
 }
 
@@ -468,4 +611,31 @@ func (uc *UsersController) DeleteUser(userID int) error {
 	}
 
 	return nil
+}
+
+func (uc *UsersController) GetUserPhotos(userID int) ([]string, error) {
+	query := `
+        SELECT DISTINCT pi.image_url
+        FROM post_images pi
+        JOIN posts p ON pi.post_id = p.id
+        WHERE p.user_id = ?
+        ORDER BY p.timestamp DESC
+    `
+
+	rows, err := uc.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user photos: %w", err)
+	}
+	defer rows.Close()
+
+	var photos []string
+	for rows.Next() {
+		var photoURL string
+		if err := rows.Scan(&photoURL); err != nil {
+			return nil, fmt.Errorf("failed to scan photo URL: %w", err)
+		}
+		photos = append(photos, photoURL)
+	}
+
+	return photos, nil
 }
