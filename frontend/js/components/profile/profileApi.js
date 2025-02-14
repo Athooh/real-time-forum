@@ -36,8 +36,6 @@ async function fetchUserPhotos(userId) {
         return;
     }
 
-     console.log("newPassword", newPassword);
-     console.log("confirmPassword", confirmPassword);
     // Check if passwords match
     if (newPassword !== confirmPassword) {
         showNotification('New passwords do not match',NotificationType.ERROR);
@@ -89,7 +87,6 @@ async function fetchUserPhotos(userId) {
   async function fetchUserSettings() {
     try {
 
-        console.log("fetching user settings");
         const response = await authenticatedFetch('/api/users/about');
 
        
@@ -98,6 +95,7 @@ async function fetchUserPhotos(userId) {
         }
 
         const data = await response.json();
+
 
         localStorage.setItem('userDataAbout', JSON.stringify(data));
         return {
@@ -201,7 +199,67 @@ async function fetchUserPhotos(userId) {
         console.error('Error fetching friends:', error);
         throw error;
     }
+ }
+ async function followUser(userId) {
+    const response = await authenticatedFetch('/api/followers/follow', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            following_id: parseInt(userId)
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to follow user');
+    }
+
+    return response.json();
 }
+
+async function unfollowUser(userId) {
+    const response = await authenticatedFetch('/api/followers/unfollow', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            following_id: parseInt(userId)
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to unfollow user');
+    }
+
+    return response.json();
+}
+
+export async function fetchUserStats() {
+    try {
+        const response = await authenticatedFetch('/api/users/stats');
+        if (!response.ok) {
+            throw new Error('Failed to fetch user stats');
+        }
+        const stats = await response.json();
+        
+        // Update localStorage with the new stats
+        const userDataAbout = JSON.parse(localStorage.getItem('userDataAbout')) || {};
+        userDataAbout.profile = {
+            ...userDataAbout.profile,
+            followers_count: stats.followers_count,
+            following_count: stats.following_count
+        };
+        localStorage.setItem('userDataAbout', JSON.stringify(userDataAbout));
+        
+        return stats;
+    } catch (error) {
+        console.error('Error fetching user stats:', error);
+        return null;
+    }
+}
+
 export {
     fetchUserPhotos,
     handlePasswordSubmit,
@@ -210,5 +268,7 @@ export {
     updateUserSettings,
     createWorkExperience,
     fetchUserExperience,
-    fetchUserFriends
+    fetchUserFriends,
+    followUser,
+    unfollowUser
 };
