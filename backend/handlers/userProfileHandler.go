@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"forum/backend/controllers"
 	"forum/backend/logger"
@@ -96,21 +94,21 @@ func UpsertUserAboutHandler(uc *controllers.UsersController) http.HandlerFunc {
 				Nickname   string `json:"nickname"`
 				Email      string `json:"email"`
 				Profession string `json:"profession"`
+				Age        int    `json:"age"`
 			} `json:"profile"`
 			About struct {
-				Bio                string    `json:"bio"`
-				DateOfBirth        time.Time `json:"date_of_birth"`
-				RelationshipStatus string    `json:"relationship_status"`
-				Website            string    `json:"website"`
-				Location           string    `json:"location"`
-				GithubURL          string    `json:"github_url"`
-				LinkedinURL        string    `json:"linkedin_url"`
-				TwitterURL         string    `json:"twitter_url"`
-				PhoneNumber        string    `json:"phone_number"`
-				Interests          string    `json:"interests"`
-				IsProfilePublic    bool      `json:"is_profile_public"`
-				ShowEmail          bool      `json:"show_email"`
-				ShowPhone          bool      `json:"show_phone"`
+				Bio                string `json:"bio"`
+				RelationshipStatus string `json:"relationship_status"`
+				Website            string `json:"website"`
+				Location           string `json:"location"`
+				GithubURL          string `json:"github_url"`
+				LinkedinURL        string `json:"linkedin_url"`
+				TwitterURL         string `json:"twitter_url"`
+				PhoneNumber        string `json:"phone_number"`
+				Interests          string `json:"interests"`
+				IsProfilePublic    bool   `json:"is_profile_public"`
+				ShowEmail          bool   `json:"show_email"`
+				ShowPhone          bool   `json:"show_phone"`
 			} `json:"about"`
 		}
 
@@ -120,8 +118,6 @@ func UpsertUserAboutHandler(uc *controllers.UsersController) http.HandlerFunc {
 			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid settings data"})
 			return
 		}
-
-		fmt.Println("website: ", requestBody.About.Website)
 		// Handle file uploads
 		var avatarPath, coverPath string
 
@@ -152,6 +148,7 @@ func UpsertUserAboutHandler(uc *controllers.UsersController) http.HandlerFunc {
 			Nickname:   requestBody.Profile.Nickname,
 			Email:      requestBody.Profile.Email,
 			Profession: requestBody.Profile.Profession,
+			Age:        requestBody.Profile.Age,
 		}
 
 		// Only set image paths if new files were uploaded
@@ -173,7 +170,6 @@ func UpsertUserAboutHandler(uc *controllers.UsersController) http.HandlerFunc {
 		about := models.UserAbout{
 			UserID:             userIDInt,
 			Bio:                requestBody.About.Bio,
-			DateOfBirth:        requestBody.About.DateOfBirth,
 			RelationshipStatus: requestBody.About.RelationshipStatus,
 			Location:           requestBody.About.Location,
 			GithubURL:          requestBody.About.GithubURL,
