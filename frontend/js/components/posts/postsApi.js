@@ -269,10 +269,11 @@ async function reactToPost(postId, isLike) {
 
 async function submitComment(postId, content) {
     try {
-        const response = await authenticatedFetch(`/api/posts/${postId}/comments`, {
+        const response = await fetch(`/api/posts/${postId}/comments`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ content })
         });
@@ -281,7 +282,7 @@ async function submitComment(postId, content) {
             throw new Error('Failed to submit comment');
         }
 
-        return response.json();
+        return await response.json();
     } catch (error) {
         console.error('Error submitting comment:', error);
         throw error;
@@ -307,6 +308,33 @@ async function savePost(postId) {
         throw error;
     }
 }
+
+async function refreshComments(postId) {
+    try {
+        const response = await fetch(`/api/posts/${postId}/comments`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch comments');
+        }
+
+        const comments = await response.json();
+        const commentsContainer = document.querySelector(`#comments-${postId}`);
+        if (commentsContainer) {
+            // Re-render comments using the createComment function from postsTemplates
+            commentsContainer.innerHTML = comments.map(comment => createComment(comment)).join('');
+        }
+    } catch (error) {
+        console.error('Error refreshing comments:', error);
+        throw error;
+    }
+}
+
 // Initialize state
 if (!forumState.hasOwnProperty('currentPage')) {
     forumState.currentPage = 1;
@@ -315,4 +343,13 @@ if (!forumState.hasOwnProperty('allPostsLoaded')) {
     forumState.allPostsLoaded = false;
 }
 
-export { handleCreatePost, handlePostReaction, handlePostSubmit, handleCommentSubmit, handleSavePost, fetchPosts };
+export {
+    handleCreatePost,
+    handlePostReaction,
+    handleCommentSubmit,
+    handleSavePost,
+    handlePostSubmit,
+    fetchPosts,
+    refreshComments,
+    submitComment
+};
