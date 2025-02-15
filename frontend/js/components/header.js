@@ -39,31 +39,29 @@ function createSearchBar() {
 function createHeaderRight() {
     return `
         <div class="header-right">
-            ${createHeaderNav()}
             ${createHeaderActions()}
         </div>
     `;
 }
 
-function createHeaderNav() {
-    return `
-        <nav class="header-nav">
-            <ul class="nav-links">
-                <li><a href="/" class="nav-link" data-route="/">Home</a></li>
-                <li><a href="/profilePage" class="nav-link" data-route="/profilePage">Profile</a></li>
-            </ul>
-        </nav>
-    `;
-}
 
 function createHeaderActions() {
     return `
         <div class="header-actions">
+            ${createHomeButton()}
+            ${createProfileButton()}
             ${createMessageButton()}
             ${createNotificationMenu()}
-            ${createSettingsButton()}
             ${createProfileMenu()}
         </div>
+    `;
+}
+
+function createHomeButton() {
+    return `
+        <button class="icon-btn" title="Home" id="home-btn" data-route="/">
+            <i class="fas fa-home"></i>
+        </button>
     `;
 }
 
@@ -72,6 +70,14 @@ function createMessageButton() {
         <button class="icon-btn" title="Messages" id="messages-btn" data-route="/messagesPage">
             <i class="fas fa-envelope"></i>
             <span class="badge">3</span>
+        </button>
+    `;
+}
+
+function createProfileButton() {
+    return `
+        <button class="icon-btn" title="Profile" id="profile-btn" data-route="/profilePage">
+            <i class="fas fa-user"></i>
         </button>
     `;
 }
@@ -118,13 +124,6 @@ function createNotificationDropdown() {
     `;
 }
 
-function createSettingsButton() {
-    return `
-        <button class="icon-btn" title="Settings">
-            <i class="fas fa-cog"></i>
-        </button>
-    `;
-}
 
 function createProfileMenu() {
     return `
@@ -194,16 +193,44 @@ async function handleLogout() {
 }
 
 export function setupHeaderEventListeners() {
+    const router = new Router(); // Create single router instance
+
     // Add click handlers for navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const route = e.target.dataset.route;
-            const router = new Router();  // Create new router instance
             router.navigate(route);
         });
     });
     
+    // Home button click handler
+    const homeBtn = document.getElementById('home-btn');
+    if (homeBtn) {
+        homeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            router.navigate('/');
+        });
+    }
+
+    // Profile button click handler
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            router.navigate('/profilePage');
+        });
+    }
+
+    // Add messages button click handler
+    const messagesBtn = document.getElementById('messages-btn');
+    if (messagesBtn) {
+        messagesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            router.navigate('/messagesPage');
+        });
+    }
+
     // Search functionality
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
@@ -225,14 +252,6 @@ export function setupHeaderEventListeners() {
         clearAllBtn.addEventListener('click', clearAllNotifications);
     }
 
-    // Add messages button click handler
-    const messagesBtn = document.getElementById('messages-btn');
-    if (messagesBtn) {
-        messagesBtn.addEventListener('click', () => {
-            const router = new Router();
-            router.navigate('/messagesPage');
-        });
-    }
 }
 
 async function handleSearch(e) {
