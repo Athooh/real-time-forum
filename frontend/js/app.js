@@ -94,6 +94,8 @@ class App {
                 ${this.renderForumSection()}
             </div>
         `;
+      
+    setupHeaderEventListeners();
     this.attachEventListeners();
     this.initializeForumFeatures();
   }
@@ -173,6 +175,7 @@ class App {
     document.getElementById("profile-content-container").innerHTML =
       profileContent;
 
+    setupHeaderEventListeners();
     this.setupProfileEventListeners();
   }
 
