@@ -1134,10 +1134,13 @@
 }
 
 .comment-input-container {
-    flex: 1;
-    position: relative;
     display: flex;
     align-items: center;
+    background: var(--search-input-color);
+    border-radius: var(--border-radius);
+    padding: 8px 12px;
+    gap: 10px;
+    width: 100%;
 }
 
 .comment-input {
@@ -1149,22 +1152,93 @@
     background: var(--search-input-color);
 }
 
-.comment-submit-btn {
-    position: absolute;
-    right: 8px;
+.comment-input-container input,
+.comment-input-container .reply-input {
+    flex: 1;
+    /* border: 1px solid var(--text-color); */
+    background: var(--background-color);
+    padding: 10px;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    /* outline: none; */
+}
+
+.comment-input-container input::placeholder,
+.comment-input-container .reply-input::placeholder {
+    color: var(--text-muted);
+}
+
+.comment-submit-btn,
+.reply-submit-btn {
     background: none;
     border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 8px;
-    transition: all 0.3s ease;
-}
-
-.comment-submit-btn:hover {
-    transform: translateX(2px);
     color: var(--primary-color);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    right: 10px;
 }
 
+.comment-submit-btn:hover,
+.reply-submit-btn:hover {
+    background: var(--primary-color-light);
+    transform: scale(1.1);
+}
+
+.comment-submit-btn i,
+.reply-submit-btn i {
+    font-size: 1.1rem;
+}
+
+.comment-input-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    width: 100%;
+}
+
+.comment-input-wrapper .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Reply specific styles */
+.reply-input-container {
+    margin-left: 40px;
+    margin-top: 8px;
+    padding: 8px 0;
+    /* border-top: 1px solid var(--border-color); */
+}
+
+.reply-input-container .comment-input-wrapper {
+    padding: 0;
+}
+
+/* Focus states */
+.comment-input-container:focus-within {
+    background: var(--white-color);
+    box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+/* Disabled states */
+.comment-submit-btn:disabled,
+.reply-submit-btn:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.comment-submit-btn:disabled:hover,
+.reply-submit-btn:disabled:hover {
+    background: none;
+    transform: none;
+}
 
 /* right sidebar */
 .suggestion-item {
@@ -1370,4 +1444,99 @@
 
 .follow-suggestions::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
+}
+
+/* Comment Styles */
+.comments-toggle {
+    margin-top: 15px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 15px;
+}
+
+.toggle-comments-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 10px;
+    border-radius: var(--border-radius);
+}
+
+.toggle-comments-btn:hover {
+    color: var(--primary-color);
+}
+
+.toggle-comments-btn.active {
+    color: var(--primary-color);
+}
+
+.comment {
+    margin: 5px 0;
+    padding: 10px 0;
+}
+
+.comment-main {
+    display: flex;
+    gap: 10px;
+}
+
+.comment-content {
+    flex: 1;
+    background: var(--background-color);
+    padding: 10px;
+    border-radius: 18px;
+    border-top-left-radius: 4px;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.comment-actions {
+    margin-top: 5px;
+}
+
+.reply-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 5px;
+}
+
+.reply-btn:hover {
+    color: var(--primary-color);
+}
+
+.comment-reply {
+    margin-left: 50px;
+    /* border-left: 2px solid var(--border-color); */
+    padding-left: 15px;
+}
+
+.reply-container {
+    margin-left: 50px;
+}
+
+.load-more-comments {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    background: var(--search-input-color);
+    border: none;
+    border-radius: var(--border-radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.load-more-comments:hover {
+    background: var(--bg-light);
+    color: var(--primary-color);
 }

@@ -207,8 +207,6 @@ function createPostCard() {
     `;
 }
 
-
-
 function createPostHeader(post) {
     return `
         <div class="post-header">
@@ -317,7 +315,7 @@ function createPostActions(post) {
                 <i class="fa-solid fa-thumbs-down"></i>
                 <span>Dislike (${post.dislikes || 0})</span>
             </li>
-            <li class="action-btn" onclick="toggleComments('${post.id}')">
+            <li class="toggle-comments-btn active" data-post-id="${post.id}">
                 <i class="far fa-comment"></i>
                 <span>Comments (${post.comments?.length || 0})</span>
             </li>
@@ -331,36 +329,96 @@ function createPostActions(post) {
 
 function createPostComments(post) {
     return `
-        <div class="post-comments">
-            <div class="comment-input-wrapper">
-                <img src="${post.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
-                <div class="comment-input-container">
-                    <input type="text" placeholder="Write a comment..." class="comment-input" data-post-id="${post.id}">
-                    <button class="comment-submit-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+        <div class="post-comments" id="comments-section-${post.id}">
+            <div class="comments-content" style="display: none;">
+                <div class="comment-input-wrapper">
+                    <img src="${post.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
+                    <div class="comment-input-container">
+                        <input type="text" placeholder="Write a comment..." class="comment-input" data-post-id="${post.id}">
+                        <button class="comment-submit-btn" data-post-id="${post.id}">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="comments-container" id="comments-${post.id}">
-                <!-- Comments will be dynamically inserted here -->
+                <div class="comments-container" id="comments-${post.id}">
+                    ${createDummyComments(post.id)}
+                </div>
+                ${post.comments?.length > 0 ? `
+                    <button class="load-more-comments" data-post-id="${post.id}">
+                        Load more comments
+                    </button>
+                ` : ''}
             </div>
         </div>
     `;
 }
 
-function createComment(comment) {
+function createComment(comment, isReply = false) {
     return `
-        <div class="comment" id="comment-${comment.id}">
-            <img src="${comment.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
-            <div class="comment-content">
-                <div class="comment-header">
-                    <strong>${escapeHTML(comment.user.nickname)}</strong>
-                    <small>${formatTimeAgo(comment.timestamp)}</small>
+        <div class="comment ${isReply ? 'comment-reply' : ''}" id="comment-${comment.id}">
+            <div class="comment-main">
+                <img src="${comment.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
+                <div class="comment-content">
+                    <div class="comment-header">
+                        <strong>${escapeHTML(comment.user.nickname)}</strong>
+                        <small>${formatTimeAgo(comment.timestamp)}</small>
+                    </div>
+                    <p>${escapeHTML(comment.content)}</p>
+                    ${!isReply ? `
+                        <div class="comment-actions">
+                            <button class="reply-btn" data-comment-id="${comment.id}">
+                                Reply
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
-                <p>${escapeHTML(comment.content)}</p>
             </div>
+            ${!isReply ? `
+                <div class="reply-container" id="replies-${comment.id}">
+                    ${comment.replies ? comment.replies.map(reply => createComment(reply, true)).join('') : ''}
+                </div>
+                <div class="reply-input-container" id="reply-input-${comment.id}" style="display: none;">
+                    <div class="comment-input-wrapper">
+                        <img src="images/avatar.png" alt="User" class="user-avatar">
+                        <div class="comment-input-container">
+                            <input type="text" placeholder="Write a reply..." class="reply-input" data-comment-id="${comment.id}">
+                            <button class="reply-submit-btn" data-comment-id="${comment.id}">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         </div>
     `;
+}
+
+function createDummyComments(postId) {
+    const dummyComments = [
+        {
+            id: 1,
+            user: { nickname: 'John Doe', avatar: 'images/avatar.png' },
+            content: 'This is a great post!',
+            timestamp: new Date(Date.now() - 3600000),
+            replies: [
+                {
+                    id: 4,
+                    user: { nickname: 'Jane Smith', avatar: 'images/avatar1.png' },
+                    content: 'I totally agree with you!',
+                    timestamp: new Date(Date.now() - 1800000)
+                }
+            ]
+        },
+        {
+            id: 2,
+            user: { nickname: 'Alice Johnson', avatar: 'images/avatar2.png' },
+            content: 'Very informative, thanks for sharing!',
+            timestamp: new Date(Date.now() - 7200000),
+            replies: []
+        }
+    ];
+
+    return dummyComments.map(comment => createComment(comment)).join('');
 }
 
 function createPostsFeed() {

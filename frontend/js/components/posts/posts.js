@@ -23,6 +23,7 @@ import {
     setupDropZone,
     handleVideoUpload
 } from './postsEvent.js';
+import { setupCommentEventListeners } from './postsEvents.js';
 
 import { setupInfiniteScroll } from '../../utils.js';
 // main functions
@@ -126,10 +127,10 @@ function setupPostEventListeners() {
     document.querySelectorAll('.category-dropdown').forEach(dropdown => {
         dropdown.addEventListener('change', handleCategorySelection);
     });
+
+    // Setup comment event listeners
+    setupCommentEventListeners();
 }
-
-
-
 
 // Move these functions outside of any other function and them
 function showCreatePostModal() {
@@ -202,7 +203,6 @@ function showVideoPostModal() {
         modal.style.display = 'block';
     }
 }
-
 
 export {
     fetchPosts, renderPosts,
