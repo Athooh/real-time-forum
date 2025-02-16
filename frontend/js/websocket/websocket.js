@@ -1,6 +1,6 @@
 import { NotificationType, showNotification } from "../utils/notifications.js";
 import { escapeHTML } from "../utils.js";
-import { handleWebsocketUpdatePost } from "./websocketUpdates.js";
+import { handleWebsocketUpdatePost, handlePostReactionUpdate } from "./websocketUpdates.js";
 import { formatNumber, formatTimeAgo } from "../utils.js";
 import { fetchUserPhotos } from "../components/profile/profileApi.js";
 
@@ -132,6 +132,7 @@ export const WebSocketMessageType = {
   NEW_MESSAGE: "new_message",
   PHOTO_UPDATE: "photo_update",
   PROFILE_UPDATE: "profile_update",
+  POST_REACTION: "post_reaction",
 };
 
 export function handleWebSocketMessage(data) {
@@ -179,6 +180,9 @@ export function handleWebSocketMessage(data) {
       break;
     case WebSocketMessageType.PROFILE_UPDATE:
       handleProfileUpdate(payload);
+      break;
+    case WebSocketMessageType.POST_REACTION:
+      handlePostReactionUpdate(payload);
       break;
     default:
       console.log("Unknown message type:", data.type);
@@ -550,6 +554,32 @@ function handleProfileUpdate(data) {
       about: { ...currentUserData.about, ...data.about },
     })
   );
+
+  // Add this new section to update sidebar profile card
+  const sidebarAvatar = document.querySelector('.user-profile-card .profile-avatar img');
+  if (sidebarAvatar) {
+    sidebarAvatar.src = data.profile.avatar || "images/avatar.png";
+  }
+
+  const sidebarBanner = document.querySelector('.user-profile-card .profile-banner img');
+  if (sidebarBanner) {
+    sidebarBanner.src = data.profile.cover_image || "images/banner.png";
+  }
+
+  const sidebarName = document.querySelector('.user-profile-card .user-name');
+  if (sidebarName) {
+    sidebarName.textContent = data.profile.nickname || "John Doe";
+  }
+
+  const sidebarProfession = document.querySelector('.user-profile-card .user-profession');
+  if (sidebarProfession) {
+    sidebarProfession.textContent = data.profile.profession || "Software Engineer";
+  }
+
+  const sidebarTagline = document.querySelector('.user-profile-card .user-tagline');
+  if (sidebarTagline) {
+    sidebarTagline.textContent = data.about?.bio || "Building the future, one line of code at a time";
+  }
 }
 
 export function resetLogoutState() {

@@ -225,3 +225,34 @@ func MarkUserOffline(userID int) {
 	}
 	Broadcast(msgBytes)
 }
+
+// Add new function to broadcast post reactions
+func BroadcastPostReaction(postID int, likes int, dislikes int) {
+	message := struct {
+		Type    string `json:"type"`
+		Payload struct {
+			PostID   int `json:"post_id"`
+			Likes    int `json:"likes"`
+			Dislikes int `json:"dislikes"`
+		} `json:"payload"`
+	}{
+		Type: "post_reaction",
+		Payload: struct {
+			PostID   int `json:"post_id"`
+			Likes    int `json:"likes"`
+			Dislikes int `json:"dislikes"`
+		}{
+			PostID:   postID,
+			Likes:    likes,
+			Dislikes: dislikes,
+		},
+	}
+
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Failed to marshal post reaction message: %v", err)
+		return
+	}
+
+	Broadcast(messageBytes)
+}

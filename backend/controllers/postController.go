@@ -145,13 +145,12 @@ func (pc *PostController) GetPostImages(postId int) ([]string, error) {
 }
 
 func (pc *PostController) GetPostComments(postID int) ([]models.Comment, error) {
+	// First, get all parent comments
 	query := `
-		SELECT 
-			c.id, c.content, c.timestamp,
-			u.id, u.nickname, u.profession, u.avatar
+		SELECT c.id, c.content, c.user_id, c.post_id, c.parent_id, c.timestamp,
+			   EXISTS(SELECT 1 FROM comments r WHERE r.parent_id = c.id) as has_replies
 		FROM comments c
-		JOIN users u ON c.user_id = u.id
-		WHERE c.post_id = ?
+		WHERE c.post_id = ? AND (c.parent_id IS NULL OR c.parent_id = 0)
 		ORDER BY c.timestamp DESC
 	`
 
@@ -164,15 +163,36 @@ func (pc *PostController) GetPostComments(postID int) ([]models.Comment, error) 
 	var comments []models.Comment
 	for rows.Next() {
 		var comment models.Comment
-		var user models.User
 		err := rows.Scan(
-			&comment.ID, &comment.PostID, &comment.UserID, &comment.Content, &comment.Timestamp,
-			&user.ID, &user.Nickname, &user.Profession, &user.Avatar,
+			&comment.ID,
+			&comment.Content,
+			&comment.UserID,
+			&comment.PostID,
+			&comment.ParentID,
+			&comment.Timestamp,
+			&comment.HasReplies,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan comment: %w", err)
 		}
-		comment.User = user
+
+		// Get user info for the comment
+		user, err := NewUsersController(pc.DB).GetUserProfile(comment.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user info: %w", err)
+		}
+		comment.User = *user
+
+		// If comment has replies, fetch them
+		if comment.HasReplies {
+
+			replies, err := pc.GetCommentReplies(comment.ID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get replies: %w", err)
+			}
+			comment.Replies = replies
+		}
+
 		comments = append(comments, comment)
 	}
 
@@ -309,9 +329,9 @@ func (pc *PostController) DeletePost(postID, userID int) error {
 	// Step 2: Fetch image paths associated with the post before deleting the post
 	var imagePaths []string
 	rows, err := tx.Query(`
-		SELECT image_url FROM posts 
-		WHERE id = ? AND user_id = ?;
-	`, postID, userID)
+		SELECT image_url FROM post_images 
+		WHERE post_id = ?;
+	`, postID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch image paths: %w", err)
 	}
@@ -391,4 +411,185 @@ func (pc *PostController) GetUserPostCount(userID int) (int, error) {
 	}
 
 	return count, nil
+}
+
+func (pc *PostController) GetCommentReplies(commentID int) ([]models.Comment, error) {
+	query := `
+		SELECT c.id, c.content, c.user_id, c.post_id, c.parent_id, c.timestamp,
+			   EXISTS(SELECT 1 FROM comments r WHERE r.parent_id = c.id) as has_replies
+		FROM comments c
+		WHERE c.parent_id = ?
+		ORDER BY c.timestamp ASC
+	`
+
+	rows, err := pc.DB.Query(query, commentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch replies: %w", err)
+	}
+	defer rows.Close()
+
+	var replies []models.Comment
+	for rows.Next() {
+		var reply models.Comment
+		err := rows.Scan(
+			&reply.ID,
+			&reply.Content,
+			&reply.UserID,
+			&reply.PostID,
+			&reply.ParentID,
+			&reply.Timestamp,
+			&reply.HasReplies,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan reply: %w", err)
+		}
+
+		// Get user info for the reply
+		user, err := NewUsersController(pc.DB).GetUserProfile(reply.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user info: %w", err)
+		}
+		reply.User = *user
+
+		// Recursively fetch nested replies if they exist
+		if reply.HasReplies {
+			nestedReplies, err := pc.GetCommentReplies(reply.ID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get nested replies: %w", err)
+			}
+			reply.Replies = nestedReplies
+		}
+
+		replies = append(replies, reply)
+	}
+
+	return replies, nil
+}
+
+// HandleVote manages likes and dislikes for a post
+func (pc *PostController) HandleVote(postID, userID int, voteType string) error {
+	tx, err := pc.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Check if user has already voted
+	var existingVote string
+	err = tx.QueryRow(`
+		SELECT user_vote 
+		FROM user_votes 
+		WHERE post_id = ? AND user_id = ?
+	`, postID, userID).Scan(&existingVote)
+
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check existing vote: %w", err)
+	}
+
+	// If user hasn't voted before
+	if err == sql.ErrNoRows {
+		// Insert new vote
+		_, err = tx.Exec(`
+			INSERT INTO user_votes (post_id, user_id, user_vote)
+			VALUES (?, ?, ?)
+		`, postID, userID, voteType)
+		if err != nil {
+			return fmt.Errorf("failed to insert vote: %w", err)
+		}
+
+		// Update post likes/dislikes count
+		var column string
+		if voteType == "like" {
+			column = "likes"
+		} else {
+			column = "dislikes"
+		}
+
+		_, err = tx.Exec(`
+			UPDATE posts 
+			SET `+column+` = `+column+` + 1 
+			WHERE id = ?
+		`, postID)
+		if err != nil {
+			return fmt.Errorf("failed to update post vote count: %w", err)
+		}
+	} else {
+		// If user is voting the same way, remove the vote
+		if existingVote == voteType {
+			// Delete the vote
+			_, err = tx.Exec(`
+				DELETE FROM user_votes 
+				WHERE post_id = ? AND user_id = ?
+			`, postID, userID)
+			if err != nil {
+				return fmt.Errorf("failed to delete vote: %w", err)
+			}
+
+			// Decrease the corresponding counter
+			var column string
+			if voteType == "like" {
+				column = "likes"
+			} else {
+				column = "dislikes"
+			}
+
+			_, err = tx.Exec(`
+				UPDATE posts 
+				SET `+column+` = `+column+` - 1 
+				WHERE id = ?
+			`, postID)
+			if err != nil {
+				return fmt.Errorf("failed to update post vote count: %w", err)
+			}
+		} else {
+			// If user is changing their vote
+			// Update the vote type
+			_, err = tx.Exec(`
+				UPDATE user_votes 
+				SET user_vote = ? 
+				WHERE post_id = ? AND user_id = ?
+			`, voteType, postID, userID)
+			if err != nil {
+				return fmt.Errorf("failed to update vote: %w", err)
+			}
+
+			// Update post counts (decrease old vote type, increase new vote type)
+			_, err = tx.Exec(`
+				UPDATE posts 
+				SET likes = CASE 
+						WHEN ? = 'like' THEN likes + 1 
+						ELSE likes - 1 
+					END,
+					dislikes = CASE 
+						WHEN ? = 'dislike' THEN dislikes + 1 
+						ELSE dislikes - 1 
+					END
+				WHERE id = ?
+			`, voteType, voteType, postID)
+			if err != nil {
+				return fmt.Errorf("failed to update post vote counts: %w", err)
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+// GetUserVote returns the user's current vote on a post
+func (pc *PostController) GetUserVote(postID, userID int) (string, error) {
+	var voteType string
+	err := pc.DB.QueryRow(`
+		SELECT user_vote 
+		FROM user_votes 
+		WHERE post_id = ? AND user_id = ?
+	`, postID, userID).Scan(&voteType)
+
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get user vote: %w", err)
+	}
+
+	return voteType, nil
 }

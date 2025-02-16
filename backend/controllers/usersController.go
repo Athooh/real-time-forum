@@ -368,6 +368,7 @@ func (uc *UsersController) GetUserProfile(userID int) (*models.UserProfile, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user profile: %w", err)
 	}
+	profile.ID = userID
 
 	profile.Nickname = nickname.String
 	profile.Email = email.String

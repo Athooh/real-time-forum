@@ -11,7 +11,10 @@ import {
   createHeader,
   setupHeaderEventListeners,
 } from "./components/header.js";
-import { createLeftSidebar, createRightSidebar } from "./components/sidebar.js";
+import {
+  createLeftSidebar,
+  createRightSidebar,
+} from "./components/sideBar/sidebar.js";
 import {
   createMainContent,
   setupPostEventListeners,
@@ -74,7 +77,6 @@ class App {
       });
 
       if (!response.ok) {
-        
         localStorage.removeItem("token");
         this.router.navigate("/loginPage");
         return;
@@ -94,13 +96,18 @@ class App {
                 ${this.renderForumSection()}
             </div>
         `;
-      
+
     setupHeaderEventListeners();
     this.attachEventListeners();
     this.initializeForumFeatures();
   }
 
   renderAuth(type = "login") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      this.router.navigate("/");
+      return;
+    }
     this.root.innerHTML = `
             <div id="app">
                 ${createAuthSection(type)}
@@ -179,7 +186,6 @@ class App {
     this.setupProfileEventListeners();
   }
 
-
   setupProfileEventListeners() {
     const navLinks = document.querySelectorAll(".profile-nav-link");
     const sections = document.querySelectorAll(".profile-section");
@@ -197,9 +203,6 @@ class App {
 
         if (initialActiveSection.dataset.section === "posts") {
           this.loadUserPosts();
-          setupPostEventListeners();
-          setupDropZone();
-          setupVideoDropZone();
         }
       }
     }
@@ -224,9 +227,6 @@ class App {
           // Handle specific section actions
           if (link.dataset.section === "posts") {
             await this.loadUserPosts();
-            setupPostEventListeners();
-            setupDropZone();
-            setupVideoDropZone();
           }
         }
       });
@@ -296,7 +296,8 @@ class App {
       if (!postsContainer) return;
 
       // Clear existing posts first
-      postsContainer.innerHTML = '<div class="loading-spinner">Loading posts...</div>';
+      postsContainer.innerHTML =
+        '<div class="loading-spinner">Loading posts...</div>';
 
       const response = await fetch("/api/posts", {
         method: "GET",
@@ -356,7 +357,6 @@ class App {
     // Attach all necessary event listeners
     setupAuthEventListeners();
     setupHeaderEventListeners();
-    setupPostEventListeners();
     setupNotificationEventListeners();
   }
 

@@ -31,4 +31,10 @@ func PostRoute(db *sql.DB) {
 		middleware.JWTAuthMiddleware,
 		middleware.SessionAuthMiddleware,
 	))
+
+	http.Handle("/api/posts/vote", middleware.ApplyMiddleware(
+		handlers.HandleVotePost(PostController),
+		middleware.JWTAuthMiddleware,
+		middleware.SessionAuthMiddleware,
+	))
 }
