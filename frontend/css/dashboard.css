@@ -2035,3 +2035,92 @@
 }
 
 
+
+.highlighted-post {
+    animation: highlight 2s ease-out;
+  }
+  
+  @keyframes highlight {
+    0% {
+      background-color: var(--primary-color-light);
+      transform: scale(1.01);
+    }
+    100% {
+      background-color: var(--white-color);
+      transform: scale(1);
+    }
+  }
+  
+  .news-title {
+    transition: color 0.3s ease;
+  }
+
+.news-title:hover {
+  color: var(--primary-color);
+}
+
+.post-menu {
+    position: relative;
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.post-menu-btn:hover {
+    background: var(--search-input-color);
+    color: var(--primary-color);
+}
+
+.post-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--white-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    display: none;
+    z-index: 100;
+}
+
+.post-menu.active .post-menu-dropdown {
+    display: block;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: none;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.menu-item:hover {
+    background: var(--search-input-color);
+}
+
+.menu-item.delete-post-btn {
+    color: var(--danger-color);
+}
+
+.menu-item.delete-post-btn:hover {
+    background: var(--danger-color);
+    color: white;
+}
+
+.menu-item i {
+    width: 16px;
+}
