@@ -48,6 +48,7 @@ function createHeaderRight() {
 function createHeaderActions() {
     return `
         <div class="header-actions">
+            ${createLeftSidebarToggleButton()}
             ${createHomeButton()}
             ${createProfileButton()}
             ${createMessageButton()}
@@ -78,6 +79,14 @@ function createProfileButton() {
     return `
         <button class="icon-btn" title="Profile" id="profile-btn" data-route="/profilePage">
             <i class="fas fa-user"></i>
+        </button>
+    `;
+}
+
+function createLeftSidebarToggleButton() {
+    return `
+        <button class="sidebar-toggle-btn" id="sidebar-toggle">
+            <i class="fas fa-bars"></i>
         </button>
     `;
 }
@@ -193,7 +202,43 @@ async function handleLogout() {
 }
 
 export function setupHeaderEventListeners() {
-    const router = new Router(); // Create single router instance
+    const router = new Router();
+
+    // Add sidebar toggle functionality
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sidebar = document.querySelector('.sidebar-left');
+            console.log('Toggle clicked, sidebar found:', !!sidebar);
+            if (sidebar) {
+                sidebar.classList.toggle('active');
+                console.log('Sidebar classes:', sidebar.classList.toString());
+                // Update toggle button icon
+                const icon = sidebarToggle.querySelector('i');
+                if (sidebar.classList.contains('active')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            const sidebar = document.querySelector('.sidebar-left');
+            if (sidebar && sidebar.classList.contains('active') && 
+                !sidebar.contains(e.target) && 
+                !sidebarToggle.contains(e.target)) {
+                sidebar.classList.remove('active');
+                const icon = sidebarToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+    }
 
     // Add click handlers for navigation
     document.querySelectorAll('.nav-link').forEach(link => {
