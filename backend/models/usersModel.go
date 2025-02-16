@@ -11,6 +11,7 @@ type UserStats struct {
 }
 
 type UserProfile struct {
+	ID         int       `json:"id"`
 	Nickname   string    `json:"nickname"`
 	Email      string    `json:"email"`
 	Avatar     *string   `json:"avatar"`
