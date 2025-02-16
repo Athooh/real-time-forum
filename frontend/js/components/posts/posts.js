@@ -23,7 +23,7 @@ import {
     setupDropZone,
     handleVideoUpload
 } from './postsEvent.js';
-import { setupCommentEventListeners } from './postsEvents.js';
+import { setupCommentEventListeners, setupPostMenuHandlers } from './postsEvents.js';
 
 import { setupInfiniteScroll } from '../../utils.js';
 // main functions
@@ -130,6 +130,11 @@ function setupPostEventListeners() {
 
     // Setup comment event listeners
     setupCommentEventListeners();
+
+    
+
+    // Add this after the other event listener setups
+    setupPostMenuHandlers();
 }
 
 // Move these functions outside of any other function and them
