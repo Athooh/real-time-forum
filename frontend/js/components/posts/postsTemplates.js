@@ -21,8 +21,14 @@ function createStorySection() {
                     </div>
                     <p>Create Story</p>
                 </div>
-                <!-- Stories will be dynamically inserted here -->
-                ${createStoriesSlider(stories)}
+                ${stories.map(story => `
+                    <div class="story-card">
+                        <div class="story-overlay">
+                            <p class="story-username">${story.user}</p>
+                        </div>
+                        <img src="${story.image}" alt="${story.user}'s story">
+                    </div>
+                `).join('')}
             </div>
         </div>
     `;

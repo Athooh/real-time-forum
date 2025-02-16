@@ -227,36 +227,12 @@
     overflow-x: auto;
 }
 
-.story-cards, .stories-slider {
+.story-cards {
     display: flex;
     gap: 15px;
     overflow-x: auto;
     scrollbar-width: thin; /* For Firefox */
     position: relative;
-}
-
-.stories-slider {
-    display: flex;
-    gap: 15px;
-    overflow: hidden; /* Changed from overflow-x: auto */
-    position: relative;
-    scroll-behavior: smooth;
-    -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
-    scrollbar-width: none;  /* Hide scrollbar for Firefox */
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.stories-slider::-webkit-scrollbar {
-    display: none;
-}
-
-.stories-slider::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.stories-slider::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
 }
 
 .story-card {
@@ -270,7 +246,7 @@
     border: 3px dashed var(--border-color);
 }
 
-.stories-slider .story-card {
+.story-card {
     flex: 0 0 120px;
     height: 200px;
     border-radius: 15px;
@@ -281,13 +257,13 @@
     border: none;
 }
 
-.stories-slider .story-card img {
+.story-card img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.stories-slider .story-overlay {
+.story-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -304,6 +280,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    border: 2px dashed var(--border-color);
 }
 
 .story-add {
@@ -818,14 +795,6 @@
     color: var(--text-muted);
 }
 
-/* Sidebar Navigation */
-/* .sidebar-nav {
-    background: var(--white-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    overflow: hidden;
-    margin-bottom: 20px;
-} */
 
 .nav-item, .view-profile-link {
     display: flex;
@@ -881,47 +850,6 @@
     max-width: 700px;
     padding-inline: 20px; 
     height: calc(100vh - 70px);
-}
-
-/* Stories Section */
-.stories-section {
-    margin-bottom: 20px;
-    overflow-x: auto;
-}
-
-.story-cards {
-    display: flex;
-    gap: 15px;
-}
-
-.story-card {
-    flex: 0 0 120px;
-    height: 200px;
-    border-radius: 15px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-    box-shadow: var(--box-shadow);
-    border: 3px dashed var(--border-color);
-}
-
-.create-story {
-    background: var(--white-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.story-add {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    color: var(--white-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 /* Create Post Card */
@@ -1412,10 +1340,6 @@
     margin-bottom: 20px;
 }
 
-/* .user-profile-card img {
-    width: 80px;
-    height: 80px;
-} */
 
 .profile-banner {
     height: 120px;
@@ -1500,13 +1424,6 @@
 }
 
 /* Sidebar Navigation */
-/* .sidebar-nav {
-    background: var(--white-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    overflow: hidden;
-    margin-bottom: 20px;
-} */
 
 .nav-item, .view-profile-link {
     display: flex;
@@ -1562,47 +1479,6 @@
     max-width: 700px;
     padding-inline: 20px; 
     height: calc(100vh - 70px);
-}
-
-/* Stories Section */
-.stories-section {
-    margin-bottom: 20px;
-    overflow-x: auto;
-}
-
-.story-cards {
-    display: flex;
-    gap: 15px;
-}
-
-.story-card {
-    flex: 0 0 120px;
-    height: 200px;
-    border-radius: 15px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-    box-shadow: var(--box-shadow);
-    border: 3px dashed var(--border-color);
-}
-
-.create-story {
-    background: var(--white-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.story-add {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    color: var(--white-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 /* Create Post Card */
