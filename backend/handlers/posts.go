@@ -21,6 +21,11 @@ type User struct {
 	LastName  string `json:"last_name"`
 }
 
+type VoteRequest struct {
+	PostID   int    `json:"post_id"`
+	VoteType string `json:"reaction_type"`
+}
+
 func GetPostsHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -225,7 +230,7 @@ func CreatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 		} else {
 			// Create post count update message
 			postCountEvent := map[string]interface{}{
-				"type":    "post_count_update",
+				"type": "post_count_update",
 				"payload": map[string]interface{}{
 					"postCount": postCount,
 				},
@@ -380,7 +385,25 @@ func UpdatePostHandler(pc *controllers.PostController) http.HandlerFunc {
 
 func DeletePostHandler(pc *controllers.PostController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("userID").(int)
+		userIDAny := r.Context().Value(models.UserIDKey)
+		userIDStr, ok := userIDAny.(string)
+		if !ok {
+			logger.Error("Failed to convert userID to string - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			logger.Error("Failed to convert userID to int: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		postIDStr := r.URL.Query().Get("postID")
 
 		postID, err := strconv.Atoi(postIDStr)
@@ -394,9 +417,11 @@ func DeletePostHandler(pc *controllers.PostController) http.HandlerFunc {
 			return
 		}
 
+		logger.Warning("Received delete request for post ID: %d", postID)
 		// Verify post ownership
 		isAuthor, err := pc.IsPostAuthor(postID, userID)
 		if err != nil || !isAuthor {
+			logger.Error("Failed to verify post ownership: %v", err)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(map[string]string{
@@ -405,6 +430,7 @@ func DeletePostHandler(pc *controllers.PostController) http.HandlerFunc {
 			return
 		}
 
+		logger.Warning("Post ownership verified, deleting post ID: %d", postID)
 		// Delete post
 		err = pc.DeletePost(postID, userID)
 		if err != nil {
@@ -417,10 +443,101 @@ func DeletePostHandler(pc *controllers.PostController) http.HandlerFunc {
 			return
 		}
 
+		logger.Warning("Post deleted successfully")
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{
 			"message": "Post deleted successfully",
+		})
+	}
+}
+
+func HandleVotePost(pc *controllers.PostController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get user ID from context
+		userIDAny := r.Context().Value(models.UserIDKey)
+		userIDStr, ok := userIDAny.(string)
+		if !ok {
+			logger.Error("Failed to convert userID to string - remote_addr: %s, method: %s, path: %s",
+				r.RemoteAddr,
+				r.Method,
+				r.URL.Path,
+			)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			logger.Error("Failed to convert userID to int: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Parse request body
+		var req VoteRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("Failed to decode vote request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Invalid request format",
+			})
+			return
+		}
+
+		// Validate vote type
+		if req.VoteType != "like" && req.VoteType != "dislike" {
+			logger.Error("Invalid vote type: %s", req.VoteType)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Invalid vote type",
+			})
+			return
+		}
+
+		// Handle the vote
+		err = pc.HandleVote(req.PostID, userID, req.VoteType)
+		if err != nil {
+			logger.Error("Failed to handle vote: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to process vote",
+			})
+			return
+		}
+
+		// Get updated post to return new counts
+		post, err := pc.GetPostByID(req.PostID)
+		if err != nil {
+			logger.Error("Failed to get updated post: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to get updated post",
+			})
+			return
+		}
+
+		// Get user's current vote status
+		currentVote, err := pc.GetUserVote(req.PostID, userID)
+		if err != nil {
+			logger.Error("Failed to get user vote: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to get vote status",
+			})
+			return
+		}
+
+		// Broadcast the update via WebSocket
+		BroadcastPostReaction(req.PostID, post.Likes, post.Dislikes)
+
+		// Return response to original requester
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"likes":       post.Likes,
+			"dislikes":    post.Dislikes,
+			"currentVote": currentVote,
 		})
 	}
 }
