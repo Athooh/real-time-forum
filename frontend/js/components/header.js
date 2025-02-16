@@ -94,6 +94,7 @@ function createNotificationMenu() {
         </div>
     `;
 }
+
 function createNotificationDropdown() {
     return `
         <div class="dropdown-menu">

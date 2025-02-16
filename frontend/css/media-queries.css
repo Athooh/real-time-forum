@@ -81,8 +81,8 @@
     .sidebar-card {
         margin: 8px 5px;
     }
-}
 
+}
 
 @media screen and (max-width: 481px) {
     .main-header {
@@ -240,7 +240,148 @@
     .input-group {
         margin-bottom: 5px;
     }
+
+      /* profile page */
+
+      .profile-page {
+        width: 100%;
+        max-width: 97%;
+        margin-top: 140px;
+        margin-bottom: 8px;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-info-section {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .profile-info-section .profile-info {
+        flex-direction: column;
+    }
+
+    .profile-cover img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .profile-avatar {
+        margin-top: -130px;
+        width: 100px;
+        height: 100px;
+        margin-bottom: 5px;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-details {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-details .profile-name {
+        font-size: 1rem;
+    }
+
+    .profile-details-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-details-header p {
+        margin-block: 5px;
+    }
+
+    .profile-details-header span {
+        background: var(--notification-color);
+        color: var(--notification-text-color);
+        padding: 3px 5px;
+        border-radius: 5px;
+    }
+    
+    .profile-bio-section {
+        flex-wrap: wrap;
+        padding: 5px;
+        gap: 5px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .joined, .location, .website, .profile-title, .email  {
+        margin-block: 5px;
+    }
+
+    .profile-container-brief {
+        width: 100%;
+        max-width: 97%;
+        margin: 0 auto;
+        flex-direction: column;
+        padding: 0;
+        gap: 8px;
+    }
+
+    .profile-page-left-column, .profile-page-right-column {
+        width: 100%;
+        /* max-width: 97%; */
+    }
+
+    .profile-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+        margin: 0 auto;
+    }
+
+    .profile-nav a {
+        margin-block: 5px;
+    }
+
+   .profile-section {
+    padding: 0;
+   }
+
+   #posts-section .posts-feed  {
+     gap: 8px;
+   }
+
+   .profile-detail-item {
+    width: 100%;
+    max-width: 97%;
+    margin: 0 auto;
+   }
+
+   .profile-info, .additional-info, .interests-section {
+    margin-top: 8px;
+   }
+
+   .about-me-section, .sidebar-section {
+    margin-bottom: 8px;
+   }
+ 
+   .settings-group {
+    margin-block: 8px;
+   }
+
+   .settings-actions {
+    justify-content: center;
+    margin-block: 10px;
+    gap: 10px;
+   }
 }
+
 
 /* Tablet Large/Desktop Small (769px - 1024px) */
 @media (min-width: 482px) and (max-width: 768px) {
@@ -380,8 +521,149 @@
     .auth-form {
         width: 100%;
     }
+
+      /* profile page */
+
+      .profile-page {
+        width: 100%;
+        max-width: 97%;
+        margin-top: 140px;
+        margin-bottom: 8px;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-info-section {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .profile-info-section .profile-info {
+        flex-direction: column;
+    }
+
+    .profile-cover img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .profile-avatar {
+        margin-top: -130px;
+        width: 100px;
+        height: 100px;
+        margin-bottom: 5px;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-details {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-details .profile-name {
+        font-size: 1rem;
+    }
+
+    .profile-details-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profile-details-header p {
+        margin-block: 5px;
+    }
+
+    .profile-details-header span {
+        background: var(--notification-color);
+        color: var(--notification-text-color);
+        padding: 3px 5px;
+        border-radius: 5px;
+    }
     
+    .profile-bio-section {
+        flex-wrap: wrap;
+        padding: 5px;
+        gap: 5px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .joined, .location, .website, .profile-title, .email  {
+        margin-block: 5px;
+    }
+
+    .profile-container-brief {
+        width: 100%;
+        max-width: 97%;
+        margin: 0 auto;
+        flex-direction: column;
+        padding: 0;
+        gap: 8px;
+    }
+
+    .profile-page-left-column, .profile-page-right-column {
+        width: 100%;
+        /* max-width: 97%; */
+    }
+
+    .profile-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+        margin: 0 auto;
+    }
+
+    .profile-nav a {
+        margin-block: 5px;
+    }
+
+   .profile-section {
+    padding: 0;
+   }
+
+   #posts-section .posts-feed  {
+     gap: 8px;
+   }
+
+   .profile-detail-item {
+    width: 100%;
+    max-width: 97%;
+    margin: 0 auto;
+   }
+
+   .profile-info, .additional-info, .interests-section {
+    margin-top: 8px;
+   }
+
+   .about-me-section, .sidebar-section {
+    margin-bottom: 8px;
+   }
+ 
+   .settings-group {
+    margin-block: 8px;
+   }
+
+   .settings-actions {
+    justify-content: center;
+    margin-block: 10px;
+    gap: 10px;
+   }
 }
+
+    
 
 /* Desktop Large (> 1024px) */
 @media (min-width: 769px) and (max-width: 890px) {
