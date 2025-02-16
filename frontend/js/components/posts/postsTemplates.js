@@ -188,10 +188,6 @@ function createPostCard() {
                     <span>Video</span>
                 </button>
                 <button class="post-action-btn">
-                    <img src="images/events.png" alt="" srcset="">
-                    <span>Event</span>
-                </button>
-                <button class="post-action-btn">
                     <img src="images/feelings.png" alt="" srcset="">
                     <span>Feeling</span>
                 </button>
@@ -318,10 +314,6 @@ function createPostActions(post) {
             <li class="toggle-comments-btn active" data-post-id="${post.id}">
                 <i class="far fa-comment"></i>
                 <span>Comments (${post.comments?.length || 0})</span>
-            </li>
-            <li class="action-btn save-post" data-post-id="${post.id}">
-                <i class="far fa-bookmark"></i>
-                <span>Save</span>
             </li>
         </div>
     `;
