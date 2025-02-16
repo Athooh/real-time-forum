@@ -319,27 +319,4 @@ li {
     display: none;  /* Hidden by default */
 }
 
-@media screen and (max-width: 768px) {
-    .sidebar-toggle-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        transition: background-color 0.3s ease;
-    }
-
-    .sidebar-toggle-btn:hover {
-        background-color: var(--background-color);
-    }
-
-    .sidebar-toggle-btn i {
-        transition: transform 0.3s ease;
-    }
-
-    .sidebar-toggle-btn i.fa-times {
-        transform: rotate(180deg);
-    }
-}
 
