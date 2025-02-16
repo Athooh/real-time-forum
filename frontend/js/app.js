@@ -179,21 +179,6 @@ class App {
     this.setupProfileEventListeners();
   }
 
-  async renderLeftSidebar() {
-    this.root.innerHTML = `
-    <div id="app">
-        ${createHeader()}
-        <div class="main-container">
-              <div class="profile-container">
-                  ${await createLeftSidebar()}
-              </div>
-        </div>
-    </div>
-`;
-
-     setupHeaderEventListeners();
-
-  }
 
   setupProfileEventListeners() {
     const navLinks = document.querySelectorAll(".profile-nav-link");
