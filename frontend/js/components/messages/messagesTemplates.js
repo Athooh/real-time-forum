@@ -38,51 +38,47 @@ export async function createMessagesSection(messages = []) {
 `;
 }
 
-export function loadMessagesList(messages) {
-    setTimeout(() => {
-        const messagesList = document.getElementById('messages-list');
-        if (!messagesList) {
-            console.error('Messages list element not found');
-            return;
+export function loadMessagesList(messagesList, messages) {
+    if (!messagesList) {
+        console.error('Messages list element not found');
+        return;
+    }
+
+    const messageArray = Array.isArray(messages) ? messages : [];
+    
+    messagesList.innerHTML = messageArray.length 
+        ? messageArray.map(msg => createMessageItem(msg)).join('')
+        : '<div class="no-messages">No messages yet</div>';
+
+    // Add click event listeners to message items
+    messagesList.addEventListener('click', (e) => {
+        const messageItem = e.target.closest('.message-item');
+        if (messageItem) {
+            const userId = messageItem.dataset.userId;
+            // Add chat-active class to enable sliding animation
+            document.querySelector('.messages-page').classList.add('chat-active');
+            // Handle chat opening
+            handleChatOpen(userId);
         }
+    });
+}
 
-        if (!messages || messages.length === 0) {
-            messagesList.innerHTML = '<div class="no-messages">No messages yet</div>';
-            return;
-        }
-
-        try {
-            // Group messages by user and get the most recent one
-            const latestMessagesByUser = messages.reduce((acc, message) => {
-                const userId = message.user.id;
-                if (!acc[userId] || new Date(message.timestamp) > new Date(acc[userId].timestamp)) {
-                    acc[userId] = message;
-                }
-                return acc;
-            }, {});
-
-            const messagesHTML = Object.values(latestMessagesByUser).map(message => `
-                <div class="message-item" data-user-id="${message.user.id}">
-                    <div class="user-avatar-wrapper">
-                        <img src="${message.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
-                        <span class="status-indicator ${message.user.isOnline ? 'online' : 'offline'}"></span>
-                    </div>
-                    <div class="message-content">
-                        <div class="message-header">
-                            <h4>${escapeHTML(message.user.nickname)}</h4>
-                            <span class="message-time">${formatTimeAgo(message.timestamp)}</span>
-                        </div>
-                        <p class="message-preview">${escapeHTML(message.content)}</p>
-                    </div>
+function createMessageItem(msg) {
+    return `
+        <div class="message-item" data-user-id="${msg.user.id}">
+            <div class="user-avatar-wrapper">
+                <img src="${msg.user.avatar || 'images/avatar.png'}" alt="${msg.user.nickname}" class="user-avatar">
+                <span class="status-indicator ${msg.user.isOnline ? 'online' : 'offline'}"></span>
+            </div>
+            <div class="message-content">
+                <div class="message-header">
+                    <h4>${msg.user.nickname}</h4>
+                    <span class="message-time">${formatTimeAgo(msg.timestamp)}</span>
                 </div>
-            `).join('');
-
-            messagesList.innerHTML = messagesHTML;
-        } catch (error) {
-            console.error('Error loading messages:', error);
-            messagesList.innerHTML = '<div class="error">Failed to load messages</div>';
-        }
-    }, 0);
+                <p class="message-preview">${msg.content}</p>
+            </div>
+        </div>
+    `;
 }
 
 export async function showChatInColumn(userId, userInfo) {
@@ -91,14 +87,20 @@ export async function showChatInColumn(userId, userInfo) {
 
     chatColumn.innerHTML = `
         <div class="chat-header">
-            <div class="user-info" data-user-id="${userId}">
-                <img src="${userInfo.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
-                <div>
-                    <h4>${escapeHTML(userInfo.nickname)}</h4>
-                    <span class="status ${userInfo.isOnline ? 'online' : 'offline'}" data-status-indicator="true">
-                        ${userInfo.isOnline ? 'Online' : 'Offline'}
-                    </span>
+            <div class="chat-header-content">
+                <div class="user-info" data-user-id="${userId}">
+                    <img src="${userInfo.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
+                    <div>
+                        <h4>${escapeHTML(userInfo.nickname)}</h4>
+                        <span class="status ${userInfo.isOnline ? 'online' : 'offline'}" data-status-indicator="true">
+                            ${userInfo.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
                 </div>
+                <!-- Add back button for mobile -->
+                <button class="back-button d-mobile-only">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
             </div>
         </div>
         <div class="chat-messages" id="chat-messages" data-user-id="${userId}">
@@ -158,6 +160,14 @@ export async function showChatInColumn(userId, userInfo) {
             sendMessageInChat(); // Call the correct function
         }
     });
+
+    // Add event listener for back button
+    const backButton = chatColumn.querySelector('.back-button');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            document.querySelector('.messages-page').classList.remove('chat-active');
+        });
+    }
 }
 
 async function loadChatHistory(userId) {

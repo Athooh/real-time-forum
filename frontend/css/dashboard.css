@@ -1,6 +1,7 @@
 /* Dashboard Layout */
 .dashboard-container {
     width: 1400px;
+    /* max-width: 1600px; */
     display: flex;
     justify-content: space-between;
     margin: 70px auto;

@@ -1,4 +1,4 @@
-import { createMessagesSection , loadMessagesList} from './messagesTemplates.js';
+import { createMessagesSection, loadMessagesList } from './messagesTemplates.js';
 import { setupMessageEventListeners } from './messagesEvents.js';
 import { fetchMessages } from './messagesApi.js';
 
@@ -15,8 +15,14 @@ export async function initializeMessages(container) {
         // Update container content
         container.innerHTML = messagesSection;
         
-        // Load the messages list after the DOM is updated
-        loadMessagesList(messages);
+        // Get the messages list element after DOM is updated
+        const messagesList = document.querySelector('#messages-list');
+        if (!messagesList) {
+            throw new Error('Messages list element not found');
+        }
+        
+        // Load the messages list
+        loadMessagesList(messagesList, messages);
         
         // Setup event listeners
         setupMessageEventListeners();
