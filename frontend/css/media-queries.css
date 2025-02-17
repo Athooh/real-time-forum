@@ -86,9 +86,22 @@
         margin: 8px 5px;
     }
 
+    .notification-menu .dropdown-menu {
+        right: -80px;
+    }
+
 }
 
 @media screen and (max-width: 481px) {
+    .header-container {
+        gap: 10px;
+        width: 100%;
+        margin: 0;
+        padding: 10px 0;
+        height: 110px;
+        max-height: 110px;
+    }
+
     .main-header {
         flex-direction: column;
         justify-content: center;
@@ -96,9 +109,6 @@
         width: 100%;
         margin: 0;
         padding: 10px 0;
-        height: 110px;
-        max-height: 110px;
-        background: var(--white-color);
     }
 
     .header-left, .header-right {
@@ -157,12 +167,6 @@
     .title-input {
         box-sizing: border-box;
         width: 95%;
-    }
-
-    .thought-input.text-only {
-       width: 95%;
-       display: flex;
-       align-items: center;
     }
 
     .button-section {
@@ -369,36 +373,40 @@
     }
 
    .profile-section {
-    padding: 0;
-   }
+        padding: 0;
+    }
 
    #posts-section .posts-feed  {
-     gap: 8px;
-   }
+        gap: 8px;
+    }
 
    .profile-detail-item {
-    width: 100%;
-    max-width: 97%;
-    margin: 0 auto;
-   }
+        width: 100%;
+        max-width: 97%;
+        margin: 0 auto;
+    }
 
    .profile-info, .additional-info, .interests-section {
-    margin-top: 8px;
-   }
+        margin-top: 8px;
+    }
 
    .about-me-section, .sidebar-section {
-    margin-bottom: 8px;
+        margin-bottom: 8px;
    }
  
    .settings-group {
-    margin-block: 8px;
+        margin-block: 8px;
    }
 
    .settings-actions {
-    justify-content: center;
-    margin-block: 10px;
-    gap: 10px;
-   }
+        justify-content: center;
+        margin-block: 10px;
+        gap: 10px;
+    }
+
+   .notification-menu .dropdown-menu {
+        right: -80px;
+    }
 }
 
 
@@ -408,6 +416,15 @@
         flex-direction: column;
     }
 
+    .header-container {
+        gap: 10px;
+        width: 100%;
+        margin: 0;
+        padding: 10px 0;
+        height: 110px;
+        max-height: 110px;
+    }
+
     .main-header {
         flex-direction: column;
         justify-content: center;
@@ -415,8 +432,6 @@
         width: 100%;
         margin: 0;
         padding: 10px 0;
-        height: 110px;
-        max-height: 110px;
     }
 
     .header-left, .header-right {
@@ -440,6 +455,10 @@
 
     .header-actions {
         padding-top: 0.5rem;
+    }
+
+    .notification-menu .dropdown-menu {
+        right: -80px;
     }
 
     .search-container {
@@ -490,6 +509,16 @@
         gap: 8px;
     }
 
+    .modal-content {
+        width: 100%;
+        max-width: 90%;
+        margin: 0 auto;
+        padding: 8px;
+    }
+    .title-input {
+        box-sizing: border-box;
+        width: 100%;
+    }
    
     .sidebar-left {
         display: none;

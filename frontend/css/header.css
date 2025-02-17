@@ -1,17 +1,24 @@
-.main-header {
+.header-container {
+    width: 100%;
     background: var(--white-color);
     box-shadow: var(--box-shadow);
-    padding: 0.1rem 16rem;
+    padding: 0.1rem 0;
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
     z-index: 1000;
+    display: flex;
+    align-items: center;
+    height: 56px;
+}
+
+.main-header {
+    width: 1350px;
+    max-height: 56px;
+    margin-inline: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 56px;
-    max-height: 56px;
+    padding-inline: 10px;
 }
 
 li {
