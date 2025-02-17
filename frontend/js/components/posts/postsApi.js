@@ -381,32 +381,13 @@ async function refreshComments(postId) {
     }
 
     const comments = await response.json();
+
+    console.log("refresh  comments", comments);
     const commentsContainer = document.querySelector(`#comments-${postId}`);
     if (commentsContainer) {
-      // Sort comments to show newest first (matches backend ORDER BY timestamp DESC)
-      const sortedComments = comments.sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      );
-
-      // Group comments by parent_id to organize replies
-      const commentTree = sortedComments.reduce((acc, comment) => {
-        // Check if parent_id is null or 0 (top-level comment)
-        if (!comment.parent_id || comment.parent_id === 0) {
-          if (!acc[comment.id]) {
-            acc[comment.id] = { ...comment, replies: [] };
-          }
-        } else {
-          // This is a reply
-          const parentComment = acc[comment.parent_id];
-          if (parentComment) {
-            parentComment.replies.push(comment);
-          }
-        }
-        return acc;
-      }, {});
-
-      commentsContainer.innerHTML = Object.values(commentTree)
-        .map((comment) => createComment(comment))
+     
+      commentsContainer.innerHTML = Object.values(comments)
+        .map((comment) => createComment(comment,false,comment.replies && comment.replies.length > 0))
         .join("");
 
       setupCommentEventListeners();
