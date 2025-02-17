@@ -37,6 +37,10 @@
         padding: 0.5rem 0;
     }
 
+    .search-container input {
+        width: 180px;
+    }
+
     .dashboard-container {
         width: 100%;
         margin: 140px auto;
@@ -122,6 +126,10 @@
 
     .search-container {
         padding: 0.5rem 0;
+    }
+
+    .search-container input {
+        width: 200px;
     }
 
     .dashboard-container {
