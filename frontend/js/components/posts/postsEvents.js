@@ -91,9 +91,7 @@ export function setupCommentEventListeners() {
         const postId = e.target.closest(".post-card").id.replace("post-", "");
         const content = e.target.value.trim();
 
-        console.log(" reply content", content);
-        console.log("reply commentId", commentId);
-        console.log("reply postId", postId);
+
 
         if (content && commentId && postId) {
           try {
@@ -113,6 +111,49 @@ export function setupCommentEventListeners() {
     });
   });
 
+  document.querySelectorAll(".reply-submit-btn").forEach((button) => {
+    button.addEventListener("click", async (e) => {
+      e.preventDefault(); // Prevent default behavior if necessary
+  
+      // Extract data attributes from the clicked button
+      const commentId = button.dataset.commentId;
+      const postId = button.dataset.postId;
+  
+      // Find the closest reply input container and get the input field
+      const replyInputContainer = e.target.closest(".reply-input-container");
+      if (!replyInputContainer) {
+        console.error("Reply input container not found.");
+        return;
+      }
+  
+      const replyInput = replyInputContainer.querySelector(".reply-input");
+      if (!replyInput) {
+        console.error("Reply input field not found.");
+        return;
+      }
+  
+      const content = replyInput.value.trim();
+  
+      // Validate content
+      if (!content) {
+        console.error("No content to submit.");
+        return;
+      }
+  
+      try {
+        // Submit the reply
+        await submitReply(commentId, content, postId);
+  
+        // Clear the input field after successful submission
+        replyInput.value = "";
+  
+       
+        replyInputContainer.style.display = "none";
+      } catch (error) {
+        console.error("Error submitting reply:", error);
+      }
+    });
+  });
   // Submit buttons click handlers
   document.querySelectorAll(".comment-submit-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
@@ -123,8 +164,6 @@ export function setupCommentEventListeners() {
         .querySelector(".comment-input");
       const content = input.value.trim();
 
-      console.log("content", content);
-      console.log("postId", postId);
 
       if (content && postId) {
         try {
@@ -206,7 +245,7 @@ async function handlePostAction(e) {
           );
         } else {
           const errorMessage = await response.json();
-          console.log("errorMessage", errorMessage.error);
+          console.error("errorMessage", errorMessage.error);
           showNotification(errorMessage.error, NotificationType.ERROR);
         }
       } catch (error) {
