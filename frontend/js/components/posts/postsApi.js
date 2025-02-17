@@ -6,6 +6,7 @@ import { forumState } from "../../state.js";
 import { authenticatedFetch } from "../../security.js";
 import { renderPosts, closePostModal, closeModals } from "./posts.js";
 import { SelectedCategories } from "./postsEvent.js";
+import { setupCommentEventListeners } from "./postsEvents.js";
 import { createComment } from "./postsTemplates.js";
 import { globalSocket } from "../../websocket/websocket.js";
 
@@ -121,8 +122,7 @@ async function handleCommentSubmit(e) {
     const postId = e.target.dataset.postId;
     const content = e.target.value.trim();
 
-    console.log("content", content);
-    console.log("postId", postId);
+
 
     if (content && postId) {
       try {
@@ -170,7 +170,6 @@ async function fetchPosts(page = 1, append = false) {
     const data = await response.json();
     const posts = data.posts;
 
-    console.log("posts", posts);
     // Check if we've reached the end
     if (!posts || posts.length < limit) {
       forumState.allPostsLoaded = true;
@@ -382,8 +381,6 @@ async function refreshComments(postId) {
     }
 
     const comments = await response.json();
-
-    console.log("comments", comments);
     const commentsContainer = document.querySelector(`#comments-${postId}`);
     if (commentsContainer) {
       // Sort comments to show newest first (matches backend ORDER BY timestamp DESC)
@@ -446,46 +443,6 @@ async function submitReply(commentId, content, postId) {
     showNotification("Failed to post reply", NotificationType.ERROR);
     throw error;
   }
-}
-
-function setupCommentEventListeners() {
-  // Add event listeners for reply submit buttons
-  document.querySelectorAll(".reply-submit-btn").forEach((button) => {
-    button.addEventListener("click", async (e) => {
-      const commentId = e.target.closest(".reply-submit-btn").dataset.commentId;
-      const postId = e.target.closest(".reply-submit-btn").dataset.postId;
-      const replyInput = e.target
-        .closest(".reply-input-container")
-        .querySelector(".reply-input");
-      const content = replyInput.value.trim();
-
-      if (content) {
-        try {
-          await submitReply(commentId, content, postId);
-          replyInput.value = ""; // Clear input after successful submission
-          // Hide reply input container
-          document.getElementById(`reply-input-${commentId}`).style.display =
-            "none";
-        } catch (error) {
-          console.error("Error submitting reply:", error);
-        }
-      }
-    });
-  });
-
-  // Add event listeners for reply buttons (to show/hide reply input)
-  document.querySelectorAll(".reply-btn").forEach((button) => {
-    button.addEventListener("click", (e) => {
-      const commentId = e.target.dataset.commentId;
-      const replyContainer = document.getElementById(
-        `reply-input-${commentId}`
-      );
-      if (replyContainer) {
-        replyContainer.style.display =
-          replyContainer.style.display === "none" ? "block" : "none";
-      }
-    });
-  });
 }
 
 // Initialize state
