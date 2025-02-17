@@ -1,4 +1,5 @@
 import { authenticatedFetch } from "../../security.js";
+import { debounce } from "../../utils.js";
 import {
   NotificationType,
   showNotification,
@@ -62,57 +63,9 @@ export function setupCommentEventListeners() {
     });
   });
 
-  // Comment submission
-  document.querySelectorAll(".comment-input").forEach((input) => {
-    input.addEventListener("keypress", async (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        const postId = e.target.dataset.postId;
-        const content = e.target.value.trim();
-
-        if (content && postId) {
-          try {
-            await submitComment(postId, content);
-            e.target.value = "";
-          } catch (error) {
-            console.error("Error submitting comment:", error);
-          }
-        }
-      }
-    });
-  });
-
-  // Reply submission
-  document.querySelectorAll(".reply-input").forEach((input) => {
-    input.addEventListener("keypress", async (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        const commentId = e.target.dataset.commentId;
-        const postId = e.target.closest(".post-card").id.replace("post-", "");
-        const content = e.target.value.trim();
-
-
-
-        if (content && commentId && postId) {
-          try {
-            await submitReply(commentId, content, postId);
-            e.target.value = "";
-            const replyInput = document.querySelector(
-              `#reply-input-${commentId}`
-            );
-            if (replyInput) {
-              replyInput.style.display = "none";
-            }
-          } catch (error) {
-            console.error("Error submitting reply:", error);
-          }
-        }
-      }
-    });
-  });
 
   document.querySelectorAll(".reply-submit-btn").forEach((button) => {
-    button.addEventListener("click", async (e) => {
+    button.addEventListener("click", debounce( async (e) => {
       e.preventDefault(); // Prevent default behavior if necessary
   
       // Extract data attributes from the clicked button
@@ -152,11 +105,11 @@ export function setupCommentEventListeners() {
       } catch (error) {
         console.error("Error submitting reply:", error);
       }
-    });
+    }),300);
   });
   // Submit buttons click handlers
   document.querySelectorAll(".comment-submit-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
+    btn.addEventListener("click", debounce(async (e) => {
       const button = e.target.closest(".comment-submit-btn");
       const postId = button.dataset.postId;
       const input = button
@@ -173,7 +126,7 @@ export function setupCommentEventListeners() {
           console.error("Error submitting comment:", error);
         }
       }
-    });
+    }),300);
   });
 }
 
