@@ -39,6 +39,7 @@ li {
 }
 
 .search-container {
+    position: relative;
     display: flex;
     align-items: center;
     border-radius: var(--border-radius);
@@ -49,18 +50,21 @@ li {
     border: none;
     background: var(--search-input-color);
     padding: 0.7rem 0.5rem;
-    width: 200px;
-    border-radius: var(--border-radius);
+    width: 300px;
+    border-radius: 20px;
 }
 
 .search-btn {
+    position: absolute;
+    right: 8px;
     background: none;
-    border: 1px solid var(--primary-color);
-    border-radius: var(--border-radius);
+    /* border: 1px solid var(--primary-color); */
+    /* border-radius: var(--border-radius); */
     color: var(--primary-color);
     cursor: pointer;
     padding: 0.6rem;
     margin-left: 0.3rem;
+    border: none;
 }
 
 .header-right {
