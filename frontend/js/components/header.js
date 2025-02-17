@@ -6,9 +6,11 @@ import { authenticatedFetch } from '../security.js';
 export function createHeader() {
     console.log("Creating header");
     return `
-        <header class="main-header">
-            ${createHeaderLeft()}
-            ${createHeaderRight()}
+        <header class="header-container">
+            <div class="main-header">
+                ${createHeaderLeft()}
+                ${createHeaderRight()}
+            </div>
         </header>
     `;
 }
