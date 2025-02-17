@@ -188,7 +188,7 @@ func GetCommentsHandler(cc *controllers.CommentController) http.HandlerFunc {
 			return
 		}
 
-		comments, err := cc.GetCommentsByPostID(postID)
+		comments, err := controllers.NewPostController(cc.DB).GetPostComments(postID)
 		if err != nil {
 			logger.Error("Failed to fetch comments: %v - remote_addr: %s, method: %s, path: %s",
 				err,
