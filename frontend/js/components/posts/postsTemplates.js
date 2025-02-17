@@ -482,7 +482,7 @@ function createComment(comment, isReply = false, hasReplies = false) {
                     <div class="comment-input-wrapper">
                         <img src="images/avatar.png" alt="User" class="user-avatar">
                         <div class="comment-input-container">
-                            <input type="text" placeholder="Write a reply..." class="reply-input" data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">
+                            <input type="text" placeholder="Write a reply..." class="reply-input data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">
                             <button class="reply-submit-btn" data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
