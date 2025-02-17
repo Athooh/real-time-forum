@@ -407,6 +407,105 @@
    .notification-menu .dropdown-menu {
         right: -80px;
     }
+
+    .messages-page {
+        display: block;
+        /* position: relative; */
+        /* height: calc(100% - 150px); */
+        height: 100vh;
+        margin-top: 130px;
+        width: 100%;
+        border-radius: 0;
+    }
+
+    .messages-list-column {
+        width: 100%;
+        height: 100%;
+        transition: transform 0.3s ease;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: var(--white-color);
+    }
+
+    .chat-column {
+        position: absolute;
+        top: 0;
+        left: 100%;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.3s ease;
+        background: var(--white-color);
+    }
+
+    /* States for sliding animation */
+    .messages-page.chat-active .messages-list-column {
+        transform: translateX(-100%);
+    }
+
+    .messages-page.chat-active .chat-column {
+        transform: translateX(-100%);
+    }
+
+    /* Mobile-specific header adjustments */
+    .chat-header {
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .chat-header .back-button {
+        background: none;
+        border: none;
+        padding: 10px;
+        margin-right: 10px;
+        cursor: pointer;
+        color: var(--white-color);
+        font-size: var(--font-size-large);
+    }
+
+    .chat-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    /* Adjust message list for mobile */
+    .message-item {
+        padding: 12px 15px;
+    }
+
+    /* Adjust chat input area for mobile */
+    .chat-input-area {
+        padding: 10px;
+        background: var(--white-color);
+        border-top: 1px solid var(--border-color);
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Adjust chat messages container for mobile */
+    .chat-messages {
+        height: calc(100% - 150px); /* Account for header and input area */
+        padding-bottom: 60px; /* Ensure last message is visible above input */
+    }
+
+    .back-button {
+        display: block;
+    }
+
+    .new-message-modal {
+        width: 100%;
+        max-width: 90%;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    .recipient-search input {
+        box-sizing: border-box;
+    }
 }
 
 
@@ -762,6 +861,16 @@
     
     #posts-container {
         gap: 15px;
+    }
+
+    .d-mobile-only {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .d-desktop-only {
+        display: none !important;
     }
 }
 
