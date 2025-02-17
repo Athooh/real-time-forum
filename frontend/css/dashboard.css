@@ -497,8 +497,7 @@
 
 /* Comment Input Styles */
 .post-comments {
-    margin-top: 15px;
-    padding-top: 15px;
+    margin-top: 5px;
 }
 
 .comment-input-wrapper {
@@ -1057,11 +1056,6 @@ span.news-time {
 }
 
 /* Comment Input Styles */
-.post-comments {
-    margin-top: 15px;
-    padding-top: 15px;
-}
-
 .comment-input-wrapper {
     display: flex;
     align-items: center;
