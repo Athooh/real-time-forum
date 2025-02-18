@@ -39,6 +39,11 @@ li {
     align-items: center;
     gap: 1.5rem;
 }
+.logo {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
 
 .logo img {
     height: 30px;
