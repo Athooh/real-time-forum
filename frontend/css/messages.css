@@ -481,10 +481,15 @@
 
 /* Messages Page */
 
+.messages-container {
+    height: 100vh;
+    margin-top: 70px;
+}
+
 .messages-page {
     display: grid;
     grid-template-columns: 350px 1fr;
-    height: calc(100vh - 100px); /* Adjust for header height */
+    /* height: calc(100vh - 100px); Adjust for header height */
     background: var(--white-color);
     margin: 20px auto;
     border-radius: var(--border-radius);
@@ -493,14 +498,14 @@
     width: calc(100% - 40px); /* Account for margins */
     max-width: 1200px;
     position: sticky; /* Prevent page scrolling */
-    top: 80px; /* Account for header height */
+    /* top: 80px; Account for header height */
     height: 80vh;
 }
 
 #messages-content {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 70px);
+    height: 100vh;
     overflow: hidden;
 }
 
