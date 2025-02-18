@@ -20,8 +20,8 @@ function createHeaderLeft() {
         <div class="header-left">
             <div class="logo">
                 <img src="images/forum.png" alt="Forum Logo">
+                 <h1>Forum</h1>
             </div>
-            <h1>Forum</h1>
             ${createSearchBar()}
         </div>
     `;
