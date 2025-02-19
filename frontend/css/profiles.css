@@ -819,7 +819,7 @@
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    color: var(--text-color);
+    color: var(--notification-header-color);
 }
 
 .form-group input,
