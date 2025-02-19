@@ -51,6 +51,7 @@ function handleNewMessage() {
                 <label>To:</label>
                 <input type="text" placeholder="Search users...">
             </div>
+           
             <div class="new-message-content">
                 <textarea class="new-message-input" placeholder="Type your message..."></textarea>
             </div>

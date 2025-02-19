@@ -1229,6 +1229,13 @@
     gap: 10px;
    }
 
+   .new-message-modal {
+    width: 100%;
+    max-width: 90%;
+    margin: 0 auto;
+    padding: 10px;
+}
+
 }
 
 /* Desktop Large (> 1024px) */
@@ -1441,6 +1448,14 @@
     margin-block: 10px;
     gap: 10px;
    }
+
+   .new-message-modal {
+    width: 100%;
+    max-width: 50%;
+    margin: 0 auto;
+    padding: 10px;
+}
+
 }
 
 @media (max-width: 768px) {
