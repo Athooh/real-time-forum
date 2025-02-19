@@ -130,6 +130,10 @@ function handleNewMessage() {
 
 async function handleRecipientSearch(event) {
     const query = event.target.value.trim();
+    const searchInput = event.target;
+    const recipientSearchContainer = searchInput.closest('.recipient-search');
+    
+    // Create results container
     const resultsContainer = document.createElement('div');
     resultsContainer.className = 'recipient-search-results';
     
@@ -161,17 +165,18 @@ async function handleRecipientSearch(event) {
                 <div class="no-results">No users available with that name</div>
             </div>`;
             
-            // Position and show results directly below the input field
-            const searchInput = event.target;
-            const inputRect = searchInput.getBoundingClientRect();
+            // Position the results container relative to the search container
             resultsContainer.style.position = 'absolute';
-            resultsContainer.style.top = `${inputRect.bottom}px`;
-            resultsContainer.style.left = `${inputRect.left}px`;
-            resultsContainer.style.width = `${inputRect.width}px`;
+            resultsContainer.style.top = '100%'; // Position right below the input
+            resultsContainer.style.left = '0';
+            resultsContainer.style.width = '100%';
+            resultsContainer.style.maxHeight = '200px';
+            resultsContainer.style.overflowY = 'auto';
             resultsContainer.style.zIndex = '1000';
             
-            // Append to the recipient-search div
-            searchInput.closest('.recipient-search').appendChild(resultsContainer);
+            // Add the results to the recipient search container
+            recipientSearchContainer.style.position = 'relative';
+            recipientSearchContainer.appendChild(resultsContainer);
             return;
         }
         
@@ -223,17 +228,18 @@ async function handleRecipientSearch(event) {
             resultsContainer.innerHTML = '<div class="no-results">No users found</div>';
         }
 
-        // Position and show results directly below the input field
-        const searchInput = event.target;
-        const inputRect = searchInput.getBoundingClientRect();
+        // Position the results container relative to the search container
         resultsContainer.style.position = 'absolute';
-        resultsContainer.style.top = `${inputRect.bottom}px`;
-        resultsContainer.style.left = `${inputRect.left}px`;
-        resultsContainer.style.width = `${inputRect.width}px`;
+        resultsContainer.style.top = '100%'; // Position right below the input
+        resultsContainer.style.left = '0';
+        resultsContainer.style.width = '100%';
+        resultsContainer.style.maxHeight = '200px';
+        resultsContainer.style.overflowY = 'auto';
         resultsContainer.style.zIndex = '1000';
         
-        // Append to the recipient-search div instead of the input's parent
-        searchInput.closest('.recipient-search').appendChild(resultsContainer);
+        // Add the results to the recipient search container
+        recipientSearchContainer.style.position = 'relative';
+        recipientSearchContainer.appendChild(resultsContainer);
 
     } catch (error) {
         console.error('Error searching users:', error);
