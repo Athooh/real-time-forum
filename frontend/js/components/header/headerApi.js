@@ -4,6 +4,7 @@ import {
 } from "../../utils/notifications.js";
 import Router from "../../router/router.js";
 import { authenticatedFetch } from "../../security.js";
+import { updateNotificationBadge } from "./headerEvent.js";
 
 async function handleLogout() {
   try {
@@ -61,4 +62,70 @@ async function handleLogout() {
   }
 }
 
-export { handleLogout };
+async function fetchNotifications(page = 1, limit = 10) {
+  try {
+    const response = await authenticatedFetch(
+      `/api/notifications?page=${page}&limit=${limit}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch notifications");
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    showNotification("Failed to load notifications", NotificationType.ERROR);
+    throw error;
+  }
+}
+
+async function markNotificationAsRead(notificationId) {
+  try {
+    const response = await authenticatedFetch(
+      `/api/notifications/read?notificationId=${notificationId}`,
+      {
+        method: "PUT",
+      }
+    );
+    if (!response.ok) throw new Error("Failed to mark notification as read");
+    return await response.json();
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    throw error;
+  }
+}
+
+async function clearAllNotifications() {
+  try {
+    const response = await authenticatedFetch("/api/notifications/clear", {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to clear notifications");
+    return await response.json();
+  } catch (error) {
+    console.error("Error clearing notifications:", error);
+    throw error;
+  }
+}
+
+async function createNotification(data) {
+  try {
+    const response = await authenticatedFetch("/api/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) throw new Error("Failed to create notification");
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    throw error;
+  }
+}
+
+export {
+  handleLogout,
+  fetchNotifications,
+  markNotificationAsRead,
+  clearAllNotifications,
+};
