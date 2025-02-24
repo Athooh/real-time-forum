@@ -28,21 +28,45 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
+.icon-btn {
+    position: relative;
+}
+
 .message-badge {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #ff4444;
-    color: white;
+    top: -6px;
+    right: -6px;
+    color: rgb(255, 17, 17);
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    min-width: 15px;
+    height: 15px;
     font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid white;
+    padding: 2px;
     font-weight: bold;
+    
+}
+
+.icon-wrapper {
+    display: inline-block;  /* Makes the wrapper respect transformations */
+    position: relative;     /* Ensures proper positioning context */
+}
+
+.icon-wrapper.shake-animation {
+    animation: shake 0.5s ease-in-out;
+    transform-origin: center;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+.shake-animation {
+    animation: shake 0.5s ease-in-out;
 }
 
 /* Messages Slide Panel */
@@ -851,3 +875,4 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
