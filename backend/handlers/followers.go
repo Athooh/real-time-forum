@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -48,6 +49,44 @@ func FollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 			logger.Error("Failed to follow user: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+
+		// Get username of follower
+		userName, err := controllers.GetUsernameByID(fc.DB, followerID)
+		if err != nil {
+			logger.Error("Failed to get username: %v", err)
+			userName = "Someone" // Fallback if username lookup fails
+		}
+
+		// Create notification for the person being followed
+		notification := models.Notification{
+			RecipientID: requestBody.FollowingID,
+			ActorID:     followerID,
+			Type:        "follow",
+			EntityType:  "profile",
+			EntityID:    followerID,
+			Message:     fmt.Sprintf("%s started following you", userName),
+		}
+
+		nc := controllers.NewNotificationController(fc.DB)
+		_, err = nc.CreateNotification(notification)
+		if err != nil {
+			logger.Error("Failed to create notification: %v", err)
+			// Continue execution since the follow action was successful
+		}
+
+		// Get the created notification with actor details
+		notifications, _, err := nc.GetNotifications(requestBody.FollowingID, 1, 0)
+		if err == nil && len(notifications) > 0 {
+			// Convert notification to JSON bytes
+			notificationMsg, err := json.Marshal(map[string]interface{}{
+				"type":    "new_notification",
+				"payload": notifications[0],
+			})
+			if err == nil {
+				// Send notification to the person being followed
+				SendToUser(requestBody.FollowingID, notificationMsg)
+			}
 		}
 
 		// Get counts for both users
@@ -123,6 +162,44 @@ func UnfollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 			logger.Error("Failed to unfollow user: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+
+		// Get username of unfollower
+		userName, err := controllers.GetUsernameByID(fc.DB, followerID)
+		if err != nil {
+			logger.Error("Failed to get username: %v", err)
+			userName = "Someone" // Fallback if username lookup fails
+		}
+
+		// Create notification for the person being unfollowed
+		notification := models.Notification{
+			RecipientID: requestBody.FollowingID,
+			ActorID:     followerID,
+			Type:        "unfollow",
+			EntityType:  "profile",
+			EntityID:    followerID,
+			Message:     fmt.Sprintf("%s unfollowed you", userName),
+		}
+
+		nc := controllers.NewNotificationController(fc.DB)
+		_, err = nc.CreateNotification(notification)
+		if err != nil {
+			logger.Error("Failed to create notification: %v", err)
+			// Continue execution since the unfollow action was successful
+		}
+
+		// Get the created notification with actor details
+		notifications, _, err := nc.GetNotifications(requestBody.FollowingID, 1, 0)
+		if err == nil && len(notifications) > 0 {
+			// Convert notification to JSON bytes
+			notificationMsg, err := json.Marshal(map[string]interface{}{
+				"type":    "new_notification",
+				"payload": notifications[0],
+			})
+			if err == nil {
+				// Send notification to the person being unfollowed
+				SendToUser(requestBody.FollowingID, notificationMsg)
+			}
 		}
 
 		// Get updated counts after unfollowing
