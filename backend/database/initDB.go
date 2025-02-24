@@ -182,6 +182,23 @@ func InitializeDatabase() (*sql.DB, error) {
 			description TEXT,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		);
+
+		CREATE TABLE IF NOT EXISTS notifications (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			recipient_id INTEGER NOT NULL,
+			actor_id INTEGER NOT NULL,
+			type TEXT NOT NULL CHECK(type IN ('like', 'dislike', 'comment', 'follow', 'message', 'unfollow')),
+			entity_type TEXT NOT NULL CHECK(entity_type IN ('post', 'comment', 'profile', 'message')),
+			entity_id INTEGER NOT NULL,
+			message TEXT NOT NULL,
+			is_read BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+		CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);
 	`)
 	return db, err
 }
