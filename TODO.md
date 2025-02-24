@@ -1,1 +1,3 @@
 -Use cache for user data on request
+- Add sound to notifications
+- Add typing indicator 
