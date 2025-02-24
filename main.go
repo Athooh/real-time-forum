@@ -79,6 +79,7 @@ func main() {
 	routes.SetupUserRoutes(db)
 	routes.MessagesRoutes(db)
 	routes.SetupCommentRoutes(db)
+	routes.NotificationRoutes(db)
 
 	logger.Info("Starting Application...")
 
