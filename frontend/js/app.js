@@ -6,13 +6,16 @@ import {
   createAuthSection,
   setupAuthEventListeners,
 } from "./components/auth.js";
-import { setupNotificationEventListeners } from "./components/notifications.js";
 import { createHeader } from "./components/header/header.js";
-import { setupHeaderEventListeners } from "./components/header/headerEvent.js";
+import {
+  setupHeaderEventListeners,
+  initializeMessageBadge,
+} from "./components/header/headerEvent.js";
 import {
   createLeftSidebar,
   createRightSidebar,
 } from "./components/sideBar/sidebar.js";
+import { initializeNotifications } from "./components/header/headerEvent.js";
 import { createMainContent } from "./components/posts/posts.js";
 import { fetchPosts } from "./components/posts/postsApi.js";
 import Router from "./router/router.js";
@@ -153,6 +156,7 @@ class App {
     }
 
     setupHeaderEventListeners();
+    this.initializeForumFeatures();
   }
 
   async renderProfile() {
@@ -176,6 +180,7 @@ class App {
 
     setupHeaderEventListeners();
     this.setupProfileEventListeners();
+    this.initializeForumFeatures();
   }
 
   setupProfileEventListeners() {
@@ -349,13 +354,14 @@ class App {
     // Attach all necessary event listeners
     setupAuthEventListeners();
     setupHeaderEventListeners();
-    setupNotificationEventListeners();
+    initializeNotifications();
   }
 
   async initializeForumFeatures() {
     try {
       await Promise.all([fetchPosts(), fetchUserSettings()]);
       initializeWebSocket();
+      initializeMessageBadge();
     } catch (error) {
       console.error("Error initializing forum:", error);
       showNotification("Error loading forum data", NotificationType.ERROR);
