@@ -27,6 +27,6 @@ type Message struct {
 	ConversationID int         `json:"conversation_id"`
 	Content        string      `json:"content"`
 	SentAt         string      `json:"timestamp"`
-	IsRead         bool        `json:"unread"`
+	IsRead         bool        `json:"is_read"`
 	User           MessageUser `json:"user"`
 }
