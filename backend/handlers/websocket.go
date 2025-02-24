@@ -84,6 +84,17 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 		return nil
 	})
 
+	// Add close handler
+	conn.SetCloseHandler(func(code int, text string) error {
+		if code != websocket.CloseGoingAway && 
+		   code != websocket.CloseNormalClosure {
+			logger.Warning("WebSocket closed with code %d: %s", code, text)
+		} else {
+			logger.Info("WebSocket connection closed normally for user %d", userIDInt)
+		}
+		return nil
+	})
+
 	defer func() {
 		utils.Mutex.Lock()
 		delete(utils.Clients, conn)
@@ -95,7 +106,11 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			logger.Error("Error reading message: %v", err)
+			if websocket.IsUnexpectedCloseError(err, 
+				websocket.CloseGoingAway,
+				websocket.CloseNormalClosure) {
+				logger.Error("Error reading message: %v", err)
+			}
 			break
 		}
 
@@ -111,7 +126,6 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 			continue
 		}
 
-		logger.Info("Received message: %s", message)
 		utils.Broadcast(message)
 	}
 }
