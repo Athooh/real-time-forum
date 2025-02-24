@@ -1,9 +1,18 @@
-import { escapeHTML, formatTimeAgo } from '../../utils.js';
-import { BASE_URL } from '../../state.js';
+import { escapeHTML, formatTimeAgo } from "../../utils.js";
+import { BASE_URL } from "../../state.js";
 
 // Helper functions
 function createStorySection() {
-    return `
+  const stories = [
+    { user: "Alice", image: "images/avatar.png" },
+    { user: "Bob", image: "images/avatar1.png" },
+    { user: "Charlie", image: "images/avatar2.png" },
+    { user: "Allan", image: "images/avatar3.png" },
+    { user: "Mel", image: "images/avatar4.png" },
+    { user: "Charlie", image: "images/avatar2.png" },
+  ];
+
+  return `
         <div class="stories-section">
             <div class="story-cards">
                 <div class="story-card create-story">
@@ -12,13 +21,44 @@ function createStorySection() {
                     </div>
                     <p>Create Story</p>
                 </div>
+                ${stories
+                  .map(
+                    (story) => `
+                    <div class="story-card">
+                        <div class="story-overlay">
+                            <p class="story-username">${story.user}</p>
+                        </div>
+                        <img src="${story.image}" alt="${story.user}'s story">
+                    </div>
+                `
+                  )
+                  .join("")}
             </div>
         </div>
     `;
 }
 
+function createStoriesSlider(stories) {
+  return `
+        <div class="stories-slider auto-scroll">
+            ${stories
+              .map(
+                (story) => `
+                <div class="story-card">
+                    <div class="story-overlay">
+                        <p class="story-username">${story.user}</p>
+                    </div>
+                    <img src="${story.image}" alt="${story.user}'s story">
+                </div>
+            `
+              )
+              .join("")}
+        </div>
+    `;
+}
+
 function createCategorySelection() {
-    return `
+  return `
         <div class="category-selection">
             <select class="category-dropdown">
                 <option value="default" selected>Select category</option>
@@ -35,7 +75,7 @@ function createCategorySelection() {
 }
 
 function createImagePostModal() {
-    return `
+  return `
         <div id="create-post-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
@@ -75,7 +115,7 @@ function createImagePostModal() {
 }
 
 function createTextPostModal() {
-    return `
+  return `
         <div id="text-post-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
@@ -104,7 +144,7 @@ function createTextPostModal() {
 }
 
 function createVideoPostModal() {
-    return `
+  return `
         <div id="video-post-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
@@ -144,7 +184,7 @@ function createVideoPostModal() {
 }
 
 function createPostCard() {
-    return `
+  return `
         <div class="create-post-card">
             <div class="post-input-section">
                 <img src="images/avatar.png" alt="User" class="user-avatar">
@@ -162,10 +202,6 @@ function createPostCard() {
                     <span>Video</span>
                 </button>
                 <button class="post-action-btn">
-                    <img src="images/events.png" alt="" srcset="">
-                    <span>Event</span>
-                </button>
-                <button class="post-action-btn">
                     <img src="images/feelings.png" alt="" srcset="">
                     <span>Feeling</span>
                 </button>
@@ -181,78 +217,123 @@ function createPostCard() {
     `;
 }
 
-
-
 function createPostHeader(post) {
-    return `
+  return `
         <div class="post-header">
             <div class="post-user">
-                <img src="${post.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
+                <img src="${
+                  post.user.avatar || "images/avatar.png"
+                }" alt="User" class="user-avatar">
                 <div class="user-info">
                     <h4>${escapeHTML(post.user.nickname)}</h4>
-                    <span class="post-meta">${post.user.profession ? `${post.user.profession} • ` : 'Feature in progress • '}${formatTimeAgo(post.timestamp)}</span>
+                    <span class="post-meta">${
+                      post.user.profession
+                        ? `${post.user.profession} • `
+                        : "Feature in progress • "
+                    }${formatTimeAgo(post.timestamp)}</span>
                 </div>
             </div>
-            <button class="post-menu-btn">
-                <i class="fas fa-ellipsis"></i>
-            </button>
+            <div class="post-menu">
+                <button class="post-menu-btn">
+                    <i class="fas fa-ellipsis"></i>
+                </button>
+                <div class="post-menu-dropdown">
+                    <button class="menu-item edit-post-btn">
+                        <i class="fas fa-edit"></i>
+                        Edit Post
+                    </button>
+                    <button class="menu-item delete-post-btn" data-post-id="${
+                      post.id
+                    }">
+                        <i class="fas fa-trash-alt"></i>
+                        Delete Post
+                    </button>
+                </div>
+            </div>
         </div>
     `;
 }
 
 function createPostContent(post) {
-    const createImageGrid = (images) => {
-        if (!images || images.length === 0) return '';
-        
-        const gridClasses = {
-            1: 'single-image',
-            2: 'two-images',
-            3: 'three-images',
-            4: 'four-images',
-            5: 'five-images'
-        };
+  const createImageGrid = (images) => {
+    if (!images || images.length === 0) return "";
 
-        // Normalize image paths to ensure they start with "/"
-        const normalizeImagePath = (path) => {
-            // Remove any leading "/" to avoid double slashes
-            path = path.replace(/^\/+/, '');
-            // Ensure path starts with "/"
-            return path.startsWith('/') ? path : `/${path}`;
-        };
-
-        const gridClass = gridClasses[Math.min(images.length, 5)] || 'five-images';
-        
-        return `
-            <div class="post-media-grid ${gridClass}">
-                ${images.slice(0, 5).map((image, index) => `
-                    <div class="grid-item">
-                        <img src="${BASE_URL}/${normalizeImagePath(image)}" alt="Post Image ${index + 1}" class="post-image">
-                        ${images.length > 5 && index === 4 ? `
-                            <div class="more-overlay">+${images.length - 5}</div>
-                        ` : ''}
-                    </div>
-                `).join('')}
-            </div>
-        `;
+    const gridClasses = {
+      1: "single-image",
+      2: "two-images",
+      3: "three-images",
+      4: "four-images",
+      5: "five-images",
     };
 
+    // Normalize image paths to ensure they start with "/"
+    const normalizeImagePath = (path) => {
+      // Remove any leading "/" to avoid double slashes
+      path = path.replace(/^\/+/, "");
+      // Ensure path starts with "/"
+      return path.startsWith("/") ? path : `/${path}`;
+    };
+
+    const gridClass = gridClasses[Math.min(images.length, 5)] || "five-images";
+
     return `
+            <div class="post-media-grid ${gridClass}">
+                ${images
+                  .slice(0, 5)
+                  .map(
+                    (image, index) => `
+                    <div class="grid-item">
+                        <img src="${BASE_URL}/${normalizeImagePath(
+                      image
+                    )}" alt="Post Image ${index + 1}" class="post-image">
+                        ${
+                          images.length > 5 && index === 4
+                            ? `
+                            <div class="more-overlay">+${
+                              images.length - 5
+                            }</div>
+                        `
+                            : ""
+                        }
+                    </div>
+                `
+                  )
+                  .join("")}
+            </div>
+        `;
+  };
+
+  return `
         <div class="post-content">
-            ${post.title ? `<div class="post-title"><h3>${escapeHTML(post.title)}</h3></div>` : ''}
-            ${post.video_url.Valid ? `
+            ${
+              post.title
+                ? `<div class="post-title"><h3>${escapeHTML(
+                    post.title
+                  )}</h3></div>`
+                : ""
+            }
+            ${
+              post.video_url.Valid
+                ? `
                 <div class="post-video-container">
                     <video class="post-video" controls>
                         <source src="${post.video_url.String}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
-            ` : post.images ? createImageGrid(post.images) : post.image ? `
+            `
+                : post.images
+                ? createImageGrid(post.images)
+                : post.image
+                ? `
                 <div class="post-media-grid single-image">
                     <div class="grid-item">
                         <img src="${post.image}" alt="Post Image" class="post-image">
                     </div>
                 </div>
-            ` : ''}
+            `
+                : ""
+            }
             <div class="post-description">
                 <p>${escapeHTML(post.content)}</p>
             </div>
@@ -261,27 +342,30 @@ function createPostContent(post) {
 }
 
 function createPostCategories(post) {
-  
-    if (!post.category) return '';
-    
-    // Handle both array and comma-separated string formats
-    const categoryArray = Array.isArray(post.category) 
-        ? post.category 
-        : post.category.split(',').map(cat => cat.trim());
+  if (!post.category) return "";
 
-    if (categoryArray.length === 0) return '';
-    
-    return `
+  // Handle both array and comma-separated string formats
+  const categoryArray = Array.isArray(post.category)
+    ? post.category
+    : post.category.split(",").map((cat) => cat.trim());
+
+  if (categoryArray.length === 0) return "";
+
+  return `
         <div class="post-categories">
-            ${categoryArray.map(category => `
+            ${categoryArray
+              .map(
+                (category) => `
                 <span class="category-tag">${escapeHTML(category)}</span>
-            `).join('')}
+            `
+              )
+              .join("")}
         </div>
     `;
 }
 
 function createPostActions(post) {
-    return `
+  return `
         <div class="post-actions">
             <li class="action-like-btn" data-post-id="${post.id}">
                 <i class="fa-solid fa-thumbs-up"></i>
@@ -291,73 +375,147 @@ function createPostActions(post) {
                 <i class="fa-solid fa-thumbs-down"></i>
                 <span>Dislike (${post.dislikes || 0})</span>
             </li>
-            <li class="action-btn" onclick="toggleComments('${post.id}')">
+            <li class="toggle-comments-btn active" data-post-id="${post.id}">
                 <i class="far fa-comment"></i>
                 <span>Comments (${post.comments?.length || 0})</span>
-            </li>
-            <li class="action-btn save-post" data-post-id="${post.id}">
-                <i class="far fa-bookmark"></i>
-                <span>Save</span>
             </li>
         </div>
     `;
 }
 
 function createPostComments(post) {
-    return `
-        <div class="post-comments">
-            <div class="comment-input-wrapper">
-                <img src="images/avatar.png" alt="User" class="user-avatar">
-                <div class="comment-input-container">
-                    <input type="text" placeholder="Write a comment..." class="comment-input" data-post-id="${post.id}">
-                    <button class="comment-submit-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+  return `
+        <div class="post-comments" id="comments-section-${post.id}">
+            <div class="comments-content" style="display: none;">
+                <div class="comment-input-wrapper">
+                    <img src="${
+                      post.user.avatar || "images/avatar.png"
+                    }" alt="User" class="user-avatar">
+                    <div class="comment-input-container">
+                        <input type="text" placeholder="Write a comment..." class="comment-input" data-post-id="${
+                          post.id
+                        }">
+                        <button class="comment-submit-btn" data-post-id="${
+                          post.id
+                        }">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="comments-container" id="comments-${post.id}">
-                <!-- Comments will be dynamically inserted here -->
+                <div class="comments-container" id="comments-${post.id}">
+                    ${
+                      post.comments
+                        ? post.comments
+                            .filter((comment) => !comment.ParentID?.Valid) // Only get parent comments
+                            .map((comment) => {
+                              return createComment(
+                                comment,
+                                false,
+                                comment.replies && comment.replies.length > 0
+                              );
+                            })
+                            .join("")
+                        : ""
+                    }
+                </div>
+                ${
+                  post.comments?.length > 0
+                    ? `
+                    <button class="load-more-comments" data-post-id="${post.id}">
+                        Load more comments
+                    </button>
+                `
+                    : ""
+                }
             </div>
         </div>
     `;
 }
 
-function createComment(comment) {
-    return `
-        <div class="comment" id="comment-${comment.id}">
-            <img src="${comment.user.avatar || 'images/avatar.png'}" alt="User" class="user-avatar">
-            <div class="comment-content">
-                <div class="comment-header">
-                    <strong>${escapeHTML(comment.user.nickname)}</strong>
-                    <small>${formatTimeAgo(comment.timestamp)}</small>
+function createComment(comment, isReply = false, hasReplies = false) {
+  if (!comment) return "";
+
+  const user = comment.User || {};
+  const nickname = user.nickname || "Anonymous";
+  const avatar = user.avatar || "images/avatar.png";
+
+  return `
+        <div class="comment ${hasReplies ? "has-replies" : ""} ${
+    isReply ? "comment-reply" : ""
+  }" id="comment-${comment.ID}">
+            <div class="comment-main">
+                <img src="${avatar}" alt="User" class="user-avatar">
+                <div class="comment-content">
+                    <div class="comment-header">
+                        <strong>${escapeHTML(nickname)}</strong>
+                        <small>${formatTimeAgo(comment.Timestamp)}</small>
+                    </div>
+                    <p>${escapeHTML(comment.Content)}</p>
+                    ${
+                      !isReply
+                        ? `
+                        <div class="comment-actions">
+                            <button class="reply-btn" data-comment-id="${comment.ID}">
+                                Reply
+                            </button>
+                        </div>
+                    `
+                        : ""
+                    }
                 </div>
-                <p>${escapeHTML(comment.content)}</p>
             </div>
+            ${
+              hasReplies
+                ? `
+                <div class="reply-container" id="replies-${comment.ID}">
+                    ${comment.replies
+                      .map((reply) => createComment(reply, true, false))
+                      .join("")}
+                </div>
+            `
+                : ""
+            }
+            ${
+              !isReply
+                ? `
+                <div class="reply-input-container" id="reply-input-${comment.ID}" style="display: none;">
+                    <div class="comment-input-wrapper">
+                        <img src="images/avatar.png" alt="User" class="user-avatar">
+                        <div class="comment-input-container">
+                            <input type="text" placeholder="Write a reply..." class="reply-input data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">
+                            <button class="reply-submit-btn" data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `
+                : ""
+            }
         </div>
     `;
 }
 
 function createPostsFeed() {
-    return `
+  return `
         <div class="posts-feed" id="posts-container">
             <!-- Post 1 -->
-                        
-            <!-- Post 2 & 3 with similar structure but different content -->
         </div>
     `;
 }
 
 export {
-    createPostCard,
-    createPostHeader,
-    createPostContent,
-    createPostCategories,
-    createPostActions,
-    createPostComments,
-    createComment,
-    createPostsFeed,
-    createStorySection,
-    createImagePostModal,
-    createTextPostModal,
-    createVideoPostModal
+  createPostCard,
+  createPostHeader,
+  createPostContent,
+  createPostCategories,
+  createPostActions,
+  createPostComments,
+  createComment,
+  createPostsFeed,
+  createStorySection,
+  createImagePostModal,
+  createTextPostModal,
+  createVideoPostModal,
+  createStoriesSlider,
 };

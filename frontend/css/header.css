@@ -1,17 +1,24 @@
-.main-header {
+.header-container {
+    width: 100%;
     background: var(--white-color);
     box-shadow: var(--box-shadow);
-    padding: 0.1rem 16rem;
+    padding: 0.1rem 0;
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
     z-index: 1000;
+    display: flex;
+    align-items: center;
+    height: 56px;
+}
+
+.main-header {
+    width: 1350px;
+    max-height: 56px;
+    margin-inline: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 56px;
-    max-height: 56px;
+    padding-inline: 10px;
 }
 
 li {
@@ -32,6 +39,11 @@ li {
     align-items: center;
     gap: 1.5rem;
 }
+.logo {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
 
 .logo img {
     height: 30px;
@@ -39,6 +51,7 @@ li {
 }
 
 .search-container {
+    position: relative;
     display: flex;
     align-items: center;
     border-radius: var(--border-radius);
@@ -49,18 +62,21 @@ li {
     border: none;
     background: var(--search-input-color);
     padding: 0.7rem 0.5rem;
-    width: 200px;
-    border-radius: var(--border-radius);
+    width: 300px;
+    border-radius: 20px;
 }
 
 .search-btn {
+    position: absolute;
+    right: 8px;
     background: none;
-    border: 1px solid var(--primary-color);
-    border-radius: var(--border-radius);
+    /* border: 1px solid var(--primary-color); */
+    /* border-radius: var(--border-radius); */
     color: var(--primary-color);
     cursor: pointer;
     padding: 0.6rem;
     margin-left: 0.3rem;
+    border: none;
 }
 
 .header-right {
@@ -148,6 +164,7 @@ li {
 
 .profile-menu:hover .dropdown-menu {
     display: block;
+    z-index: 1000;
 }
 
 .dropdown-menu a {
@@ -312,4 +329,10 @@ li {
     font-size: 0.9rem;
     font-weight: 500;
 }
+
+/* Add these styles for the toggle button positioning */
+.sidebar-toggle-btn {
+    display: none;  /* Hidden by default */
+}
+
 

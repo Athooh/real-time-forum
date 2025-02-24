@@ -43,7 +43,6 @@ body {
     padding: 0;
     background-color: var(--background-color);
     color: var(--text-color);
-    height: calc(100vh - 70px);
 }
 
 p {
@@ -448,6 +447,35 @@ header {
     border: none;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
+}
+
+.error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-medium);
+}
+
+.error-page h1 {
+    color: var(--danger-color);
+    font-size: 150px;
+    margin-bottom: 0;
+}
+
+.error-page h2 {
+    color: var(--text-color);
+    font-size: 24px;
+    margin-block: 0;
+}
+
+.error-page a {
+    padding: 10px 15px;
+    background: var(--online-user-color);
+    border: none;
+    color: var(--white-color);
+    font-size: var(--font-size-medium);
+    border-radius: 20px;
 }
 
 /* password visibility */

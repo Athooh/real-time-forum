@@ -9,14 +9,13 @@ type Comment struct {
 	ID        int
 	PostID    int
 	UserID    int
-	User      User
+	User      UserProfile
 	ParentID  sql.NullInt64
 	Author    string
 	Content   string
 	Likes     int
+	HasReplies bool
 	Dislikes  int
-	UserVote  sql.NullString
 	Timestamp time.Time
 	Replies   []Comment `json:"replies,omitempty"`
-	Depth     int       `json:"depth"`
 }

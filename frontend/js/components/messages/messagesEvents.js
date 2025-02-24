@@ -1,6 +1,6 @@
-import { searchMessages, fetchMessages, sendMessage } from './messagesApi.js';
+import { searchMessages, fetchMessages, sendMessage, fetchConversation } from './messagesApi.js';
 import { renderMessages } from './messages.js';
-import { throttle } from '../../utils.js';
+import { throttle, getCurrentUserId, escapeHTML } from '../../utils.js';
 import { showChatInColumn } from './messagesTemplates.js';
 import { authenticatedFetch } from '../../security.js';
 
@@ -51,6 +51,7 @@ function handleNewMessage() {
                 <label>To:</label>
                 <input type="text" placeholder="Search users...">
             </div>
+           
             <div class="new-message-content">
                 <textarea class="new-message-input" placeholder="Type your message..."></textarea>
             </div>
@@ -92,8 +93,6 @@ function handleNewMessage() {
         const message = messageInput.value.trim();
         const recipientId = recipientInput.dataset.userId; // We set this in handleRecipientSearch
 
-        console.log("recipientId send button clicked", recipientId);
-
         if (!recipientId) {
             showNotification('Please select a valid recipient', 'error');
             return;
@@ -131,6 +130,10 @@ function handleNewMessage() {
 
 async function handleRecipientSearch(event) {
     const query = event.target.value.trim();
+    const searchInput = event.target;
+    const recipientSearchContainer = searchInput.closest('.recipient-search');
+    
+    // Create results container
     const resultsContainer = document.createElement('div');
     resultsContainer.className = 'recipient-search-results';
     
@@ -162,17 +165,18 @@ async function handleRecipientSearch(event) {
                 <div class="no-results">No users available with that name</div>
             </div>`;
             
-            // Position and show results directly below the input field
-            const searchInput = event.target;
-            const inputRect = searchInput.getBoundingClientRect();
+            // Position the results container relative to the search container
             resultsContainer.style.position = 'absolute';
-            resultsContainer.style.top = `${inputRect.bottom}px`;
-            resultsContainer.style.left = `${inputRect.left}px`;
-            resultsContainer.style.width = `${inputRect.width}px`;
+            resultsContainer.style.top = '100%'; // Position right below the input
+            resultsContainer.style.left = '0';
+            resultsContainer.style.width = '100%';
+            resultsContainer.style.maxHeight = '200px';
+            resultsContainer.style.overflowY = 'auto';
             resultsContainer.style.zIndex = '1000';
             
-            // Append to the recipient-search div
-            searchInput.closest('.recipient-search').appendChild(resultsContainer);
+            // Add the results to the recipient search container
+            recipientSearchContainer.style.position = 'relative';
+            recipientSearchContainer.appendChild(resultsContainer);
             return;
         }
         
@@ -224,17 +228,18 @@ async function handleRecipientSearch(event) {
             resultsContainer.innerHTML = '<div class="no-results">No users found</div>';
         }
 
-        // Position and show results directly below the input field
-        const searchInput = event.target;
-        const inputRect = searchInput.getBoundingClientRect();
+        // Position the results container relative to the search container
         resultsContainer.style.position = 'absolute';
-        resultsContainer.style.top = `${inputRect.bottom}px`;
-        resultsContainer.style.left = `${inputRect.left}px`;
-        resultsContainer.style.width = `${inputRect.width}px`;
+        resultsContainer.style.top = '100%'; // Position right below the input
+        resultsContainer.style.left = '0';
+        resultsContainer.style.width = '100%';
+        resultsContainer.style.maxHeight = '200px';
+        resultsContainer.style.overflowY = 'auto';
         resultsContainer.style.zIndex = '1000';
         
-        // Append to the recipient-search div instead of the input's parent
-        searchInput.closest('.recipient-search').appendChild(resultsContainer);
+        // Add the results to the recipient search container
+        recipientSearchContainer.style.position = 'relative';
+        recipientSearchContainer.appendChild(resultsContainer);
 
     } catch (error) {
         console.error('Error searching users:', error);
@@ -324,6 +329,8 @@ export async function handleChatOpen(userId) {
         // Show chat in the main column
         await showChatInColumn(userId, userInfo);
         
+        setupChatScrollListener(userId);
+
     } catch (error) {
         console.error('Error opening chat:', error);
     }
@@ -365,4 +372,76 @@ function formatTimeAgo(timestamp) {
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return date.toLocaleDateString();
+}
+
+let isLoadingHistory = false;
+let allMessagesLoaded = false;
+let currentPage = 1;
+
+function setupChatScrollListener(userId) {
+    const chatMessages = document.querySelector('.chat-messages');
+    if (!chatMessages) return;
+
+    // Store initial scroll height
+    let lastScrollHeight = chatMessages.scrollHeight;
+
+    chatMessages.addEventListener('scroll', async function() {
+        // Check if we're near the top (scrolling up)
+        if (chatMessages.scrollTop <= 100 && !isLoadingHistory && !allMessagesLoaded) {
+            isLoadingHistory = true;
+            
+            // Add loading indicator at the top
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message-loading';
+            loadingDiv.innerHTML = '<div class="loading-spinner"></div>';
+            chatMessages.prepend(loadingDiv);
+
+            // Remember scroll position
+            const previousHeight = chatMessages.scrollHeight;
+
+            try {
+                currentPage++;
+                const olderMessages = await fetchConversation(userId, currentPage);
+                
+                if (!olderMessages || olderMessages.length < 20) {
+                    allMessagesLoaded = true;
+                }
+
+                if (olderMessages && olderMessages.length > 0) {
+                    // Create and prepend messages
+                    const messagesHTML = olderMessages.reverse().map(msg => createMessageElement(msg)).join('');
+                    loadingDiv.insertAdjacentHTML('afterend', messagesHTML);
+
+                    // Maintain scroll position
+                    const newScrollTop = chatMessages.scrollHeight - previousHeight;
+                    chatMessages.scrollTop = newScrollTop;
+                }
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+            } finally {
+                // Remove loading indicator
+                loadingDiv.remove();
+                isLoadingHistory = false;
+            }
+        }
+    });
+}
+
+function createMessageElement(message) {
+    const isOwn = message.sender_id === getCurrentUserId();
+    return `
+        <div class="chat-message ${isOwn ? 'sent' : 'received'}">
+            ${!isOwn ? `
+                <div class="message-avatar">
+                    <img src="${message.user.avatar || 'images/default-avatar.png'}" alt="${message.user.nickname}">
+                </div>
+            ` : ''}
+            <div class="message-bubble">
+                <div class="message-content">
+                    <p>${escapeHTML(message.content)}</p>
+                    <span class="message-time">${formatTimeAgo(message.timestamp)}</span>
+                </div>
+            </div>
+        </div>
+    `;
 } 

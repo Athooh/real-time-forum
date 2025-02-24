@@ -3,6 +3,8 @@ package controllers
 import (
 	"database/sql"
 	"fmt"
+
+	"forum/backend/models"
 )
 
 type FollowersController struct {
@@ -47,7 +49,116 @@ func (fc *FollowersController) DeleteUserFollower(followerID, followingID int) e
 	return err
 }
 
-func (fc *FollowersController) GetUserFollowers(userID int) ([]int, error) {
+func (fc *FollowersController) GetUserFollowers(userID int, page, limit int) ([]models.UserFollower, error) {
+	offset := (page - 1) * limit
+	query := `
+		SELECT u.id, u.nickname, u.avatar, u.profession
+		FROM users u
+		INNER JOIN followers f ON u.id = f.follower_id
+		WHERE f.following_id = ?
+		ORDER BY f.followed_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := fc.db.Query(query, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var followers []models.UserFollower
+	for rows.Next() {
+		var follower models.UserFollower
+		var avatar sql.NullString
+		var profession sql.NullString
+
+		err := rows.Scan(&follower.ID, &follower.Nickname, &avatar, &profession)
+		if err != nil {
+			return nil, err
+		}
+
+		if avatar.Valid {
+			follower.Avatar = &avatar.String
+		}
+		if profession.Valid {
+			follower.Profession = profession.String
+		}
+
+		followers = append(followers, follower)
+	}
+
+	return followers, nil
+}
+
+func (fc *FollowersController) GetUserFollowing(userID int, page, limit int) ([]models.UserFollower, error) {
+	offset := (page - 1) * limit
+	query := `
+		SELECT u.id, u.nickname, u.avatar, u.profession
+		FROM users u
+		INNER JOIN followers f ON u.id = f.following_id
+		WHERE f.follower_id = ?
+		ORDER BY f.followed_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := fc.db.Query(query, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var following []models.UserFollower
+	for rows.Next() {
+		var user models.UserFollower
+		var avatar sql.NullString
+		var profession sql.NullString
+
+		err := rows.Scan(&user.ID, &user.Nickname, &avatar, &profession)
+		if err != nil {
+			return nil, err
+		}
+
+		if avatar.Valid {
+			user.Avatar = &avatar.String
+		}
+		if profession.Valid {
+			user.Profession = profession.String
+		}
+
+		following = append(following, user)
+	}
+
+	return following, nil
+}
+
+func (fc *FollowersController) GetFollowCounts(userID int) (int, int, error) {
+	var followersCount, followingCount int
+
+	// Get followers count
+	err := fc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&followersCount)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Get following count
+	err = fc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&followingCount)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return followersCount, followingCount, nil
+}
+
+func (fc *FollowersController) IsFollowing(followerID, followingID int) (bool, error) {
+	var exists bool
+	err := fc.db.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM followers WHERE follower_id = ? AND following_id = ?)",
+		followerID, followingID,
+	).Scan(&exists)
+	return exists, err
+}
+
+func (fc *FollowersController) GetUserFollowersId(userID int) ([]int, error) {
 	rows, err := fc.db.Query("SELECT follower_id FROM followers WHERE following_id = ?", userID)
 	if err != nil {
 		return nil, err
@@ -64,7 +175,7 @@ func (fc *FollowersController) GetUserFollowers(userID int) ([]int, error) {
 	return followers, nil
 }
 
-func (fc *FollowersController) GetUserFollowing(userID int) ([]int, error) {
+func (fc *FollowersController) GetUserFollowingId(userID int) ([]int, error) {
 	rows, err := fc.db.Query("SELECT following_id FROM followers WHERE follower_id = ?", userID)
 	if err != nil {
 		return nil, err
@@ -79,16 +190,4 @@ func (fc *FollowersController) GetUserFollowing(userID int) ([]int, error) {
 		following = append(following, followingID)
 	}
 	return following, nil
-}
-
-func (fc *FollowersController) GetUserFollowersCount(userID int) (int, error) {
-	var count int
-	err := fc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&count)
-	return count, err
-}
-
-func (fc *FollowersController) GetUserFollowingCount(userID int) (int, error) {
-	var count int
-	err := fc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&count)
-	return count, err
 }

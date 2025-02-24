@@ -1,37 +1,46 @@
-import { NotificationType, showNotification } from '../../utils/notifications.js';
+import {
+  NotificationType,
+  showNotification,
+} from "../../utils/notifications.js";
 
 const SelectedCategories = new Set();
 
 function handleVideoUpload(e) {
-    const file = e.target.files?.[0] || e.dataTransfer?.files?.[0];
-    const previewArea = document.getElementById('videoPreviewArea');
+  if (e.handled === true) return;
+  e.handled = true;
 
-    if (!file || !previewArea) return;
+  const file = e.target.files?.[0] || e.dataTransfer?.files?.[0];
+  const previewArea = document.getElementById("videoPreviewArea");
 
-    // Validate file type
-    if (!file.type.startsWith('video/')) {
-        showNotification('Only video files are allowed', NotificationType.ERROR);
-        return;
-    }
+  if (!file || !previewArea) return;
 
-    // Check file size
-    const maxSize = 300 * 1024 * 1024;
-    if (file.size > maxSize) {
-        showNotification('Video file size must be less than 100MB', NotificationType.ERROR);
-        return;
-    }
+  // Validate file type
+  if (!file.type.startsWith("video/")) {
+    showNotification("Only video files are allowed", NotificationType.ERROR);
+    return;
+  }
 
-    // Show loading spinner
-    previewArea.innerHTML = `
+  // Check file size
+  const maxSize = 300 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showNotification(
+      "Video file size must be less than 100MB",
+      NotificationType.ERROR
+    );
+    return;
+  }
+
+  // Show loading spinner
+  previewArea.innerHTML = `
         <div class="video-loading">
             <div class="spinner"></div>
             <p>Uploading video...</p>
         </div>
     `;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        previewArea.innerHTML = `
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    previewArea.innerHTML = `
             <div class="video-preview">
                 <video controls class="modal-video-player">
                     <source src="${e.target.result}" type="${file.type}">
@@ -41,191 +50,245 @@ function handleVideoUpload(e) {
             </div>
         `;
 
-        // Add remove functionality
-        previewArea.querySelector('.remove-video').addEventListener('click', function() {
-            previewArea.innerHTML = '';
-            const fileInput = document.getElementById('video-upload');
-            if (fileInput) fileInput.value = '';
-        });
+    // Add remove functionality
+    previewArea
+      .querySelector(".remove-video")
+      .addEventListener("click", function () {
+        previewArea.innerHTML = "";
+        const fileInput = document.getElementById("video-upload");
+        if (fileInput) fileInput.value = "";
+      });
 
-        // Auto-adjust video height based on aspect ratio
-        const video = previewArea.querySelector('video');
-        video.addEventListener('loadedmetadata', function() {
-            const aspectRatio = this.videoHeight / this.videoWidth;
-            const width = this.offsetWidth;
-            this.style.height = `${width * aspectRatio}px`;
-        });
-    };
-    reader.readAsDataURL(file);
+    // Auto-adjust video height based on aspect ratio
+    const video = previewArea.querySelector("video");
+    video.addEventListener("loadedmetadata", function () {
+      const aspectRatio = this.videoHeight / this.videoWidth;
+      const width = this.offsetWidth;
+      this.style.height = `${width * aspectRatio}px`;
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 function setupVideoDropZone() {
-    const dropZone = document.getElementById('videoDropZone');
-    const fileInput = document.getElementById('video-upload');
+  const dropZone = document.getElementById("videoDropZone");
+  const fileInput = document.getElementById("video-upload");
 
-    if (!dropZone || !fileInput) return;
+  if (!dropZone || !fileInput) return;
 
-    dropZone.addEventListener('click', () => fileInput.click());
-    
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults);
-    });
+  // Remove existing event listeners
+  fileInput.removeEventListener("change", handleVideoUpload);
+  const clickHandler = () => fileInput.click();
+  dropZone.removeEventListener("click", clickHandler);
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.add('dragover');
-        });
-    });
+  // Add new event listeners
+  fileInput.addEventListener("change", handleVideoUpload);
+  dropZone.addEventListener("click", clickHandler);
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.remove('dragover');
-        });
-    });
+  // Clean up existing drag event listeners
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+    dropZone.removeEventListener(eventName, preventDefaults);
+  });
 
-    dropZone.addEventListener('drop', (e) => {
-        handleVideoUpload({ dataTransfer: e.dataTransfer });
-    });
+  // Add new drag event listeners
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+    dropZone.addEventListener(eventName, preventDefaults);
+  });
+
+  // Handle drag states
+  const addDragover = () => dropZone.classList.add("dragover");
+  const removeDragover = () => dropZone.classList.remove("dragover");
+
+  ["dragenter", "dragover"].forEach((eventName) => {
+    dropZone.removeEventListener(eventName, addDragover);
+    dropZone.addEventListener(eventName, addDragover);
+  });
+
+  ["dragleave", "drop"].forEach((eventName) => {
+    dropZone.removeEventListener(eventName, removeDragover);
+    dropZone.addEventListener(eventName, removeDragover);
+  });
+
+  // Handle dropped files
+  const dropHandler = (e) =>
+    handleVideoUpload({ dataTransfer: e.dataTransfer });
+  dropZone.removeEventListener("drop", dropHandler);
+  dropZone.addEventListener("drop", dropHandler);
 }
 
 // Add these new functions to handle category selection
 function handleCategorySelection(e) {
-    const dropdown = e.target;
-    const selectedCategoriesContainer = dropdown.closest('.category-selection').querySelector('.selected-categories');
-    
-    const selectedValue = dropdown.value;
-    const selectedText = dropdown.options[dropdown.selectedIndex].text;
-    
-    // Return if "Select category" is chosen
-    if (!selectedValue || selectedValue === 'default') {
-        return;
-    }
-    
-    // Check if category is already selected
-    const existingCategories = Array.from(selectedCategoriesContainer.querySelectorAll('.remove-category'))
-        .map(el => el.dataset.value);
-    if (existingCategories.includes(selectedValue)) {
-        showNotification('This category is already selected', NotificationType.ERROR);
-        dropdown.value = 'default'; // Reset to default option
-        return;
-    }
-    
-    // Check maximum categories limit
-    const currentCategories = selectedCategoriesContainer.querySelectorAll('.category-tag').length;
-    if (currentCategories >= 5) {
-        showNotification('You can only select up to 5 categories at once', NotificationType.ERROR);
-        dropdown.value = 'default'; // Reset to default option
-        return;
-    }
-    SelectedCategories.add(selectedValue);
+  const dropdown = e.target;
+  const selectedCategoriesContainer = dropdown
+    .closest(".category-selection")
+    .querySelector(".selected-categories");
 
-    // Create and append the category tag
-    const categoryTag = document.createElement('div');
-    categoryTag.className = 'category-tag selected';
-    categoryTag.innerHTML = `
+  const selectedValue = dropdown.value;
+  const selectedText = dropdown.options[dropdown.selectedIndex].text;
+
+  // Return if "Select category" is chosen
+  if (!selectedValue || selectedValue === "default") {
+    return;
+  }
+
+  // Check if category is already selected
+  const existingCategories = Array.from(
+    selectedCategoriesContainer.querySelectorAll(".remove-category")
+  ).map((el) => el.dataset.value);
+  if (existingCategories.includes(selectedValue)) {
+    showNotification(
+      "This category is already selected",
+      NotificationType.ERROR
+    );
+    dropdown.value = "default"; // Reset to default option
+    return;
+  }
+
+  // Check maximum categories limit
+  const currentCategories =
+    selectedCategoriesContainer.querySelectorAll(".category-tag").length;
+  if (currentCategories >= 5) {
+    showNotification(
+      "You can only select up to 5 categories at once",
+      NotificationType.ERROR
+    );
+    dropdown.value = "default"; // Reset to default option
+    return;
+  }
+  SelectedCategories.add(selectedValue);
+
+  // Create and append the category tag
+  const categoryTag = document.createElement("div");
+  categoryTag.className = "category-tag selected";
+  categoryTag.innerHTML = `
         ${selectedText}
         <span class="remove-category" data-value="${selectedValue}">×</span>
     `;
-    selectedCategoriesContainer.appendChild(categoryTag);
-    
-    // Reset dropdown to default "Select category" option
-    dropdown.value = 'default';
+  selectedCategoriesContainer.appendChild(categoryTag);
 
-    // Handle category removal
-    categoryTag.querySelector('.remove-category').addEventListener('click', function() {
-        categoryTag.remove();
-        SelectedCategories.delete(selectedValue);
+  // Reset dropdown to default "Select category" option
+  dropdown.value = "default";
+
+  // Handle category removal
+  categoryTag
+    .querySelector(".remove-category")
+    .addEventListener("click", function () {
+      categoryTag.remove();
+      SelectedCategories.delete(selectedValue);
     });
 }
- function handleImageUpload(e) {
-    const files = Array.from(e.target.files || e.dataTransfer?.files || []);
-    const previewArea = document.getElementById('imagePreviewArea');
-    const existingPreviews = previewArea?.querySelectorAll('.image-preview')?.length || 0;
-    const maxImages = 5;
+function handleImageUpload(e) {
+  if (e.handled === true) return;
+  e.handled = true;
+  const files = Array.from(e.target.files || e.dataTransfer?.files || []);
+  const previewArea = document.getElementById("imagePreviewArea");
+  const existingPreviews =
+    previewArea?.querySelectorAll(".image-preview")?.length || 0;
+  const maxImages = 5;
 
-    if (!previewArea) return;
+  if (!previewArea) return;
 
-    // Check total number of images (existing + new)
-    if (existingPreviews + files.length > maxImages) {
-        showNotification(`Maximum ${maxImages} images allowed`, NotificationType.ERROR);
-        return;
+  // Check total number of images (existing + new)
+  if (existingPreviews + files.length > maxImages) {
+    showNotification(
+      `Maximum ${maxImages} images allowed`,
+      NotificationType.ERROR
+    );
+    return;
+  }
+
+  files.forEach((file) => {
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      showNotification("Only image files are allowed", NotificationType.ERROR);
+      return;
     }
 
-    files.forEach(file => {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showNotification('Only image files are allowed', NotificationType.ERROR);
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.createElement('div');
-            preview.className = 'image-preview';
-            preview.innerHTML = `
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const preview = document.createElement("div");
+      preview.className = "image-preview";
+      preview.innerHTML = `
                 <img src="${e.target.result}" alt="Preview">
                 <button type="button" class="remove-image" aria-label="Remove image">&times;</button>
             `;
-            previewArea.appendChild(preview);
+      previewArea.appendChild(preview);
 
-            // Add remove functionality
-            preview.querySelector('.remove-image').addEventListener('click', function() {
-                preview.remove();
-                // Reset file input if all previews are removed
-                if (previewArea.querySelectorAll('.image-preview').length === 0) {
-                    const fileInput = document.getElementById('image-upload');
-                    if (fileInput) fileInput.value = '';
-                }
-            });
-        };
-        reader.readAsDataURL(file);
-    });
- }
- function setupDropZone() {
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('image-upload');
-    const previewArea = document.getElementById('imagePreviewArea');
-
-    if (!dropZone || !fileInput || !previewArea) return;
-
-    dropZone.addEventListener('click', () => fileInput.click());
-    
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults);
-        document.body.addEventListener(eventName, preventDefaults);
-    });
-
-    // Handle drag states
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.add('dragover');
+      // Add remove functionality
+      preview
+        .querySelector(".remove-image")
+        .addEventListener("click", function () {
+          preview.remove();
+          // Reset file input if all previews are removed
+          if (previewArea.querySelectorAll(".image-preview").length === 0) {
+            const fileInput = document.getElementById("image-upload");
+            if (fileInput) fileInput.value = "";
+          }
         });
-    });
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.remove('dragover');
-        });
-    });
+function setupDropZone() {
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("image-upload");
+  const previewArea = document.getElementById("imagePreviewArea");
 
-    // Handle dropped files
-    dropZone.addEventListener('drop', (e) => {
-        handleImageUpload({ dataTransfer: e.dataTransfer });
-    });
+  if (!dropZone || !fileInput || !previewArea) return;
+
+  // Remove all existing event listeners
+  fileInput.removeEventListener("change", handleImageUpload);
+  const clickHandler = () => fileInput.click();
+  dropZone.removeEventListener("click", clickHandler);
+
+  // Add new event listeners
+  fileInput.addEventListener("change", handleImageUpload);
+  dropZone.addEventListener("click", clickHandler);
+
+  // Clean up existing drag event listeners
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+    dropZone.removeEventListener(eventName, preventDefaults);
+    document.body.removeEventListener(eventName, preventDefaults);
+  });
+
+  // Add new drag event listeners
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+    dropZone.addEventListener(eventName, preventDefaults);
+    document.body.addEventListener(eventName, preventDefaults);
+  });
+
+  // Handle drag states
+  const addDragover = () => dropZone.classList.add("dragover");
+  const removeDragover = () => dropZone.classList.remove("dragover");
+
+  ["dragenter", "dragover"].forEach((eventName) => {
+    dropZone.removeEventListener(eventName, addDragover);
+    dropZone.addEventListener(eventName, addDragover);
+  });
+
+  ["dragleave", "drop"].forEach((eventName) => {
+    dropZone.removeEventListener(eventName, removeDragover);
+    dropZone.addEventListener(eventName, removeDragover);
+  });
+
+  // Handle dropped files
+  const dropHandler = (e) =>
+    handleImageUpload({ dataTransfer: e.dataTransfer });
+  dropZone.removeEventListener("drop", dropHandler);
+  dropZone.addEventListener("drop", dropHandler);
 }
 
 function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 }
 
-
 export {
-    handleCategorySelection,
-    setupVideoDropZone,
-    handleVideoUpload,
-    handleImageUpload,
-    setupDropZone,
-    SelectedCategories
+  handleCategorySelection,
+  setupVideoDropZone,
+  handleVideoUpload,
+  handleImageUpload,
+  setupDropZone,
+  SelectedCategories,
 };

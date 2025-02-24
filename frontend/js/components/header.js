@@ -1,13 +1,16 @@
 import { escapeHTML, formatTimeAgo } from '../utils.js';
 import { showNotification, NotificationType } from '../utils/notifications.js';
 import Router from '../router/router.js';
+import { authenticatedFetch } from '../security.js';
 
 export function createHeader() {
     console.log("Creating header");
     return `
-        <header class="main-header">
-            ${createHeaderLeft()}
-            ${createHeaderRight()}
+        <header class="header-container">
+            <div class="main-header">
+                ${createHeaderLeft()}
+                ${createHeaderRight()}
+            </div>
         </header>
     `;
 }
@@ -17,8 +20,8 @@ function createHeaderLeft() {
         <div class="header-left">
             <div class="logo">
                 <img src="images/forum.png" alt="Forum Logo">
+                 <h1>Forum</h1>
             </div>
-            <h1>Forum</h1>
             ${createSearchBar()}
         </div>
     `;
@@ -38,31 +41,29 @@ function createSearchBar() {
 function createHeaderRight() {
     return `
         <div class="header-right">
-            ${createHeaderNav()}
             ${createHeaderActions()}
         </div>
     `;
 }
 
-function createHeaderNav() {
-    return `
-        <nav class="header-nav">
-            <ul class="nav-links">
-                <li><a href="/" class="nav-link" data-route="/">Home</a></li>
-                <li><a href="/profilePage" class="nav-link" data-route="/profilePage">Profile</a></li>
-            </ul>
-        </nav>
-    `;
-}
 
 function createHeaderActions() {
     return `
         <div class="header-actions">
+            ${createHomeButton()}
+            ${createProfileButton()}
             ${createMessageButton()}
             ${createNotificationMenu()}
-            ${createSettingsButton()}
             ${createProfileMenu()}
         </div>
+    `;
+}
+
+function createHomeButton() {
+    return `
+        <button class="icon-btn" title="Home" id="home-btn" data-route="/">
+            <i class="fas fa-home"></i>
+        </button>
     `;
 }
 
@@ -75,6 +76,15 @@ function createMessageButton() {
     `;
 }
 
+function createProfileButton() {
+    return `
+        <button class="icon-btn" title="Profile" id="profile-btn" data-route="/profilePage">
+            <i class="fas fa-user"></i>
+        </button>
+    `;
+}
+
+
 function createNotificationMenu() {
     return `
         <div class="notification-menu">
@@ -86,6 +96,7 @@ function createNotificationMenu() {
         </div>
     `;
 }
+
 function createNotificationDropdown() {
     return `
         <div class="dropdown-menu">
@@ -117,13 +128,6 @@ function createNotificationDropdown() {
     `;
 }
 
-function createSettingsButton() {
-    return `
-        <button class="icon-btn" title="Settings">
-            <i class="fas fa-cog"></i>
-        </button>
-    `;
-}
 
 function createProfileMenu() {
     return `
@@ -142,21 +146,27 @@ function createProfileMenu() {
 
 async function handleLogout() {
     try {
-        // Remove token and user data from local storage first
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
+        // Set the intentional logout flag before closing connection
+        let { isIntentionalLogout, globalSocket } = await import('../websocket/websocket.js');
+        isIntentionalLogout = true;
+        // Close WebSocket connection if it exists
+        if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
+            globalSocket.close();
+        }
+
 
         // Try to notify the server, but don't wait for it
         try {
-            await fetch('/api/auth/logout', {
+            await authenticatedFetch('/logout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
         } catch (serverError) {
-            console.warn('Server logout failed, but continuing with local logout:', serverError);
+            console.error('Failed to logout from server:', serverError);
+            showNotification('Failed to logout from server', NotificationType.ERROR);
+            return;
         }
 
         // Hide forum section
@@ -171,6 +181,10 @@ async function handleLogout() {
             messengerContainer.remove();
         }
 
+        // Remove token and user data from local storage first
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+
         // Get router instance and navigate
         const router = new Router();
         router.navigate('/loginPage');
@@ -183,27 +197,51 @@ async function handleLogout() {
 }
 
 export function setupHeaderEventListeners() {
+    const router = new Router();
+
     // Add click handlers for navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const route = e.target.dataset.route;
-            const router = new Router();  // Create new router instance
             router.navigate(route);
         });
     });
     
+    // Home button click handler
+    const homeBtn = document.getElementById('home-btn');
+    if (homeBtn) {
+        homeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            router.navigate('/');
+        });
+    }
+
+    // Profile button click handler
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            router.navigate('/profilePage');
+        });
+    }
+
+    // Add messages button click handler
+    const messagesBtn = document.getElementById('messages-btn');
+    if (messagesBtn) {
+        messagesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            router.navigate('/messagesPage');
+        });
+    }
+
     // Search functionality
     const searchBtn = document.querySelector('.search-btn');
     if (searchBtn) {
         searchBtn.addEventListener('click', handleSearch);
     }
 
-    if (document.getElementById('logout')) {
-        console.log('Logout button found');
-    } else {
-        console.log('Logout button not found');
-    }
+ 
     // Logout functionality - Use event delegation for dynamically added elements
     document.addEventListener('click', (e) => {
         if (e.target.closest('#logout')) {
@@ -218,14 +256,6 @@ export function setupHeaderEventListeners() {
         clearAllBtn.addEventListener('click', clearAllNotifications);
     }
 
-    // Add messages button click handler
-    const messagesBtn = document.getElementById('messages-btn');
-    if (messagesBtn) {
-        messagesBtn.addEventListener('click', () => {
-            const router = new Router();
-            router.navigate('/messagesPage');
-        });
-    }
 }
 
 async function handleSearch(e) {

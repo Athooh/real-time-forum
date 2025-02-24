@@ -160,6 +160,14 @@
     margin-bottom: 5px;
 }
 
+.back-button {
+    display: none;
+}
+
+/* .d-desktop-only {
+    display: none !important;
+}  */
+
 .message-header h4 {
     font-size: 1rem;
     font-weight: 600;
@@ -473,10 +481,15 @@
 
 /* Messages Page */
 
+.messages-container {
+    height: 100vh;
+    margin-top: 70px;
+}
+
 .messages-page {
     display: grid;
     grid-template-columns: 350px 1fr;
-    height: calc(100vh - 100px); /* Adjust for header height */
+    /* height: calc(100vh - 100px); Adjust for header height */
     background: var(--white-color);
     margin: 20px auto;
     border-radius: var(--border-radius);
@@ -485,14 +498,14 @@
     width: calc(100% - 40px); /* Account for margins */
     max-width: 1200px;
     position: sticky; /* Prevent page scrolling */
-    top: 80px; /* Account for header height */
+    /* top: 80px; Account for header height */
     height: 80vh;
 }
 
 #messages-content {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 70px);
+    height: 100vh;
     overflow: hidden;
 }
 
@@ -636,7 +649,8 @@
     left: 50%;
     transform: translate(-50%, -50%);
     background: white;
-    width: 500px;
+    width: 100%;
+    max-width: 25%;
     border-radius: 10px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
     z-index: 10002;
@@ -648,6 +662,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 10px;
 }
 
 .new-message-header h3 {
@@ -666,44 +681,45 @@
 
 .recipient-search {
     position: relative;
-    margin-top: 10px;
-    margin-bottom: 5px;
-    padding: 0 20px;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .recipient-search input {
-    width: 410px;
-    padding: 10px 10px;
+    width: 100%;
+    padding: 8px 12px;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--search-input-color);
-    color: var(--text-color);
-    font-size: 0.9rem;
-   
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
 }
-
-
 
 .recipient-search-results {
     position: absolute;
-    background: var(--white-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    width: 100%;
     top: 100%;
     left: 0;
+    width: 100%;
+    background: var(--white-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 1000;
+    box-sizing: border-box;
 }
 
 .recipient-result {
+    width: 100%;
+    position: relative;
     display: flex;
     align-items: center;
     padding: 8px 12px;
     cursor: pointer;
     transition: background-color 0.2s;
+    margin-inline: 10px;
+    box-sizing: border-box;
 }
 
 .recipient-result:hover {
@@ -728,11 +744,13 @@
 .recipient-result .user-nickname {
     font-weight: 600;
     color: var(--text-color);
+    text-overflow: ellipsis;
 }
 
 .recipient-result .user-name {
     font-size: 0.8em;
     color: var(--text-muted);
+    text-overflow: ellipsis;
 }
 
 .no-results {
@@ -742,7 +760,7 @@
 }
 
 .new-message-content {
-    padding: 20px;
+    padding: 10px;
     height: 300px;
     display: flex;
     flex-direction: column;
@@ -756,7 +774,6 @@
     padding: 10px;
     background: var(--search-input-color);
     border-radius: 8px;
-    margin-bottom: 15px;
 }
 
 .new-message-actions {
@@ -813,4 +830,24 @@
     font-size: 0.9rem;
     margin-top: 8px;
     color: var(--text-muted);
+}
+
+.message-loading {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

@@ -10,6 +10,11 @@ import (
 	"forum/backend/models"
 )
 
+type FollowResponse struct {
+	Connections []models.UserFollower `json:"connections"`
+	TotalCount  int                   `json:"totalCount"`
+}
+
 func FollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value(models.UserIDKey).(string)
@@ -46,16 +51,9 @@ func FollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 		}
 
 		// Get counts for both users
-		followedUserFollowersCount, err := fc.GetUserFollowersCount(requestBody.FollowingID)
+		followersCount, followingCount, err := fc.GetFollowCounts(requestBody.FollowingID)
 		if err != nil {
-			logger.Error("Failed to get followers count: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		followerUserFollowingCount, err := fc.GetUserFollowingCount(followerID)
-		if err != nil {
-			logger.Error("Failed to get following count: %v", err)
+			logger.Error("Failed to get counts: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -66,8 +64,8 @@ func FollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 			"payload": map[string]interface{}{
 				"followerId":     followerID,
 				"followingId":    requestBody.FollowingID,
-				"followersCount": followedUserFollowersCount,
-				"followingCount": followerUserFollowingCount,
+				"followersCount": followersCount,
+				"followingCount": followingCount,
 			},
 		}
 
@@ -128,19 +126,38 @@ func UnfollowUserHandler(fc *controllers.FollowersController) http.HandlerFunc {
 		}
 
 		// Get updated counts after unfollowing
-		followersCount, err := fc.GetUserFollowersCount(requestBody.FollowingID)
+		followersCount, followingCount, err := fc.GetFollowCounts(requestBody.FollowingID)
 		if err != nil {
-			logger.Error("Failed to get followers count: %v", err)
+			logger.Error("Failed to get counts: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Failed to fetch user stats",
+			})
+			return
+		}
+
+		// Create the unfollow event message
+		unfollowEvent := map[string]interface{}{
+			"type": "user_unfollowed",
+			"payload": map[string]interface{}{
+				"followerId":     followerID,
+				"followingId":    requestBody.FollowingID,
+				"followersCount": followersCount,
+				"followingCount": followingCount,
+			},
+		}
+
+		// Convert the event to JSON
+		msgBytes, err := json.Marshal(unfollowEvent)
+		if err != nil {
+			logger.Error("Error creating message: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		followingCount, err := fc.GetUserFollowingCount(followerID)
-		if err != nil {
-			logger.Error("Failed to get following count: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		// Send the message to both users involved
+		SendToUser(followerID, msgBytes) // Send to the follower
+		SendToUser(requestBody.FollowingID, msgBytes)
 
 		response := map[string]interface{}{
 			"message":         "Successfully unfollowed user",
@@ -170,16 +187,9 @@ func GetFollowCountsHandler(fc *controllers.FollowersController) http.HandlerFun
 			return
 		}
 
-		followersCount, err := fc.GetUserFollowersCount(userID)
+		followersCount, followingCount, err := fc.GetFollowCounts(userID)
 		if err != nil {
-			logger.Error("Failed to get followers count: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		followingCount, err := fc.GetUserFollowingCount(userID)
-		if err != nil {
-			logger.Error("Failed to get following count: %v", err)
+			logger.Error("Failed to get counts: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -205,7 +215,7 @@ func GetUserFollowingListHandler(fc *controllers.FollowersController) http.Handl
 			return
 		}
 
-		followingList, err := fc.GetUserFollowing(followerID)
+		followingList, err := fc.GetUserFollowingId(followerID)
 		if err != nil {
 			logger.Error("Failed to get following list: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -214,5 +224,107 @@ func GetUserFollowingListHandler(fc *controllers.FollowersController) http.Handl
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(followingList)
+	}
+}
+
+func GetUserFollowersHandler(fc *controllers.FollowersController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(models.UserIDKey).(string)
+
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if userIDInt == 0 {
+			logger.Error("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 || limit > 50 {
+			limit = 10
+		}
+
+		followers, err := fc.GetUserFollowers(userIDInt, page, limit)
+		if err != nil {
+			logger.Error("Failed to fetch followers: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		followersCount, _, err := fc.GetFollowCounts(userIDInt)
+		if err != nil {
+			logger.Error("Failed to fetch counts: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		response := FollowResponse{
+			Connections: followers,
+			TotalCount:  followersCount,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+func GetUserFollowingHandler(fc *controllers.FollowersController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(models.UserIDKey).(string)
+
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if userIDInt == 0 {
+			logger.Error("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 || limit > 50 {
+			limit = 10
+		}
+
+		following, err := fc.GetUserFollowing(userIDInt, page, limit)
+		if err != nil {
+			logger.Error("Failed to fetch following: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		_, followingCount, err := fc.GetFollowCounts(userIDInt)
+		if err != nil {
+			logger.Error("Failed to fetch counts: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		response := FollowResponse{
+			Connections: following,
+			TotalCount:  followingCount,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
 	}
 }

@@ -33,15 +33,22 @@ func SendToUser(userID int, message []byte) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
+	found := false
 	for conn, connUserID := range clients {
 		if connUserID == userID {
+			found = true
+			logger.Info("Sending message to user %d", userID)
 			err := conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
-				log.Printf("Error sending message to user %d: %v", userID, err)
+				logger.Error("Error sending message to user %d: %v", userID, err)
 				conn.Close()
 				delete(clients, conn)
 			}
 		}
+	}
+
+	if !found {
+		logger.Warning("No active WebSocket connection found for user %d", userID)
 	}
 }
 
@@ -217,4 +224,35 @@ func MarkUserOffline(userID int) {
 		return
 	}
 	Broadcast(msgBytes)
+}
+
+// Add new function to broadcast post reactions
+func BroadcastPostReaction(postID int, likes int, dislikes int) {
+	message := struct {
+		Type    string `json:"type"`
+		Payload struct {
+			PostID   int `json:"post_id"`
+			Likes    int `json:"likes"`
+			Dislikes int `json:"dislikes"`
+		} `json:"payload"`
+	}{
+		Type: "post_reaction",
+		Payload: struct {
+			PostID   int `json:"post_id"`
+			Likes    int `json:"likes"`
+			Dislikes int `json:"dislikes"`
+		}{
+			PostID:   postID,
+			Likes:    likes,
+			Dislikes: dislikes,
+		},
+	}
+
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Failed to marshal post reaction message: %v", err)
+		return
+	}
+
+	Broadcast(messageBytes)
 }

@@ -22,12 +22,9 @@ class Router {
         this.handleRoute(path);
     }
 
-    handleRoute(pathname) {
-        console.log('Handling route:', pathname);
-        console.log('Available routes:', Object.keys(this.routes));
+    handleRoute(pathname) { 
         const route = this.routes[pathname] || this.routes['*'];
         if (route) {
-            console.log('Executing route handler for:', pathname);
             route();
         } else {
             console.log('No route handler found for:', pathname);

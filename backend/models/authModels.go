@@ -13,6 +13,7 @@ type User struct {
 	Gender     string    `json:"gender"`
 	Profession string    `json:"profession"`
 	Avatar     *string   `json:"avatar"`
+	CoverImage *string   `json:"cover_image"`
 	IsOnline   bool      `json:"is_online"`
 	LastSeen   time.Time `json:"last_seen"`
 }

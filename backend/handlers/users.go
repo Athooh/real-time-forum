@@ -182,3 +182,50 @@ func SearchUsersHandler(uc *controllers.UsersController) http.HandlerFunc {
 		json.NewEncoder(w).Encode(users)
 	}
 }
+
+type PasswordUpdateRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+func UpdatePasswordHandler(uc *controllers.UsersController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get user ID from context
+		userIDStr := r.Context().Value(models.UserIDKey).(string)
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			logger.Error("Failed to convert user ID: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var req PasswordUpdateRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request format"})
+			return
+		}
+
+		// Verify current password
+		if err := uc.VerifyPassword(userID, req.CurrentPassword); err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Current password is incorrect"})
+			return
+		}
+
+		// Update password
+		if err := uc.UpdatePassword(userID, req.NewPassword); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to update password"})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Password updated successfully"})
+	}
+}

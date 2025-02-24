@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,6 +25,11 @@ func InitializeDatabase() (*sql.DB, error) {
 		log.Fatal("Failed to open database:", err)
 	}
 
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+	}
+
 	GloabalDB = db
 	// Create tables
 	_, err = db.Exec(`
@@ -38,6 +44,7 @@ func InitializeDatabase() (*sql.DB, error) {
 			gender TEXT,
 			profession TEXT,
 			avatar TEXT,
+			cover_image TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 
@@ -125,6 +132,7 @@ func InitializeDatabase() (*sql.DB, error) {
 			user2_id INTEGER NOT NULL,
 			latest_message_id INTEGER,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY(user1_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY(user2_id) REFERENCES users(id) ON DELETE CASCADE,
 			UNIQUE(user1_id, user2_id)
@@ -141,6 +149,38 @@ func InitializeDatabase() (*sql.DB, error) {
 			FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY(recipient_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS user_about (
+			user_id INTEGER PRIMARY KEY,
+			bio TEXT,
+			date_of_birth DATE,
+			relationship_status TEXT,
+			location TEXT,
+			github_url TEXT,
+			linkedin_url TEXT,
+			twitter_url TEXT,
+			website TEXT,
+			phone_number TEXT,
+			interests TEXT,
+			is_profile_public BOOLEAN DEFAULT TRUE,
+			show_email BOOLEAN DEFAULT FALSE,
+			show_phone BOOLEAN DEFAULT FALSE,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS user_experience (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			company_name TEXT NOT NULL,
+			role TEXT NOT NULL,
+			category TEXT NOT NULL,
+			location TEXT,
+			start_date DATE NOT NULL,
+			end_date DATE,
+			is_current BOOLEAN DEFAULT FALSE,
+			description TEXT,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		);
 	`)
 	return db, err

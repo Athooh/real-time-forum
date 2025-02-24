@@ -132,9 +132,9 @@ export async function markMessageAsRead(messageId) {
     }
 }
 
-export async function fetchConversation(userId) {
+export async function fetchConversation(userId, page = 1, limit = 20) {
     try {
-        const response = await authenticatedFetch(`${BASE_URL}/messages/conversation?recipient_id=${userId}`, {
+        const response = await authenticatedFetch(`${BASE_URL}/messages/conversation?recipient_id=${userId}&page=${page}&limit=${limit}&order=desc`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
