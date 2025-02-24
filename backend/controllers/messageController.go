@@ -131,7 +131,7 @@ func (mc *MessageController) GetMessagesInConversation(user1ID, user2ID, offset,
         LEFT JOIN user_status s_status ON s.id = s_status.user_id
         LEFT JOIN user_status r_status ON r.id = r_status.user_id
         WHERE (c.user1_id = ? AND c.user2_id = ?) OR (c.user1_id = ? AND c.user2_id = ?)
-        ORDER BY m.sent_at ASC
+        ORDER BY m.sent_at DESC
         LIMIT ? OFFSET ?
     `
 
@@ -200,14 +200,43 @@ func (mc *MessageController) GetMessagesInConversation(user1ID, user2ID, offset,
 	return messages, nil
 }
 
-func (mc *MessageController) MarkMessageAsRead(msgID int) error {
+func (mc *MessageController) MarkMessageAsRead(msgID int) (int, error) {
+	// First mark the message as read
 	query := `
         UPDATE messages
         SET is_read = TRUE
         WHERE id = ?
     `
 	_, err := mc.db.Exec(query, msgID)
-	return err
+	if err != nil {
+		return 0, err
+	}
+
+	// Get the recipient_id for the message we just marked as read
+	var recipientID int
+	query = `
+        SELECT recipient_id 
+        FROM messages 
+        WHERE id = ?
+    `
+	err = mc.db.QueryRow(query, msgID).Scan(&recipientID)
+	if err != nil {
+		return 0, err
+	}
+
+	// Count remaining unread messages for this recipient
+	var unreadCount int
+	query = `
+        SELECT COUNT(*) 
+        FROM messages 
+        WHERE recipient_id = ? AND is_read = FALSE
+    `
+	err = mc.db.QueryRow(query, recipientID).Scan(&unreadCount)
+	if err != nil {
+		return 0, err
+	}
+
+	return unreadCount, nil
 }
 
 func (mc *MessageController) GetAllMessages(userID, limit, offset int) ([]models.Message, error) {
@@ -310,4 +339,19 @@ func (mc *MessageController) GetUserInfo(userID int) (models.MessageUser, error)
 	userInfo.Avatar = avatarNull.String
 
 	return userInfo, nil
+}
+
+func (mc *MessageController) GetUnreadMessageCount(userID int) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*) 
+		FROM messages 
+		WHERE recipient_id = ? AND is_read = false
+	`
+	err := mc.db.QueryRow(query, userID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
