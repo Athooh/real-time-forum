@@ -4,6 +4,7 @@ import {
   handleWebsocketUpdatePost,
   handlePostReactionUpdate,
   handleUnreadCountUpdate,
+  handleNewNotification,
 } from "./websocketUpdates.js";
 import { formatNumber, formatTimeAgo } from "../utils.js";
 import { fetchUserPhotos } from "../components/profile/profileApi.js";
@@ -38,7 +39,8 @@ export function initializeWebSocket() {
 
     socket.onopen = () => {
       console.log("WebSocket connection established");
-      reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      socket.wasConnected = true;
+      reconnectAttempts = 0;
     };
 
     socket.onmessage = (event) => {
@@ -50,15 +52,17 @@ export function initializeWebSocket() {
       console.log("WebSocket connection closed");
       clearInterval(pingInterval);
 
-      // Don't attempt to reconnect if the closure was clean and intended
+      // Don't attempt to reconnect if:
+      // 1. The closure was clean and intended
+      // 2. We had a successful connection (event.wasClean)
+      // 3. User logged out intentionally
       if (event.wasClean || isIntentionalLogout) {
         console.log("WebSocket connection closed cleanly or intentionally");
         return;
       }
 
-      // Only attempt to reconnect if we haven't exceeded max attempts
-      if (reconnectAttempts < maxReconnectAttempts) {
-        // Exponential backoff
+      // Only attempt to reconnect if connection was never established
+      if (!socket.wasConnected && reconnectAttempts < maxReconnectAttempts) {
         const delay = Math.min(
           baseDelay * Math.pow(2, reconnectAttempts),
           30000
@@ -75,11 +79,8 @@ export function initializeWebSocket() {
           connect();
         }, delay);
       } else {
-        console.log("Max reconnection attempts reached");
-        // Optionally notify the user that the connection was lost
-        showNotification(
-          "Connection lost. Please refresh the page.",
-          NotificationType.ERROR
+        console.log(
+          "Max reconnection attempts reached or connection was previously established"
         );
       }
     };
@@ -138,6 +139,7 @@ export const WebSocketMessageType = {
   PROFILE_UPDATE: "profile_update",
   POST_REACTION: "post_reaction",
   UNREAD_COUNT_UPDATE: "unread_count_update",
+  NEW_NOTIFICATION: "new_notification",
 };
 
 export function handleWebSocketMessage(data) {
@@ -191,6 +193,10 @@ export function handleWebSocketMessage(data) {
       break;
     case WebSocketMessageType.UNREAD_COUNT_UPDATE:
       handleUnreadCountUpdate(payload);
+      break;
+    case WebSocketMessageType.NEW_NOTIFICATION:
+      console.log("New notification received:", payload);
+      handleNewNotification(payload);
       break;
     default:
       console.log("Unknown message type:", data.type);
