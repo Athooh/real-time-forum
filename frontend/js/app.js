@@ -7,26 +7,18 @@ import {
   setupAuthEventListeners,
 } from "./components/auth.js";
 import { setupNotificationEventListeners } from "./components/notifications.js";
-import {
-  createHeader,
-  setupHeaderEventListeners,
-} from "./components/header.js";
+import { createHeader } from "./components/header/header.js";
+import { setupHeaderEventListeners } from "./components/header/headerEvent.js";
 import {
   createLeftSidebar,
   createRightSidebar,
 } from "./components/sideBar/sidebar.js";
-import {
-  createMainContent,
-  setupPostEventListeners,
-} from "./components/posts/posts.js";
+import { createMainContent } from "./components/posts/posts.js";
 import { fetchPosts } from "./components/posts/postsApi.js";
 import Router from "./router/router.js";
 import { createProfileContent } from "./components/profile/profile.js";
 import { createProfilePage } from "./components/profile/profileTemplate.js";
-import {
-  setupDropZone,
-  setupVideoDropZone,
-} from "./components/posts/postsEvent.js";
+
 import { ensureWebSocketConnection } from "./websocket/websocket.js";
 import { fetchUserSettings } from "./components/profile/profileApi.js";
 
