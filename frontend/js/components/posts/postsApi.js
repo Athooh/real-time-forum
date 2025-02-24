@@ -9,6 +9,7 @@ import { SelectedCategories } from "./postsEvent.js";
 import { setupCommentEventListeners } from "./postsEvents.js";
 import { createComment } from "./postsTemplates.js";
 import { globalSocket } from "../../websocket/websocket.js";
+import { WebSocketMessageType } from "../../websocket/websocket.js";
 
 async function handleCreatePost(e) {
   e.preventDefault();
@@ -30,16 +31,15 @@ async function handleCreatePost(e) {
 async function handlePostReaction(e) {
   const postId = e.currentTarget.dataset.postId;
   const isLike = e.currentTarget.classList.contains("action-like-btn");
-  const isDislike = e.currentTarget.classList.contains("action-dislike-btn");
 
   try {
     const response = await reactToPost(postId, isLike);
 
-    // If the WebSocket is connected, send the update
+    // Send WebSocket update for reaction counts
     if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
       globalSocket.send(
         JSON.stringify({
-          type: "post_reaction",
+          type: WebSocketMessageType.POST_REACTION,
           payload: {
             post_id: parseInt(postId),
             likes: response.likes,
@@ -121,8 +121,6 @@ async function handleCommentSubmit(e) {
     e.preventDefault();
     const postId = e.target.dataset.postId;
     const content = e.target.value.trim();
-
-
 
     if (content && postId) {
       try {
@@ -382,12 +380,16 @@ async function refreshComments(postId) {
 
     const comments = await response.json();
 
-    console.log("refresh  comments", comments);
     const commentsContainer = document.querySelector(`#comments-${postId}`);
     if (commentsContainer) {
-     
       commentsContainer.innerHTML = Object.values(comments)
-        .map((comment) => createComment(comment,false,comment.replies && comment.replies.length > 0))
+        .map((comment) =>
+          createComment(
+            comment,
+            false,
+            comment.replies && comment.replies.length > 0
+          )
+        )
         .join("");
 
       setupCommentEventListeners();
