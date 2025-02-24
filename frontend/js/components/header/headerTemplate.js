@@ -31,7 +31,7 @@ function createNotificationMenu() {
         <div class="notification-menu">
             <button class="icon-btn" title="Notifications">
                 <i class="fas fa-bell"></i>
-                <span class="badge">5</span>
+                <span class="notification-badge" style="display: none">0</span>
             </button>
             ${createNotificationDropdown()}
         </div>
@@ -42,28 +42,14 @@ function createNotificationDropdown() {
   return `
         <div class="dropdown-menu">
             <div class="notification-header">
-                <p class="h3">Notifications <span>2 New</span></p>
-                <p class="clear-all">Clear all</p>
+                <p class="h3">Notifications <span class="new-notifications-count"></span></p>
+                <button class="clear-all">Clear all</button>
             </div>
-            <div class="notifications-list">
-                <div class="notification">
-                    <img src="images/avatar.png" alt="User Avatar">
-                    <div class="notification-content">
-                        <p><span><strong>John Doe</strong></span> liked your post</p>
-                        <span class="time">2 mins</span>
-                    </div>
-                </div>
-                <div class="notification unread">
-                    <img src="images/avatar.png" alt="User Avatar">
-                    <div class="notification-content">
-                        <p><span><strong>Jane Smith</strong></span> commented on your post</p>
-                        <span class="time">5 mins</span>
-                    </div>
-                </div>
-                <!-- More notifications -->
+            <div class="notifications-list" id="notifications-list">
+                <!-- Notifications will be loaded dynamically -->
             </div>
             <div class="notification-footer">
-                <a href="#">View all notifications</a>
+                <button class="load-more-notifications" style="display: none">Load more</button>
             </div>
         </div>
     `;
@@ -97,7 +83,7 @@ function createSearchBar() {
 
 function createNotificationItem(notification) {
   return `
-        <div class="notification-item ${notification.read ? "" : "unread"}" 
+        <div class="notification-item ${notification.is_read ? "" : "unread"}" 
              data-notification-id="${notification.id}">
             <div class="notification-icon">
                 ${getNotificationTypeIcon(notification.type)}
@@ -107,12 +93,16 @@ function createNotificationItem(notification) {
                   notification.actor.nickname
                 )}</strong> ${escapeHTML(notification.message)}</p>
                 <span class="notification-time">${formatTimeAgo(
-                  notification.timestamp
+                  notification.created_at
                 )}</span>
             </div>
-            <button class="notification-close" aria-label="Dismiss notification">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="notification-actions">
+                <button class="mark-read-btn" title="Mark as read" ${
+                  notification.is_read ? 'style="display: none;"' : ""
+                }>
+                    <i class="fas fa-check"></i>
+                </button>
+            </div>
         </div>
     `;
 }
@@ -120,22 +110,7 @@ function createNotificationItem(notification) {
 function createNotificationsList() {
   return `
         <div class="notifications-list">
-            ${createNotificationItem({
-              id: 1,
-              type: "like",
-              message: "liked your post",
-              actor: { nickname: "John Doe" },
-              timestamp: new Date(),
-              read: false,
-            })}
-            ${createNotificationItem({
-              id: 2,
-              type: "comment",
-              message: "commented on your post",
-              actor: { nickname: "Jane Smith" },
-              timestamp: new Date(),
-              read: false,
-            })}
+            <!-- Notifications will be loaded dynamically -->
         </div>
     `;
 }
