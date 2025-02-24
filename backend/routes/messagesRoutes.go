@@ -37,4 +37,11 @@ func MessagesRoutes(db *sql.DB) {
 		middleware.JWTAuthMiddleware,
 		middleware.CORSMiddleware,
 	))
+
+	http.Handle("/messages/unread-count", middleware.ApplyMiddleware(
+		http.HandlerFunc(handlers.GetUnreadCountHandler(mc)),
+		middleware.SessionAuthMiddleware,
+		middleware.JWTAuthMiddleware,
+		middleware.CORSMiddleware,
+	))
 }
