@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -497,7 +498,7 @@ func HandleVotePost(pc *controllers.PostController) http.HandlerFunc {
 		}
 
 		// Handle the vote
-		err = pc.HandleVote(req.PostID, userID, req.VoteType)
+		sameVote, err := pc.HandleVote(req.PostID, userID, req.VoteType)
 		if err != nil {
 			logger.Error("Failed to handle vote: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -516,6 +517,50 @@ func HandleVotePost(pc *controllers.PostController) http.HandlerFunc {
 				"error": "Failed to get updated post",
 			})
 			return
+		}
+
+		// Only create and send notification if the recipient is not the current user
+		if post.User.ID != userID && !sameVote {
+
+			// Get username of voter
+			userName, err := controllers.GetUsernameByID(pc.DB, userID)
+			if err != nil {
+				logger.Error("Failed to get username: %v", err)
+				userName = "Someone" // Fallback if username lookup fails
+			}
+
+			// Create notification for post author
+			notification := models.Notification{
+				RecipientID: post.User.ID,
+				ActorID:     userID,
+				Type:        req.VoteType,
+				EntityType:  "post",
+				EntityID:    req.PostID,
+				Message:     fmt.Sprintf("%s %sd your post: %s", userName, req.VoteType, post.Title),
+			}
+
+			nc := controllers.NewNotificationController(pc.DB)
+			_, err = nc.CreateNotification(notification)
+			if err != nil {
+				logger.Error("Failed to create notification: %v", err)
+			} else {
+				// Get the created notification with actor details
+				notifications, _, err := nc.GetNotifications(post.User.ID, 1, 0)
+				if err != nil {
+					logger.Error("Failed to get notifications: %v", err)
+				}
+				if err == nil && len(notifications) > 0 {
+					// Convert notification to JSON bytes
+					msgBytes, err := json.Marshal(map[string]interface{}{
+						"type":    "new_notification",
+						"payload": notifications[0],
+					})
+					if err == nil {
+						// Send notification to post author
+						SendToUser(post.User.ID, msgBytes)
+					}
+				}
+			}
 		}
 
 		// Get user's current vote status
