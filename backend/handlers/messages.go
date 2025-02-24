@@ -189,3 +189,27 @@ func MarkMessageAsReadHandler(mc *controllers.MessageController) http.HandlerFun
 		json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 	}
 }
+
+func GetUnreadCountHandler(mc *controllers.MessageController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(models.UserIDKey).(string)
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID in GetUnreadCountHandler %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		count, err := mc.GetUnreadMessageCount(userIDInt)
+		if err != nil {
+			logger.Error("Failed to get unread message count in GetUnreadCountHandler %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{
+			"unreadCount": count,
+		})
+	}
+}
