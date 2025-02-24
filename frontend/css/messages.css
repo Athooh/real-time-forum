@@ -32,22 +32,7 @@
     position: relative;
 }
 
-.message-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    color: rgb(255, 17, 17);
-    border-radius: 50%;
-    min-width: 15px;
-    height: 15px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px;
-    font-weight: bold;
-    
-}
+
 
 .icon-wrapper {
     display: inline-block;  /* Makes the wrapper respect transformations */
