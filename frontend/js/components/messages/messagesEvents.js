@@ -109,7 +109,10 @@ function handleNewMessage() {
     const recipientId = recipientInput.dataset.userId; // We set this in handleRecipientSearch
 
     if (!recipientId) {
-      showNotification("Please select a valid recipient", NotificationType.ERROR);
+      showNotification(
+        "Please select a valid recipient",
+        NotificationType.ERROR
+      );
       return;
     }
 
@@ -393,7 +396,7 @@ function createMessageItem(message) {
   return `
         <div class="message-item" data-user-id="${message.user.id}">
             <div class="user-avatar-wrapper">
-                <img src="${message.user.avatar}" alt="${
+                <img src="${message.user.avatar || "images/avatar.png"}" alt="${
     message.user.nickname
   }" class="user-avatar">
                 <span class="status-indicator ${
