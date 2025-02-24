@@ -8,15 +8,15 @@ import (
 )
 
 type FollowersController struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 func NewFollowersController(db *sql.DB) *FollowersController {
-	return &FollowersController{db: db}
+	return &FollowersController{DB: db}
 }
 
 func (fc *FollowersController) InsertUserFollower(followerID, followingID int) error {
-	tx, err := fc.db.Begin()
+	tx, err := fc.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (fc *FollowersController) InsertUserFollower(followerID, followingID int) e
 }
 
 func (fc *FollowersController) DeleteUserFollower(followerID, followingID int) error {
-	_, err := fc.db.Exec("DELETE FROM followers WHERE follower_id = ? AND following_id = ?", followerID, followingID)
+	_, err := fc.DB.Exec("DELETE FROM followers WHERE follower_id = ? AND following_id = ?", followerID, followingID)
 	return err
 }
 
@@ -60,7 +60,7 @@ func (fc *FollowersController) GetUserFollowers(userID int, page, limit int) ([]
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := fc.db.Query(query, userID, limit, offset)
+	rows, err := fc.DB.Query(query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (fc *FollowersController) GetUserFollowing(userID int, page, limit int) ([]
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := fc.db.Query(query, userID, limit, offset)
+	rows, err := fc.DB.Query(query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -135,13 +135,13 @@ func (fc *FollowersController) GetFollowCounts(userID int) (int, int, error) {
 	var followersCount, followingCount int
 
 	// Get followers count
-	err := fc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&followersCount)
+	err := fc.DB.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&followersCount)
 	if err != nil {
 		return 0, 0, err
 	}
 
 	// Get following count
-	err = fc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&followingCount)
+	err = fc.DB.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&followingCount)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -151,7 +151,7 @@ func (fc *FollowersController) GetFollowCounts(userID int) (int, int, error) {
 
 func (fc *FollowersController) IsFollowing(followerID, followingID int) (bool, error) {
 	var exists bool
-	err := fc.db.QueryRow(
+	err := fc.DB.QueryRow(
 		"SELECT EXISTS(SELECT 1 FROM followers WHERE follower_id = ? AND following_id = ?)",
 		followerID, followingID,
 	).Scan(&exists)
@@ -159,7 +159,7 @@ func (fc *FollowersController) IsFollowing(followerID, followingID int) (bool, e
 }
 
 func (fc *FollowersController) GetUserFollowersId(userID int) ([]int, error) {
-	rows, err := fc.db.Query("SELECT follower_id FROM followers WHERE following_id = ?", userID)
+	rows, err := fc.DB.Query("SELECT follower_id FROM followers WHERE following_id = ?", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (fc *FollowersController) GetUserFollowersId(userID int) ([]int, error) {
 }
 
 func (fc *FollowersController) GetUserFollowingId(userID int) ([]int, error) {
-	rows, err := fc.db.Query("SELECT following_id FROM followers WHERE follower_id = ?", userID)
+	rows, err := fc.DB.Query("SELECT following_id FROM followers WHERE follower_id = ?", userID)
 	if err != nil {
 		return nil, err
 	}
