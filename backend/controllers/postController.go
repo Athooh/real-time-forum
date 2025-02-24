@@ -467,10 +467,11 @@ func (pc *PostController) GetCommentReplies(commentID int) ([]models.Comment, er
 }
 
 // HandleVote manages likes and dislikes for a post
-func (pc *PostController) HandleVote(postID, userID int, voteType string) error {
+func (pc *PostController) HandleVote(postID, userID int, voteType string) (bool, error) {
+	var sameVote bool = false
 	tx, err := pc.DB.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return false, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -483,7 +484,7 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 	`, postID, userID).Scan(&existingVote)
 
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check existing vote: %w", err)
+		return false, fmt.Errorf("failed to check existing vote: %w", err)
 	}
 
 	// If user hasn't voted before
@@ -494,7 +495,7 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 			VALUES (?, ?, ?)
 		`, postID, userID, voteType)
 		if err != nil {
-			return fmt.Errorf("failed to insert vote: %w", err)
+			return false, fmt.Errorf("failed to insert vote: %w", err)
 		}
 
 		// Update post likes/dislikes count
@@ -511,7 +512,7 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 			WHERE id = ?
 		`, postID)
 		if err != nil {
-			return fmt.Errorf("failed to update post vote count: %w", err)
+			return false, fmt.Errorf("failed to update post vote count: %w", err)
 		}
 	} else {
 		// If user is voting the same way, remove the vote
@@ -522,7 +523,7 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 				WHERE post_id = ? AND user_id = ?
 			`, postID, userID)
 			if err != nil {
-				return fmt.Errorf("failed to delete vote: %w", err)
+				return false, fmt.Errorf("failed to delete vote: %w", err)
 			}
 
 			// Decrease the corresponding counter
@@ -539,8 +540,9 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 				WHERE id = ?
 			`, postID)
 			if err != nil {
-				return fmt.Errorf("failed to update post vote count: %w", err)
+				return false, fmt.Errorf("failed to update post vote count: %w", err)
 			}
+			sameVote = true
 		} else {
 			// If user is changing their vote
 			// Update the vote type
@@ -550,7 +552,7 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 				WHERE post_id = ? AND user_id = ?
 			`, voteType, postID, userID)
 			if err != nil {
-				return fmt.Errorf("failed to update vote: %w", err)
+				return false, fmt.Errorf("failed to update vote: %w", err)
 			}
 
 			// Update post counts (decrease old vote type, increase new vote type)
@@ -567,12 +569,12 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 				WHERE id = ?
 			`, voteType, voteType, postID)
 			if err != nil {
-				return fmt.Errorf("failed to update post vote counts: %w", err)
+				return false, fmt.Errorf("failed to update post vote counts: %w", err)
 			}
 		}
 	}
 
-	return tx.Commit()
+	return sameVote, tx.Commit()
 }
 
 // GetUserVote returns the user's current vote on a post
