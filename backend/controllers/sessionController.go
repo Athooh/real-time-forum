@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"forum/backend/logger"
+	"forum/backend/utils"
 )
 
 // Helper function to check if a session is valid
@@ -62,14 +63,11 @@ func DeleteUserSessions(db *sql.DB, userID int) error {
 	return err
 }
 
-// Cleanup expired sessions (replace with your actual cleanup logic)
+// Cleanup expired sessions and mark associated users as offline
 func CleanupExpiredSessions(ctx context.Context, db *sql.DB) {
 	// Run cleanup immediately when the function is called
 	logger.Info("Running initial cleanup of expired sessions...")
-	_, err := db.Exec("DELETE FROM sessions WHERE expires_at < ?", time.Now())
-	if err != nil {
-		log.Printf("Failed to clean up expired sessions: %v\n", err)
-	}
+	cleanupExpiredSessionsAndMarkOffline(db)
 
 	// Start a ticker to run cleanup at intervals of one hour
 	ticker := time.NewTicker(1 * time.Hour)
@@ -82,11 +80,66 @@ func CleanupExpiredSessions(ctx context.Context, db *sql.DB) {
 			return
 		case <-ticker.C:
 			logger.Info("Cleaning up expired sessions...")
-			_, err := db.Exec("DELETE FROM sessions WHERE expires_at < ?", time.Now())
-			if err != nil {
-				log.Printf("Failed to clean up expired sessions: %v\n", err)
-			}
+			cleanupExpiredSessionsAndMarkOffline(db)
 		}
+	}
+}
+
+func cleanupExpiredSessionsAndMarkOffline(db *sql.DB) {
+	// Start a transaction
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Failed to start transaction: %v\n", err)
+		return
+	}
+	defer tx.Rollback()
+
+	// First, get the user IDs of expired sessions
+	rows, err := tx.Query(`
+		SELECT DISTINCT user_id 
+		FROM sessions 
+		WHERE expires_at < ? 
+		AND user_id NOT IN (
+			SELECT user_id 
+			FROM sessions 
+			WHERE expires_at >= ?
+		)`, time.Now(), time.Now())
+	if err != nil {
+		log.Printf("Failed to query expired sessions: %v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	// Collect user IDs to mark as offline
+	var userIDs []int
+	for rows.Next() {
+		var userID int
+		if err := rows.Scan(&userID); err != nil {
+			log.Printf("Failed to scan user ID: %v\n", err)
+			continue
+		}
+		userIDs = append(userIDs, userID)
+	}
+
+	// Delete expired sessions
+	_, err = tx.Exec("DELETE FROM sessions WHERE expires_at < ?", time.Now())
+	if err != nil {
+		log.Printf("Failed to clean up expired sessions: %v\n", err)
+		return
+	}
+
+	// Mark users as offline
+	if len(userIDs) > 0 {
+		for _, userID := range userIDs {
+			utils.MarkUserOffline(userID)
+		}
+		logger.Info("Marked %d users as offline due to expired sessions", len(userIDs))
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		log.Printf("Failed to commit transaction: %v\n", err)
+		return
 	}
 }
 
