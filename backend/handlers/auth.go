@@ -71,7 +71,7 @@ func RegisterHandler(ac *controllers.AuthController) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		Broadcast(msgBytes)
+		utils.Broadcast(msgBytes)
 		// Set headers first
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -174,18 +174,18 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove user from WebSocket connections and mark as offline
-	mutex.Lock()
-	for conn, usrID := range clients {
+	utils.Mutex.Lock()
+	for conn, usrID := range utils.Clients {
 		if usrID == userID {
 			conn.Close()
-			delete(clients, conn)
+			delete(utils.Clients, conn)
 			break
 		}
 	}
-	mutex.Unlock()
+	utils.Mutex.Unlock()
 
 	// Mark user as offline in database and broadcast status
-	MarkUserOffline(userID)
+	utils.MarkUserOffline(userID)
 
 	// Broadcast offline status
 	offlineEvent := map[string]interface{}{
@@ -199,7 +199,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Error creating offline message: %v", err)
 	} else {
-		Broadcast(msgBytes)
+		utils.Broadcast(msgBytes)
 	}
 
 	// Clear the session cookie on the client
