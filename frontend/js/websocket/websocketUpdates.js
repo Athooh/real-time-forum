@@ -1,4 +1,7 @@
 import { renderPosts } from "../components/posts/posts.js";
+import { showNotification, NotificationType } from "../utils/notifications.js";
+
+import { createNotificationItem } from "../components/header/headerTemplate.js";
 
 function handleWebsocketUpdatePost(post) {
   if (post) {
@@ -67,4 +70,25 @@ export function handleUnreadCountUpdate(data) {
       messageBadge.style.display = "none";
     }
   }
+}
+
+export function handleNewNotification(data) {
+  // Add notification to list
+  const notificationsList = document.querySelector(".notifications-list");
+  if (notificationsList) {
+    const notificationHTML = createNotificationItem(data);
+    notificationsList.insertAdjacentHTML("afterbegin", notificationHTML);
+  }
+
+  // Update badge count
+  const badge = document.querySelector(".notification-badge");
+  if (badge) {
+    const currentCount = parseInt(badge.textContent) || 0;
+    const newCount = currentCount + 1;
+    badge.textContent = newCount;
+    badge.style.display = newCount > 0 ? "block" : "none";
+  }
+
+  // Show notification toast
+  showNotification(data.message, NotificationType.INFO);
 }
