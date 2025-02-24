@@ -40,6 +40,8 @@ export function handleUnreadCountUpdate(data) {
   const unreadCountElement = document.querySelector(
     ".messages-header h3 .unread-count"
   );
+  const messageBadge = document.querySelector(".message-badge");
+  const envelopeIcon = document.querySelector("#messages-btn .fa-envelope");
 
   if (unreadCountElement) {
     if (unreadCount > 0) {
@@ -47,6 +49,22 @@ export function handleUnreadCountUpdate(data) {
       unreadCountElement.style.display = "inline";
     } else {
       unreadCountElement.style.display = "none";
+    }
+  }
+
+  if (messageBadge) {
+    if (unreadCount > 0) {
+      messageBadge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+      messageBadge.style.display = "flex";
+
+      // Update the selector to target the wrapper
+      const iconWrapper = document.querySelector("#messages-btn .icon-wrapper");
+      iconWrapper.classList.add("shake-animation");
+      setTimeout(() => {
+        iconWrapper.classList.remove("shake-animation");
+      }, 500);
+    } else {
+      messageBadge.style.display = "none";
     }
   }
 }
