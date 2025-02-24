@@ -134,3 +134,20 @@ export async function fetchConversation(userId, page = 1, limit = 10) {
     throw error;
   }
 }
+
+export async function fetchUnreadCount() {
+  try {
+    const response = await authenticatedFetch(
+      `${BASE_URL}/messages/unread-count`
+    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch unread count");
+    }
+    const data = await response.json();
+    console.log("Unread count:", data.unreadCount);
+    return data.unreadCount;
+  } catch (error) {
+    console.error("Error fetching unread count:", error);
+    throw error;
+  }
+}
