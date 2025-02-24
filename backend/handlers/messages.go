@@ -66,6 +66,15 @@ func SendMessageHandler(mc *controllers.MessageController) http.HandlerFunc {
 		payloadBytes, _ := json.Marshal(payload)
 		SendToUser(req.RecipientID, payloadBytes)
 
+		unreadCount, err := mc.GetUnreadMessageCount(req.RecipientID)
+		if err != nil {
+			logger.Error("Failed to get unread message count in SendMessageHandler %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		BroadcastUnreadCount(req.RecipientID, unreadCount)
+
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"message": "Message sent successfully",
@@ -150,6 +159,14 @@ func GetAllMessagesHandler(mc *controllers.MessageController) http.HandlerFunc {
 
 func MarkMessageAsReadHandler(mc *controllers.MessageController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(models.UserIDKey).(string)
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID in MarkMessageAsReadHandler %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		msgIDStr := r.URL.Query().Get("msgID")
 		msgID, err := strconv.Atoi(msgIDStr)
 		if err != nil {
@@ -158,11 +175,14 @@ func MarkMessageAsReadHandler(mc *controllers.MessageController) http.HandlerFun
 			return
 		}
 
-		if err := mc.MarkMessageAsRead(msgID); err != nil {
+		var unreadCount int
+		if unreadCount, err = mc.MarkMessageAsRead(msgID); err != nil {
 			logger.Error("Failed to mark message as read %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		BroadcastUnreadCount(userIDInt, unreadCount)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
