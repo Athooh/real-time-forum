@@ -8,6 +8,7 @@ import {
 } from "./websocketUpdates.js";
 import { formatNumber, formatTimeAgo } from "../utils.js";
 import { fetchUserPhotos } from "../components/profile/profileApi.js";
+import { startTimeUpdates } from '../utils/timeUpdater.js';
 
 export let globalSocket = null;
 export let isIntentionalLogout = false;
@@ -41,6 +42,9 @@ export function initializeWebSocket() {
       console.log("WebSocket connection established");
       socket.wasConnected = true;
       reconnectAttempts = 0;
+      
+      // Start time updates when connection is established
+      startTimeUpdates();
     };
 
     socket.onmessage = (event) => {
@@ -195,7 +199,6 @@ export function handleWebSocketMessage(data) {
       handleUnreadCountUpdate(payload);
       break;
     case WebSocketMessageType.NEW_NOTIFICATION:
-      console.log("New notification received:", payload);
       handleNewNotification(payload);
       break;
     default:
