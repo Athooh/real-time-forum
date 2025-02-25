@@ -18,8 +18,12 @@ class Router {
   }
 
   navigate(path) {
-    window.history.pushState({}, "", path);
-    window.location.reload();
+    // Only update history and handle route if path is different
+    if (this.currentPath !== path) {
+      window.history.pushState({}, "", path);
+      this.currentPath = path;
+      this.handleRoute(path);
+    }
   }
 
   handleRoute(pathname) {
