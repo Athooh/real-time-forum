@@ -3,13 +3,26 @@ import {
   fetchConversation,
   sendMessage,
   markMessageAsRead,
+  fetchUnreadCount,
 } from "./messagesApi.js";
 import { handleChatOpen } from "./messagesEvents.js";
+import { registerTimeElement } from "../../utils/timeUpdater.js";
 
 export async function createMessagesSection(messages = []) {
-  const unreadCount = messages?.filter((msg) => !msg.is_read)?.length || 0;
+  // Initial fetch of unread count
+  let unreadCount = 0;
+  try {
+    const response = await fetchUnreadCount();
+    unreadCount = response;
+  } catch (error) {
+    console.error("Error fetching unread count:", error);
+  }
+
+  // Create unread count element with a specific ID for dynamic updates
   const unreadCountDisplay =
-    unreadCount > 0 ? `<span class="unread-count">${unreadCount}</span>` : "";
+    unreadCount > 0
+      ? `<span class="unread-count" id="messages-unread-count">${unreadCount}</span>`
+      : `<span class="unread-count" id="messages-unread-count" style="display: none"></span>`;
 
   return `
     <div class="messages-page">
@@ -45,19 +58,67 @@ export async function createMessagesSection(messages = []) {
 }
 
 export function loadMessagesList(messagesList, messages) {
-  if (!messagesList) {
-    console.error("Messages list element not found");
-    return;
-  }
+  if (!messagesList) return;
 
   const messageArray = Array.isArray(messages) ? messages : [];
 
-  // Take only the first message from the array
-  const firstMessage = messageArray[0];
+  if (messageArray.length === 0) {
+    messagesList.innerHTML = '<div class="no-messages">No messages yet</div>';
+    return;
+  }
 
-  messagesList.innerHTML = firstMessage
-    ? createMessageItem(firstMessage)
-    : '<div class="no-messages">No messages yet</div>';
+  const latestMessages = messageArray.reduce((acc, message) => {
+    const userId = message.user.id;
+    if (
+      !acc[userId] ||
+      new Date(message.timestamp) > new Date(acc[userId].timestamp)
+    ) {
+      acc[userId] = message;
+    }
+    return acc;
+  }, {});
+
+  const uniqueMessages = Object.values(latestMessages).sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  const messagesHTML = uniqueMessages
+    .map((message) => {
+      const timeId = `message-preview-${message.id}`;
+      return `
+      <div class="message-item" data-user-id="${message.user.id}">
+        <div class="user-avatar-wrapper">
+          <img src="${message.user.avatar || "images/avatar.png"}" alt="${
+        message.user.nickname
+      }" class="user-avatar">
+          <span class="status-indicator ${
+            message.user.isOnline ? "online" : "offline"
+          }"></span>
+        </div>
+        <div class="message-content">
+          <div class="message-header">
+            <h4>${message.user.nickname}</h4>
+            <span class="message-time" id="${timeId}">${formatTimeAgo(
+        message.timestamp
+      )}</span>
+          </div>
+          <p class="message-preview">${message.content}</p>
+        </div>
+      </div>
+    `;
+    })
+    .join("");
+
+  messagesList.innerHTML = messagesHTML;
+
+  // Register all time elements for updates
+  uniqueMessages.forEach((message) => {
+    registerTimeElement(
+      `message-preview-${message.id}`,
+      message.timestamp,
+      formatTimeAgo
+    );
+  });
 
   // Add click event listeners to message items
   messagesList.addEventListener("click", (e) => {
@@ -200,12 +261,12 @@ async function loadChatHistory(userId) {
 
     if (!conversation || conversation.length === 0) {
       chatMessages.innerHTML = `
-                <div class="empty-conversation">
-                    <i class="fas fa-comments"></i>
-                    <h3>No messages yet</h3>
-                    <p>Start the conversation by sending a message below</p>
-                </div>
-            `;
+        <div class="empty-conversation">
+            <i class="fas fa-comments"></i>
+            <h3>No messages yet</h3>
+            <p>Start the conversation by sending a message below</p>
+        </div>
+      `;
       return;
     }
 
@@ -226,38 +287,55 @@ async function loadChatHistory(userId) {
       }
     }
 
-    const messagesByDate = conversation.reduce((acc, msg) => {
-      const date = new Date(msg.timestamp).toLocaleDateString();
+    // Initialize a map to store all message groups by date
+    const allMessagesByDate = new Map();
 
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(msg);
-      acc[date].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      return acc;
-    }, {});
+    // Function to add messages to the date groups
+    const addMessagesToGroups = (messages) => {
+      messages.forEach((msg) => {
+        const date = new Date(msg.timestamp).toLocaleDateString();
+        if (!allMessagesByDate.has(date)) {
+          allMessagesByDate.set(date, []);
+        }
+        allMessagesByDate.get(date).push(msg);
+      });
 
-    const sortedDates = Object.keys(messagesByDate).sort(
-      (a, b) => new Date(a) - new Date(b) // Sort dates in ascending order
-    );
+      // Sort messages within each date group
+      allMessagesByDate.forEach((messages) => {
+        messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      });
+    };
 
-    const messagesHTML = sortedDates
-      .map(
-        (date) => `
-            <div class="message-date-group">
+    // Add initial messages to groups
+    addMessagesToGroups(conversation);
+
+    // Render initial messages
+    const renderMessageGroups = () => {
+      const sortedDates = Array.from(allMessagesByDate.keys()).sort(
+        (a, b) => new Date(a) - new Date(b)
+      );
+
+      const messagesHTML = sortedDates
+        .map(
+          (date) => `
+            <div class="message-date-group" data-date="${date}">
                 <div class="date-divider">
                     <span>${formatMessageDate(date)}</span>
                 </div>
-                ${messagesByDate[date]
+                ${allMessagesByDate
+                  .get(date)
                   .map((msg) => createMessageElement(msg))
                   .join("")}
             </div>
-        `
-      )
-      .join("");
+          `
+        )
+        .join("");
 
-    chatMessages.innerHTML = messagesHTML;
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+      chatMessages.innerHTML = messagesHTML;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+
+    renderMessageGroups();
 
     // Add scroll event listener for infinite scroll
     let isLoading = false;
@@ -282,39 +360,16 @@ async function loadChatHistory(userId) {
           );
 
           if (olderMessages && olderMessages.length > 0) {
-            // Group and render older messages
-            const oldMessagesByDate = olderMessages.reduce((acc, msg) => {
-              const date = new Date(msg.timestamp).toLocaleDateString();
-              if (!acc[date]) acc[date] = [];
-              acc[date].push(msg);
-              acc[date].sort(
-                (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-              );
-              return acc;
-            }, {});
+            // Add new messages to existing groups
+            addMessagesToGroups(olderMessages);
 
-            const oldSortedDates = Object.keys(oldMessagesByDate).sort(
-              (a, b) => new Date(b) - new Date(a)
-            );
-
-            const oldMessagesHTML = oldSortedDates
-              .map(
-                (date) => `
-                    <div class="message-date-group">
-                        <div class="date-divider">
-                            <span>${formatMessageDate(date)}</span>
-                        </div>
-                        ${oldMessagesByDate[date]
-                          .map((msg) => createMessageElement(msg))
-                          .join("")}
-                    </div>
-                `
-              )
-              .join("");
-
-            // Preserve scroll position
+            // Store current scroll position
             const scrollHeight = chatMessages.scrollHeight;
-            chatMessages.insertAdjacentHTML("afterbegin", oldMessagesHTML);
+
+            // Re-render all message groups
+            renderMessageGroups();
+
+            // Restore scroll position
             chatMessages.scrollTop = chatMessages.scrollHeight - scrollHeight;
           }
         } catch (error) {
@@ -333,31 +388,38 @@ async function loadChatHistory(userId) {
 
 function createMessageElement(msg) {
   const currentUserId = getCurrentUserId();
-  return `
+  const timeId = `msg-time-${msg.id}`;
+
+  const messageHTML = `
     <div class="chat-message ${
       parseInt(msg.sender_id) === parseInt(currentUserId) ? "sent" : "received"
     }">
         ${
           parseInt(msg.sender_id) !== parseInt(currentUserId)
-            ? `
-            <div class="message-avatar">
+            ? `<div class="message-avatar">
                 <img src="${msg.user.avatar || "images/avatar.png"}" alt="${
                 msg.user.nickname
               }">
-            </div>
-        `
+               </div>`
             : ""
         }
         <div class="message-bubble">
             <div class="message-content">
                 <p>${escapeHTML(msg.content)}</p>
-                <span class="message-time">${formatMessageTime(
-                  msg.timestamp
-                )}</span>
+                <span class="message-time" id="${timeId}">${formatMessageTime(
+    msg.timestamp
+  )}</span>
             </div>
         </div>
     </div>
   `;
+
+  // Register the time element for updates
+  setTimeout(() => {
+    registerTimeElement(timeId, msg.timestamp, formatTimeAgo);
+  }, 0);
+
+  return messageHTML;
 }
 
 function formatMessageDate(dateStr) {
@@ -368,7 +430,11 @@ function formatMessageDate(dateStr) {
 
   if (date.toDateString() === today.toDateString()) return "Today";
   if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return "";
+  return date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "long",
+    year: "2-digit",
+  });
 }
 
 function formatMessageTime(timestamp) {
