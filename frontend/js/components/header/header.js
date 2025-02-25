@@ -8,7 +8,6 @@ import {
 } from "./headerTemplate.js";
 
 export function createHeader() {
-  console.log("Creating header");
   return `
         <header class="header-container">
             <div class="main-header">
