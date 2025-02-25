@@ -5,6 +5,8 @@ import {
   NotificationType,
 } from "../../utils/notifications.js";
 import { scrollToPost } from "./sideBarEvent.js";
+import { registerTimeElement } from "../../utils/timeUpdater.js";
+
 async function updateLatestNews() {
   try {
     const response = await authenticatedFetch("/api/posts?page=1&limit=5", {
@@ -47,9 +49,9 @@ async function updateLatestNews() {
                         post.title || "Untitled Post"
                       )}</h4>
                           </div>
-                          <span class="news-time">${formatTimeAgo(
-                            post.timestamp
-                          )}</span>
+                          <span class="news-time" id="news-time-${
+                            post.id
+                          }">${formatTimeAgo(post.timestamp)}</span>
                       </div>
                   `
                     )
@@ -58,6 +60,20 @@ async function updateLatestNews() {
           `;
 
     newsContainer.innerHTML = newsHTML;
+
+    // Register time elements for updating
+    posts.forEach((post) => {
+      registerTimeElement(
+        `news-time-${post.id}`,
+        post.timestamp,
+        formatTimeAgo
+      );
+      registerTimeElement(
+        `post-time-${post.id}`,
+        post.timestamp,
+        formatTimeAgo
+      );
+    });
 
     const newsTitles = document.querySelectorAll(".news-title");
     newsTitles.forEach((title) => {
