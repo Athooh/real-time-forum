@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"forum/backend/models"
+	"forum/backend/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,7 +22,9 @@ func NewUsersController(db *sql.DB) *UsersController {
 
 func (uc *UsersController) VerifyPassword(userID int, currentPassword string) error {
 	var hashedPassword string
-	err := uc.db.QueryRow("SELECT password FROM users WHERE id = ?", userID).Scan(&hashedPassword)
+	err := utils.RetryOnLocked(uc.db, func() error {
+		return uc.db.QueryRow("SELECT password FROM users WHERE id = ?", userID).Scan(&hashedPassword)
+	})
 	if err != nil {
 		return err
 	}
@@ -35,8 +38,10 @@ func (uc *UsersController) UpdatePassword(userID int, newPassword string) error 
 		return err
 	}
 
-	_, err = uc.db.Exec("UPDATE users SET password = ? WHERE id = ?", hashedPassword, userID)
-	return err
+	return utils.RetryOnLocked(uc.db, func() error {
+		_, err := uc.db.Exec("UPDATE users SET password = ? WHERE id = ?", hashedPassword, userID)
+		return err
+	})
 }
 
 func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.User, error) {
@@ -47,15 +52,31 @@ func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.Us
 			u.id, u.nickname, u.email, u.first_name, u.last_name, 
 			u.age, u.gender, u.profession, u.avatar,
 			COALESCE(us.is_online, FALSE) as is_online,
-			COALESCE(us.last_seen, datetime(u.created_at)) as last_seen
+			COALESCE(us.last_seen, datetime(u.created_at)) as last_seen,
+			COALESCE(
+				(SELECT COUNT(*) 
+				FROM messages m 
+				WHERE m.sender_id = u.id 
+				AND m.recipient_id = ? 
+				AND m.is_read = FALSE), 
+				0
+			) as unread_messages_count
 		FROM users u
 		LEFT JOIN user_status us ON u.id = us.user_id
 		WHERE u.id != ?
 		ORDER BY u.id DESC
 		LIMIT ? OFFSET ?
 	`
+	var rows *sql.Rows
+	var err error
 
-	rows, err := uc.db.Query(query, currentUserID, limit, offset)
+	err = utils.RetryOnLocked(uc.db, func() error {
+		rows, err = uc.db.Query(query, currentUserID, currentUserID, limit, offset)
+		if err != nil {
+			return fmt.Errorf("failed to fetch users: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch users: %w", err)
 	}
@@ -66,6 +87,7 @@ func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.Us
 		var user models.User
 		var avatar, profession, gender sql.NullString
 		var lastSeenStr sql.NullString
+		var unreadCount int
 
 		err := rows.Scan(
 			&user.ID,
@@ -79,6 +101,7 @@ func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.Us
 			&avatar,
 			&user.IsOnline,
 			&lastSeenStr,
+			&unreadCount,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -107,6 +130,7 @@ func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.Us
 			user.LastSeen = parsedTime
 		}
 
+		user.UnreadMessages = unreadCount
 		users = append(users, user)
 	}
 
@@ -120,22 +144,29 @@ func (uc *UsersController) GetUsers(currentUserID, page, limit int) ([]models.Us
 func (uc *UsersController) GetUserStats(userID int) (models.UserStats, error) {
 	var stats models.UserStats
 
-	// Get posts count
-	err := uc.db.QueryRow("SELECT COUNT(*) FROM posts WHERE user_id = ?", userID).Scan(&stats.PostsCount)
-	if err != nil {
-		return stats, fmt.Errorf("failed to get posts count: %w", err)
-	}
+	err := utils.RetryOnLocked(uc.db, func() error {
+		// Get posts count
+		err := uc.db.QueryRow("SELECT COUNT(*) FROM posts WHERE user_id = ?", userID).Scan(&stats.PostsCount)
+		if err != nil {
+			return fmt.Errorf("failed to get posts count: %w", err)
+		}
 
-	// Get followers count
-	err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&stats.FollowersCount)
-	if err != nil {
-		return stats, fmt.Errorf("failed to get followers count: %w", err)
-	}
+		// Get followers count
+		err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE following_id = ?", userID).Scan(&stats.FollowersCount)
+		if err != nil {
+			return fmt.Errorf("failed to get followers count: %w", err)
+		}
 
-	// Get following count
-	err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&stats.FollowingCount)
+		// Get following count
+		err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&stats.FollowingCount)
+		if err != nil {
+			return fmt.Errorf("failed to get following count: %w", err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return stats, fmt.Errorf("failed to get following count: %w", err)
+		return stats, err
 	}
 
 	return stats, nil
@@ -170,13 +201,21 @@ func (uc *UsersController) SearchUsers(query string, currentUserID, page, limit 
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := uc.db.Query(
-		sqlQuery,
-		currentUserID,
-		searchPattern, searchPattern, searchPattern, // for WHERE clause
-		searchPattern, searchPattern, searchPattern, // for ORDER BY clause
-		limit, offset,
-	)
+	var rows *sql.Rows
+	var err error
+	err = utils.RetryOnLocked(uc.db, func() error {
+		rows, err = uc.db.Query(
+			sqlQuery,
+			currentUserID,
+			searchPattern, searchPattern, searchPattern, // for WHERE clause
+			searchPattern, searchPattern, searchPattern, // for ORDER BY clause
+			limit, offset,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to search users: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to search users: %w", err)
 	}
@@ -237,8 +276,6 @@ func (uc *UsersController) SearchUsers(query string, currentUserID, page, limit 
 // GetUserAbout retrieves user's about information
 func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
 	var about models.UserAbout
-
-	// Use NullString for nullable string fields
 	var bio, relationshipStatus, location, githubURL, linkedinURL,
 		twitterURL, phoneNumber, interests, website sql.NullString
 
@@ -251,22 +288,25 @@ func (uc *UsersController) GetUserAbout(userID int) (*models.UserAbout, error) {
         WHERE user_id = ?
     `
 
-	err := uc.db.QueryRow(query, userID).Scan(
-		&about.UserID,
-		&bio,
-		&about.DateOfBirth,
-		&relationshipStatus,
-		&location,
-		&githubURL,
-		&linkedinURL,
-		&twitterURL,
-		&phoneNumber,
-		&interests,
-		&about.IsProfilePublic,
-		&about.ShowEmail,
-		&about.ShowPhone,
-		&website,
-	)
+	err := utils.RetryOnLocked(uc.db, func() error {
+		return uc.db.QueryRow(query, userID).Scan(
+			&about.UserID,
+			&bio,
+			&about.DateOfBirth,
+			&relationshipStatus,
+			&location,
+			&githubURL,
+			&linkedinURL,
+			&twitterURL,
+			&phoneNumber,
+			&interests,
+			&about.IsProfilePublic,
+			&about.ShowEmail,
+			&about.ShowPhone,
+			&website,
+		)
+	})
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -329,7 +369,7 @@ func (uc *UsersController) UpsertUserAbout(about *models.UserAbout) error {
 	_, err := uc.db.Exec(query,
 		about.UserID, about.Bio, about.DateOfBirth, about.RelationshipStatus, about.Location,
 		about.GithubURL, about.LinkedinURL, about.TwitterURL, about.PhoneNumber, about.Interests,
-		about.IsProfilePublic, about.ShowEmail, about.ShowPhone, about.Website,
+
 		// Update values
 		about.Bio, about.DateOfBirth, about.RelationshipStatus, about.Location,
 		about.GithubURL, about.LinkedinURL, about.TwitterURL, about.PhoneNumber, about.Interests,
@@ -404,23 +444,30 @@ func (uc *UsersController) UpsertUserProfile(profile *models.UserProfile) error 
 		WHERE nickname = ? OR email = ?
 	`
 
-	result, err := uc.db.Exec(query,
-		profile.Nickname,
-		profile.Email,
-		profile.Avatar,
-		profile.Age,
-		profile.CoverImage,
-		profile.Profession,
-		profile.Nickname,
-		profile.Email,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to update user profile: %w", err)
-	}
+	var rows int64
+	err := utils.RetryOnLocked(uc.db, func() error {
+		result, err := uc.db.Exec(query,
+			profile.Nickname,
+			profile.Email,
+			profile.Avatar,
+			profile.Age,
+			profile.CoverImage,
+			profile.Profession,
+			profile.Nickname,
+			profile.Email,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update user profile: %w", err)
+		}
 
-	rows, err := result.RowsAffected()
+		rows, err = result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to get rows affected: %w", err)
+		}
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return err
 	}
 
 	if rows == 0 {
@@ -432,30 +479,37 @@ func (uc *UsersController) UpsertUserProfile(profile *models.UserProfile) error 
 
 // GetUserExperiences retrieves all experiences for a user
 func (uc *UsersController) GetUserExperiences(userID int) ([]models.UserExperience, error) {
-	query := `SELECT * FROM user_experience WHERE user_id = ? ORDER BY start_date DESC`
-	rows, err := uc.db.Query(query, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user experiences: %w", err)
-	}
-	defer rows.Close()
-
 	var experiences []models.UserExperience
-	for rows.Next() {
-		var exp models.UserExperience
-		var endDate sql.NullTime
-		err := rows.Scan(
-			&exp.ID, &exp.UserID, &exp.CompanyName, &exp.Role,
-			&exp.Category, &exp.Location, &exp.StartDate, &endDate,
-			&exp.IsCurrent, &exp.Description,
-		)
+
+	err := utils.RetryOnLocked(uc.db, func() error {
+		rows, err := uc.db.Query("SELECT * FROM user_experience WHERE user_id = ? ORDER BY start_date DESC", userID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan experience: %w", err)
+			return fmt.Errorf("failed to get user experiences: %w", err)
 		}
-		if endDate.Valid {
-			exp.EndDate = &endDate.Time
+		defer rows.Close()
+
+		for rows.Next() {
+			var exp models.UserExperience
+			var endDate sql.NullTime
+			err := rows.Scan(
+				&exp.ID, &exp.UserID, &exp.CompanyName, &exp.Role,
+				&exp.Category, &exp.Location, &exp.StartDate, &endDate,
+				&exp.IsCurrent, &exp.Description,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to scan experience: %w", err)
+			}
+			if endDate.Valid {
+				exp.EndDate = &endDate.Time
+			}
+			experiences = append(experiences, exp)
 		}
-		experiences = append(experiences, exp)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
 	return experiences, nil
 }
 
@@ -556,46 +610,56 @@ func (uc *UsersController) GetUserFriends(userID, offset, limit int) (map[string
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := uc.db.Query(query, userID, userID, userID, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch friends: %w", err)
-	}
-	defer rows.Close()
+	var result map[string]interface{}
 
-	var friends []map[string]interface{}
-	for rows.Next() {
-		var friend struct {
-			ID            int
-			Nickname      string
-			Avatar        sql.NullString
-			IsOnline      bool
-			MutualFriends int
+	err := utils.RetryOnLocked(uc.db, func() error {
+		rows, err := uc.db.Query(query, userID, userID, userID, limit, offset)
+		if err != nil {
+			return fmt.Errorf("failed to fetch friends: %w", err)
+		}
+		defer rows.Close()
+
+		var friends []map[string]interface{}
+		for rows.Next() {
+			var friend struct {
+				ID            int
+				Nickname      string
+				Avatar        sql.NullString
+				IsOnline      bool
+				MutualFriends int
+			}
+
+			if err := rows.Scan(&friend.ID, &friend.Nickname, &friend.Avatar, &friend.IsOnline, &friend.MutualFriends); err != nil {
+				return fmt.Errorf("failed to scan friend: %w", err)
+			}
+
+			friends = append(friends, map[string]interface{}{
+				"id":             friend.ID,
+				"nickname":       friend.Nickname,
+				"avatar":         friend.Avatar.String,
+				"is_online":      friend.IsOnline,
+				"mutual_friends": friend.MutualFriends,
+			})
 		}
 
-		if err := rows.Scan(&friend.ID, &friend.Nickname, &friend.Avatar, &friend.IsOnline, &friend.MutualFriends); err != nil {
-			return nil, fmt.Errorf("failed to scan friend: %w", err)
+		// Get total count
+		var totalCount int
+		err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&totalCount)
+		if err != nil {
+			return fmt.Errorf("failed to get total friends count: %w", err)
 		}
 
-		friends = append(friends, map[string]interface{}{
-			"id":             friend.ID,
-			"nickname":       friend.Nickname,
-			"avatar":         friend.Avatar.String,
-			"is_online":      friend.IsOnline,
-			"mutual_friends": friend.MutualFriends,
-		})
-	}
-
-	// Get total count
-	var totalCount int
-	err = uc.db.QueryRow("SELECT COUNT(*) FROM followers WHERE follower_id = ?", userID).Scan(&totalCount)
+		result = map[string]interface{}{
+			"friends":    friends,
+			"totalCount": totalCount,
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total friends count: %w", err)
+		return nil, err
 	}
 
-	return map[string]interface{}{
-		"friends":    friends,
-		"totalCount": totalCount,
-	}, nil
+	return result, nil
 }
 
 func (uc *UsersController) DeleteUser(userID int) error {
