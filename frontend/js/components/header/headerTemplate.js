@@ -56,12 +56,19 @@ function createNotificationDropdown() {
 }
 
 function createProfileMenu() {
+  // Get user data from localStorage
+  const userDataAbout = JSON.parse(localStorage.getItem("userDataAbout")) || {};
+  const userData = userDataAbout.profile || {};
+  
+  // Get avatar with fallback to default
+  const avatar = userData.avatar || "images/avatar.png";
+
   return `
         <div class="profile-menu">
-            <img src="images/avatar.png" alt="Profile" class="avatar">
+            <img src="${avatar}" alt="Profile" class="avatar">
             <div class="dropdown-menu">
-                <a href="#profile"><i class="fas fa-user"></i> Profile</a>
-                <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                <a href="/profilePage" data-route="/profilePage"><i class="fas fa-user"></i> Profile</a>
+                <a href="/profilePage#settings" data-route="/profilePage" data-section="settings"><i class="fas fa-cog"></i> Settings</a>
                 <button id="logout" class="dropdown-btn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
