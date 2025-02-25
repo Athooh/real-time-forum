@@ -5,7 +5,7 @@ import { globalSocket } from "../../websocket/websocket.js";
 export async function fetchMessages(page = 1, limit = 10) {
   try {
     const response = await authenticatedFetch(
-      `${BASE_URL}/messages?page=${page}&limit=${limit}`,
+      `/messages?page=${page}&limit=${limit}`,
       {
         method: "GET",
         headers: {
@@ -29,7 +29,7 @@ export async function fetchMessages(page = 1, limit = 10) {
 export async function searchMessages(query) {
   try {
     const response = await authenticatedFetch(
-      `${BASE_URL}/messages/search?query=${encodeURIComponent(query)}`,
+      `/messages/search?query=${encodeURIComponent(query)}`,
       {
         method: "GET",
         headers: {
@@ -52,7 +52,7 @@ export async function searchMessages(query) {
 
 export async function sendMessage(recipientId, content) {
   try {
-    const response = await authenticatedFetch(`${BASE_URL}/messages/send`, {
+    const response = await authenticatedFetch(`/messages/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -78,7 +78,7 @@ export async function sendMessage(recipientId, content) {
 export async function markMessageAsRead(messageId) {
   try {
     const response = await authenticatedFetch(
-      `${BASE_URL}/messages/mark-as-read?msgID=${messageId}`,
+      `/messages/mark-as-read?msgID=${messageId}`,
       {
         method: "POST",
         headers: {
@@ -115,7 +115,7 @@ export async function markMessageAsRead(messageId) {
 export async function fetchConversation(userId, page = 1, limit = 10) {
   try {
     const response = await authenticatedFetch(
-      `${BASE_URL}/messages/conversation?recipient_id=${userId}&page=${page}&limit=${limit}&order=desc`,
+      `/messages/conversation?recipient_id=${userId}&page=${page}&limit=${limit}&order=desc`,
       {
         method: "GET",
         headers: {
@@ -138,7 +138,7 @@ export async function fetchConversation(userId, page = 1, limit = 10) {
 export async function fetchUnreadCount() {
   try {
     const response = await authenticatedFetch(
-      `${BASE_URL}/messages/unread-count`
+      `/messages/unread-count`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch unread count");
