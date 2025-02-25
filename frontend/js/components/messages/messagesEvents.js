@@ -366,8 +366,9 @@ export async function handleChatOpen(userId) {
     const activeItem = document.querySelector(
       `.message-item[data-user-id="${userId}"]`
     );
+
     const userInfo = {
-      nickname: activeItem.querySelector("h4").textContent,
+      nickname: activeItem.querySelector("h4").firstChild.textContent.trim(),
       avatar: activeItem.querySelector(".user-avatar").src,
       isOnline: activeItem
         .querySelector(".status-indicator")
