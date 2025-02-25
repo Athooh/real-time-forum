@@ -1,6 +1,5 @@
 import { NotificationType, showNotification } from "../utils/notifications.js";
 import Router from "../router/router.js";
-import { initializeMessenger } from "./messages.js";
 
 export function createAuthSection() {
   return `
