@@ -40,11 +40,10 @@ export function handlePostReactionUpdate(data) {
 
 export function handleUnreadCountUpdate(data) {
   const { unreadCount } = data;
-  const unreadCountElement = document.querySelector(
-    ".messages-header h3 .unread-count"
-  );
+
   const messageBadge = document.querySelector(".message-badge");
-  const envelopeIcon = document.querySelector("#messages-btn .fa-envelope");
+
+  const unreadCountElement = document.getElementById("messages-unread-count");
 
   if (unreadCountElement) {
     if (unreadCount > 0) {
