@@ -144,7 +144,6 @@ export async function fetchUnreadCount() {
       throw new Error("Failed to fetch unread count");
     }
     const data = await response.json();
-    console.log("Unread count:", data.unreadCount);
     return data.unreadCount;
   } catch (error) {
     console.error("Error fetching unread count:", error);
