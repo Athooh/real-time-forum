@@ -200,5 +200,21 @@ func InitializeDatabase() (*sql.DB, error) {
 		CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
 		CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);
 	`)
-	return db, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tables: %w", err)
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode=WAL")
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
+	}
+
+	// Set busy timeout
+	_, err = db.Exec("PRAGMA busy_timeout=5000")
+	if err != nil {
+		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+
+	return db, nil
 }
