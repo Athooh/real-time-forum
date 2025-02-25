@@ -146,18 +146,24 @@ async function handleSavePost(e) {
 }
 
 async function fetchPosts(page = 1, append = false) {
-  if (forumState.isLoading || forumState.allPostsLoaded) return;
+  if (forumState.isLoading) return;
+  
+  // Reset state when loading first page
+  if (page === 1 && !append) {
+    forumState.allPostsLoaded = false;
+  }
+  
   forumState.isLoading = true;
 
   try {
-    const limit = 10; // Posts per page
+    const limit = 10;
     const response = await authenticatedFetch(
       `/api/posts?page=${page}&limit=${limit}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-        },
+        }
       }
     );
 
@@ -168,7 +174,6 @@ async function fetchPosts(page = 1, append = false) {
     const data = await response.json();
     const posts = data.posts;
 
-    // Check if we've reached the end
     if (!posts || posts.length < limit) {
       forumState.allPostsLoaded = true;
     }
