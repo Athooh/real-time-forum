@@ -17,12 +17,14 @@ func MessagesRoutes(db *sql.DB) {
 		middleware.SessionAuthMiddleware,
 		middleware.JWTAuthMiddleware,
 		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 	http.Handle("/messages/conversation", middleware.ApplyMiddleware(
 		http.HandlerFunc(handlers.GetMessagesConversationHandler(mc)),
 		middleware.SessionAuthMiddleware,
 		middleware.JWTAuthMiddleware,
 		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 
 	http.Handle("/messages/send", middleware.ApplyMiddleware(
@@ -30,12 +32,14 @@ func MessagesRoutes(db *sql.DB) {
 		middleware.SessionAuthMiddleware,
 		middleware.JWTAuthMiddleware,
 		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 	http.Handle("/messages/mark-as-read", middleware.ApplyMiddleware(
 		http.HandlerFunc(handlers.MarkMessageAsReadHandler(mc)),
 		middleware.SessionAuthMiddleware,
 		middleware.JWTAuthMiddleware,
 		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 
 	http.Handle("/messages/unread-count", middleware.ApplyMiddleware(
@@ -43,5 +47,6 @@ func MessagesRoutes(db *sql.DB) {
 		middleware.SessionAuthMiddleware,
 		middleware.JWTAuthMiddleware,
 		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 }
