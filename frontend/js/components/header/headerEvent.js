@@ -10,10 +10,16 @@ import {
   clearAllNotifications,
 } from "./headerApi.js";
 import { createNotificationItem } from "../header/headerTemplate.js";
-import { fetchUnreadCount } from '../messages/messagesApi.js';
+import { fetchUnreadCount } from "../messages/messagesApi.js";
 
 function setupHeaderEventListeners() {
   const router = new Router();
+
+  // Add navigation callback
+  router.addNavigationCallback(() => {
+    initializeNotifications();
+    initializeMessageBadge();
+  });
 
   // Add click handlers for navigation
   document.querySelectorAll(".nav-link").forEach((link) => {
@@ -67,6 +73,9 @@ function setupHeaderEventListeners() {
 
   // Initialize notifications
   initializeNotifications();
+
+  // Initialize profile menu events
+  setupProfileMenuEvents();
 }
 
 async function handleSearch(e) {
@@ -88,9 +97,28 @@ let isLoading = false;
 let hasMoreNotifications = true;
 
 export async function initializeNotifications() {
+  // Reset state
+  currentPage = 1;
+  isLoading = false;
+  hasMoreNotifications = true;
+
+  // Setup UI
   setupNotificationDropdown();
+
+  // Load initial notifications
   await loadNotifications();
-  setupNotificationEventListeners();
+
+  // Setup event listeners only if they haven't been set up
+  if (
+    !document
+      .querySelector(".notification-menu")
+      .hasAttribute("data-initialized")
+  ) {
+    setupNotificationEventListeners();
+    document
+      .querySelector(".notification-menu")
+      .setAttribute("data-initialized", "true");
+  }
 }
 
 async function loadNotifications(append = false) {
@@ -101,14 +129,16 @@ async function loadNotifications(append = false) {
     const { notifications, total, unread } = await fetchNotifications(
       currentPage
     );
-    if (!notifications) {
-      updateNotificationsList(null, append);
-      updateNotificationBadge(0);
-      return;
-    }
-    updateNotificationsList(notifications, append);
+
+    // Always update badge count even if there are no notifications
     updateNotificationBadge(unread);
 
+    if (!notifications || notifications.length === 0) {
+      updateNotificationsList([], append);
+      return;
+    }
+
+    updateNotificationsList(notifications, append);
     hasMoreNotifications = notifications.length === 10;
     if (hasMoreNotifications) currentPage++;
 
@@ -118,6 +148,7 @@ async function loadNotifications(append = false) {
     }
   } catch (error) {
     console.error("Error loading notifications:", error);
+    showNotification("Failed to load notifications", NotificationType.ERROR);
   } finally {
     isLoading = false;
   }
@@ -287,35 +318,62 @@ export {
   handleSearch,
   clearAllNotifications,
   updateNotificationBadge,
+  loadNotifications,
 };
 
 export async function initializeMessageBadge() {
-    try {
-        const unreadCount = await fetchUnreadCount();
-        updateMessageBadge(unreadCount);
-    } catch (error) {
-        console.error('Error initializing message badge:', error);
-    }
+  try {
+    const unreadCount = await fetchUnreadCount();
+    updateMessageBadge(unreadCount);
+  } catch (error) {
+    console.error("Error initializing message badge:", error);
+  }
 }
 
 export function updateMessageBadge(count) {
-    const badge = document.querySelector('.message-badge');
-    const iconWrapper = document.querySelector('#messages-btn .icon-wrapper');
-    
-    if (badge) {
-        if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = 'flex';
-            
-            // Add animation
-            if (iconWrapper) {
-                iconWrapper.classList.add('shake-animation');
-                setTimeout(() => {
-                    iconWrapper.classList.remove('shake-animation');
-                }, 500);
-            }
-        } else {
-            badge.style.display = 'none';
-        }
+  const badge = document.querySelector(".message-badge");
+  const iconWrapper = document.querySelector("#messages-btn .icon-wrapper");
+
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count > 99 ? "99+" : count;
+      badge.style.display = "flex";
+
+      // Add animation
+      if (iconWrapper) {
+        iconWrapper.classList.add("shake-animation");
+        setTimeout(() => {
+          iconWrapper.classList.remove("shake-animation");
+        }, 500);
+      }
+    } else {
+      badge.style.display = "none";
     }
+  }
+}
+
+export function setupProfileMenuEvents() {
+  // Profile menu click handlers
+  document.addEventListener("click", (e) => {
+    const profileLink = e.target.closest('[data-route="/profilePage"]');
+    if (profileLink) {
+      e.preventDefault();
+
+      // Create router instance directly
+      const router = new Router();
+      router.navigate("/profilePage");
+
+      // If it's the settings link, switch to settings section after navigation
+      if (profileLink.dataset.section === "settings") {
+        setTimeout(() => {
+          const settingsNav = document.querySelector(
+            '.profile-nav [data-section="settings"]'
+          );
+          if (settingsNav) {
+            settingsNav.click();
+          }
+        }, 300);
+      }
+    }
+  });
 }
