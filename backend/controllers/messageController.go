@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"forum/backend/models"
+	"forum/backend/utils"
 )
 
 type MessageController struct {
@@ -53,46 +54,50 @@ func max(a, b int) int {
 }
 
 func (mc *MessageController) SendMessageController(senderID, recipientID int, content string) (int, string, error) {
-	// Step 1: Ensure the conversation exists
-	convID, err := mc.CreateConversationIfNotExists(senderID, recipientID)
-	if err != nil {
-		return 0, "", err
-	}
-
-	// Step 2: Insert the message
-	query := `
-        INSERT INTO messages (sender_id, recipient_id, conversation_id, content, sent_at)
-        VALUES (?, ?, ?, ?, ?)
-    `
-	result, err := mc.db.Exec(query, senderID, recipientID, convID, content, time.Now())
-	if err != nil {
-		return 0, "", err
-	}
-
-	msgID, err := result.LastInsertId()
-	if err != nil {
-		return 0, "", err
-	}
-
-	// Step 3: Update the latest_message_id and updated_at in the conversation
-	query = `
-        UPDATE conversations
-        SET latest_message_id = ?, updated_at = ?
-        WHERE id = ?
-    `
-	_, err = mc.db.Exec(query, msgID, time.Now(), convID)
-	if err != nil {
-		return 0, "", err
-	}
-
-	// Step 4: Get the message timestamp
+	var msgID int64
 	var sentAt string
-	query = `
-        SELECT sent_at 
-        FROM messages 
-        WHERE id = ?
-    `
-	err = mc.db.QueryRow(query, msgID).Scan(&sentAt)
+
+	err := utils.RetryOnLocked(mc.db, func() error {
+		// Step 1: Ensure the conversation exists
+		convID, err := mc.CreateConversationIfNotExists(senderID, recipientID)
+		if err != nil {
+			return err
+		}
+
+		// Step 2: Insert the message
+		query := `
+			INSERT INTO messages (sender_id, recipient_id, conversation_id, content, sent_at)
+			VALUES (?, ?, ?, ?, ?)
+		`
+		result, err := mc.db.Exec(query, senderID, recipientID, convID, content, time.Now())
+		if err != nil {
+			return err
+		}
+
+		msgID, err = result.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		// Step 3: Update the latest_message_id and updated_at in the conversation
+		query = `
+			UPDATE conversations
+			SET latest_message_id = ?, updated_at = ?
+			WHERE id = ?
+		`
+		_, err = mc.db.Exec(query, msgID, time.Now(), convID)
+		if err != nil {
+			return err
+		}
+
+		// Step 4: Get the message timestamp
+		query = `
+			SELECT sent_at 
+			FROM messages 
+			WHERE id = ?
+		`
+		return mc.db.QueryRow(query, msgID).Scan(&sentAt)
+	})
 	if err != nil {
 		return 0, "", err
 	}
@@ -200,43 +205,72 @@ func (mc *MessageController) GetMessagesInConversation(user1ID, user2ID, offset,
 	return messages, nil
 }
 
-func (mc *MessageController) MarkMessageAsRead(msgID int) (int, error) {
-	// First mark the message as read
-	query := `
-        UPDATE messages
-        SET is_read = TRUE
-        WHERE id = ?
-    `
-	_, err := mc.db.Exec(query, msgID)
+type MarkAsReadResponse struct {
+	UnreadCount int `json:"unreadCount"`
+	UserId      int `json:"userId"`
+}
+
+func (mc *MessageController) MarkMessageAsRead(msgID int) (MarkAsReadResponse, error) {
+	var response MarkAsReadResponse
+
+	err := utils.RetryOnLocked(mc.db, func() error {
+		// First mark the message as read
+		query := `
+			UPDATE messages
+			SET is_read = TRUE
+			WHERE id = ?
+		`
+		_, err := mc.db.Exec(query, msgID)
+		if err != nil {
+			return err
+		}
+
+		// Get the recipient_id for the message we just marked as read
+		var recipientID int
+		query = `
+			SELECT recipient_id 
+			FROM messages 
+			WHERE id = ?
+		`
+		err = mc.db.QueryRow(query, msgID).Scan(&recipientID)
+		if err != nil {
+			return err
+		}
+
+		var senderID int
+		query = `
+			SELECT sender_id 
+			FROM messages 
+			WHERE id = ?
+		`
+		err = mc.db.QueryRow(query, msgID).Scan(&senderID)
+		if err != nil {
+			return err
+		}
+
+		// Count remaining unread messages for this recipient
+		var unreadCount int
+		query = `
+			SELECT COUNT(*) 
+			FROM messages 
+			WHERE recipient_id = ? AND is_read = FALSE
+		`
+		err = mc.db.QueryRow(query, recipientID).Scan(&unreadCount)
+		if err != nil {
+			return err
+		}
+
+		response = MarkAsReadResponse{
+			UnreadCount: unreadCount,
+			UserId:      senderID,
+		}
+		return nil
+	})
 	if err != nil {
-		return 0, err
+		return MarkAsReadResponse{}, err
 	}
 
-	// Get the recipient_id for the message we just marked as read
-	var recipientID int
-	query = `
-        SELECT recipient_id 
-        FROM messages 
-        WHERE id = ?
-    `
-	err = mc.db.QueryRow(query, msgID).Scan(&recipientID)
-	if err != nil {
-		return 0, err
-	}
-
-	// Count remaining unread messages for this recipient
-	var unreadCount int
-	query = `
-        SELECT COUNT(*) 
-        FROM messages 
-        WHERE recipient_id = ? AND is_read = FALSE
-    `
-	err = mc.db.QueryRow(query, recipientID).Scan(&unreadCount)
-	if err != nil {
-		return 0, err
-	}
-
-	return unreadCount, nil
+	return response, nil
 }
 
 func (mc *MessageController) GetAllMessages(userID, limit, offset int) ([]models.Message, error) {
