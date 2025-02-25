@@ -14,13 +14,11 @@ func UserRegAndLogin(db *sql.DB) {
 	http.Handle("/register", middleware.ApplyMiddleware(
 		http.HandlerFunc(handlers.RegisterHandler(AuthController)),
 		middleware.CORSMiddleware,
-		middleware.ErrorHandler(handlers.ServeErrorPage),
 	))
 
 	http.Handle("/login", middleware.ApplyMiddleware(
 		http.HandlerFunc(handlers.LoginHandler(AuthController)),
 		middleware.CORSMiddleware,
-		middleware.ErrorHandler(handlers.ServeErrorPage),
 	))
 
 	http.Handle("/validate-token", http.HandlerFunc(handlers.ValidateTokenHandler))
@@ -28,6 +26,5 @@ func UserRegAndLogin(db *sql.DB) {
 		http.HandlerFunc(handlers.LogoutHandler),
 		middleware.SessionAuthMiddleware,
 		middleware.JWTAuthMiddleware,
-		middleware.ErrorHandler(handlers.ServeErrorPage),
 	))
 }
