@@ -4,6 +4,7 @@ import {
   sendMessage,
   markMessageAsRead,
   fetchUnreadCount,
+  fetchUsers,
 } from "./messagesApi.js";
 import { handleChatOpen } from "./messagesEvents.js";
 import { registerTimeElement } from "../../utils/timeUpdater.js";
@@ -57,104 +58,73 @@ export async function createMessagesSection(messages = []) {
 `;
 }
 
-export function loadMessagesList(messagesList, messages) {
+export async function loadMessagesList(messagesList, messages) {
   if (!messagesList) return;
 
-  const messageArray = Array.isArray(messages) ? messages : [];
+  try {
+    const users = await fetchUsers();
 
-  if (messageArray.length === 0) {
-    messagesList.innerHTML = '<div class="no-messages">No messages yet</div>';
-    return;
-  }
-
-  const latestMessages = messageArray.reduce((acc, message) => {
-    const userId = message.user.id;
-    if (
-      !acc[userId] ||
-      new Date(message.timestamp) > new Date(acc[userId].timestamp)
-    ) {
-      acc[userId] = message;
+    if (!users || users.length === 0) {
+      messagesList.innerHTML =
+        '<div class="no-messages">No users available</div>';
+      return;
     }
-    return acc;
-  }, {});
 
-  const uniqueMessages = Object.values(latestMessages).sort(
-    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-  );
-
-  const messagesHTML = uniqueMessages
-    .map((message) => {
-      const timeId = `message-preview-${message.id}`;
-      return `
-      <div class="message-item" data-user-id="${message.user.id}">
-        <div class="user-avatar-wrapper">
-          <img src="${message.user.avatar || "images/avatar.png"}" alt="${
-        message.user.nickname
-      }" class="user-avatar">
-          <span class="status-indicator ${
-            message.user.isOnline ? "online" : "offline"
-          }"></span>
-        </div>
-        <div class="message-content">
-          <div class="message-header">
-            <h4>${message.user.nickname}</h4>
-            <span class="message-time" id="${timeId}">${formatTimeAgo(
-        message.timestamp
-      )}</span>
-          </div>
-          <p class="message-preview">${message.content}</p>
-        </div>
-      </div>
-    `;
-    })
-    .join("");
-
-  messagesList.innerHTML = messagesHTML;
-
-  // Register all time elements for updates
-  uniqueMessages.forEach((message) => {
-    registerTimeElement(
-      `message-preview-${message.id}`,
-      message.timestamp,
-      formatTimeAgo
+    // Sort users alphabetically by nickname
+    const sortedUsers = users.sort((a, b) =>
+      a.nickname.toLowerCase().localeCompare(b.nickname.toLowerCase())
     );
-  });
 
-  // Add click event listeners to message items
-  messagesList.addEventListener("click", (e) => {
-    const messageItem = e.target.closest(".message-item");
-    if (messageItem) {
-      const userId = messageItem.dataset.userId;
-      // Add chat-active class to enable sliding animation
-      document.querySelector(".messages-page").classList.add("chat-active");
-      // Handle chat opening
-      handleChatOpen(userId);
-    }
-  });
-}
+    const messagesHTML = sortedUsers
+      .map((user) => {
+        // Add unread class if there are unread messages
+        const unreadClass = user.unread_messages > 0 ? "unread-message" : "";
+        const unreadBadge =
+          user.unread_messages > 0
+            ? `<span class="unread-badge">${user.unread_messages}</span>`
+            : "";
 
-function createMessageItem(msg) {
-  return `
-        <div class="message-item" data-user-id="${msg.user.id}">
-            <div class="user-avatar-wrapper">
-                <img src="${msg.user.avatar || "images/avatar.png"}" alt="${
-    msg.user.nickname
-  }" class="user-avatar">
-                <span class="status-indicator ${
-                  msg.user.isOnline ? "online" : "offline"
-                }"></span>
+        return `
+        <div class="message-item ${unreadClass}" data-user-id="${user.id}">
+          <div class="user-avatar-wrapper">
+            <img src="${user.avatar || "images/avatar.png"}" alt="${
+          user.nickname
+        }" class="user-avatar">
+            <span class="status-indicator ${
+              user.is_online ? "online" : "offline"
+            }"></span>
+          </div>
+          <div class="message-content">
+            <div class="message-header">
+              <h4>${user.nickname} ${unreadBadge}</h4>
+              <span class="user-info">${user.first_name} ${
+          user.last_name
+        }</span>
             </div>
-            <div class="message-content">
-                <div class="message-header">
-                    <h4>${msg.user.nickname}</h4>
-                    <span class="message-time">${formatTimeAgo(
-                      msg.timestamp
-                    )}</span>
-                </div>
-                <p class="message-preview">${msg.content}</p>
-            </div>
+            <p class="message-preview">Click to start a conversation</p>
+          </div>
         </div>
-    `;
+      `;
+      })
+      .join("");
+
+    messagesList.innerHTML = messagesHTML;
+
+    // Add click event listeners for message items
+    messagesList.addEventListener("click", (e) => {
+      const messageItem = e.target.closest(".message-item");
+      if (messageItem) {
+        const userId = messageItem.dataset.userId;
+        // Add chat-active class to enable sliding animation
+        document.querySelector(".messages-page").classList.add("chat-active");
+        // Handle chat opening
+        handleChatOpen(userId);
+      }
+    });
+  } catch (error) {
+    console.error("Error loading users:", error);
+    messagesList.innerHTML = '<div class="error">Failed to load users</div>';
+  }
 }
 
 export async function showChatInColumn(userId, userInfo) {
@@ -219,6 +189,7 @@ export async function showChatInColumn(userId, userInfo) {
                     <div class="chat-message sent">
                         <div class="message-bubble">
                             <div class="message-content">
+                                <span class="message-sender">You</span>
                                 <p>${escapeHTML(content)}</p>
                                 <span class="message-time">${formatMessageTime(
                                   new Date()
@@ -405,6 +376,13 @@ function createMessageElement(msg) {
         }
         <div class="message-bubble">
             <div class="message-content">
+                ${
+                  parseInt(msg.sender_id) !== parseInt(currentUserId)
+                    ? `<span class="message-sender">${escapeHTML(
+                        msg.user.nickname
+                      )}</span>`
+                    : `<span class="message-sender">You</span>`
+                }
                 <p>${escapeHTML(msg.content)}</p>
                 <span class="message-time" id="${timeId}">${formatMessageTime(
     msg.timestamp
