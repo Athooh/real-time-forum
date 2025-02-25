@@ -861,3 +861,51 @@
     100% { transform: rotate(360deg); }
 }
 
+.message-item .user-info {
+    font-size: 0.8em;
+    color: #666;
+    margin-left: 8px;
+}
+
+.message-item .message-preview {
+    color: #888;
+    font-style: italic;
+}
+
+.message-sender {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.chat-message.sent .message-sender {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.chat-message.received .message-sender {
+    color: var(--text-muted);
+}
+
+.message-item.unread-message {
+    background-color: var(--notification-color);
+}
+
+.message-item.unread-message:hover {
+    background-color: var(--notification-hover-color);
+}
+
+.unread-badge {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    margin-left: 8px;
+    font-weight: bold;
+}
+
+.message-item.unread-message .message-preview {
+    font-weight: 600;
+    color: var(--notification-header-color);
+}
+
