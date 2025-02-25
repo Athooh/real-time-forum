@@ -1,6 +1,7 @@
 import { escapeHTML, formatTimeAgo } from "../../utils.js";
 import { BASE_URL } from "../../state.js";
 
+
 // Helper functions
 function createStorySection() {
   const stories = [
@@ -218,6 +219,7 @@ function createPostCard() {
 }
 
 function createPostHeader(post) {
+  const timeId = `post-time-${post.id}`;
   return `
         <div class="post-header">
             <div class="post-user">
@@ -230,7 +232,7 @@ function createPostHeader(post) {
                       post.user.profession
                         ? `${post.user.profession} • `
                         : "Feature in progress • "
-                    }${formatTimeAgo(post.timestamp)}</span>
+                    }<span id="${timeId}">${formatTimeAgo(post.timestamp)}</span></span>
                 </div>
             </div>
             <div class="post-menu">
