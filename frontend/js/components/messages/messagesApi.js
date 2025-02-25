@@ -137,9 +137,7 @@ export async function fetchConversation(userId, page = 1, limit = 10) {
 
 export async function fetchUnreadCount() {
   try {
-    const response = await authenticatedFetch(
-      `/messages/unread-count`
-    );
+    const response = await authenticatedFetch(`/messages/unread-count`);
     if (!response.ok) {
       throw new Error("Failed to fetch unread count");
     }
@@ -149,4 +147,14 @@ export async function fetchUnreadCount() {
     console.error("Error fetching unread count:", error);
     throw error;
   }
+}
+
+export async function fetchUsers() {
+  const response = await authenticatedFetch("/api/users?page=1&limit=50", {});
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch users");
+  }
+
+  return await response.json();
 }
