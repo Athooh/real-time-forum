@@ -8,6 +8,7 @@ class Router {
 
     this.routes = routes;
     this.currentPath = window.location.pathname;
+    this.callbacks = [];
 
     // Handle browser back/forward buttons
     window.addEventListener("popstate", () => {
@@ -17,12 +18,19 @@ class Router {
     Router.instance = this;
   }
 
-  navigate(path) {
+  addNavigationCallback(callback) {
+    this.callbacks.push(callback);
+  }
+
+  async navigate(path) {
     // Only update history and handle route if path is different
     if (this.currentPath !== path) {
       window.history.pushState({}, "", path);
       this.currentPath = path;
       this.handleRoute(path);
+
+      // After navigation is complete, call all callbacks
+      this.callbacks.forEach(callback => callback());
     }
   }
 
