@@ -124,12 +124,6 @@ func GetUserStatsHandler(uc *controllers.UsersController) http.HandlerFunc {
 	}
 }
 
-func RegisterUserHandler(uc *controllers.UsersController) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// ... existing registration code ...
-	}
-}
-
 func SearchUsersHandler(uc *controllers.UsersController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
