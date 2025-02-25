@@ -87,14 +87,17 @@ class App {
 
   renderHome() {
     this.root.innerHTML = `
-            <div id="app">
-                ${this.renderForumSection()}
-            </div>
-        `;
+        <div id="app">
+            ${this.renderForumSection()}
+        </div>
+    `;
 
     setupHeaderEventListeners();
     this.attachEventListeners();
     this.initializeForumFeatures();
+
+    // Explicitly fetch posts when rendering home
+    fetchPosts(1, false); // Reset to page 1 and don't append
   }
 
   renderAuth(type = "login") {
@@ -359,9 +362,20 @@ class App {
 
   async initializeForumFeatures() {
     try {
-      await Promise.all([fetchPosts(), fetchUserSettings()]);
+      // Fetch user settings first
+      await fetchUserSettings();
+
+      // Initialize other features
       initializeWebSocket();
       initializeMessageBadge();
+
+      // Only fetch posts if we're on the home page
+      if (
+        window.location.pathname === "/" ||
+        window.location.pathname === "/profilePage"
+      ) {
+        await fetchPosts(1, false);
+      }
     } catch (error) {
       console.error("Error initializing forum:", error);
       showNotification("Error loading forum data", NotificationType.ERROR);
