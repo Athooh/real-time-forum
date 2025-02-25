@@ -86,8 +86,8 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 
 	// Add close handler
 	conn.SetCloseHandler(func(code int, text string) error {
-		if code != websocket.CloseGoingAway && 
-		   code != websocket.CloseNormalClosure {
+		if code != websocket.CloseGoingAway &&
+			code != websocket.CloseNormalClosure {
 			logger.Warning("WebSocket closed with code %d: %s", code, text)
 		} else {
 			logger.Info("WebSocket connection closed normally for user %d", userIDInt)
@@ -106,7 +106,7 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, 
+			if websocket.IsUnexpectedCloseError(err,
 				websocket.CloseGoingAway,
 				websocket.CloseNormalClosure) {
 				logger.Error("Error reading message: %v", err)
@@ -189,7 +189,7 @@ func BroadcastPostReaction(postID int, likes int, dislikes int) {
 }
 
 // Add this function to broadcast unread count updates
-func BroadcastUnreadCount(userID int, unreadCount int) {
+func BroadcastUnreadCount(userID, unreadCount int) {
 	message := map[string]interface{}{
 		"type": "unread_count_update",
 		"payload": map[string]interface{}{
@@ -204,5 +204,23 @@ func BroadcastUnreadCount(userID int, unreadCount int) {
 	}
 
 	// Send only to the specific user
+	SendToUser(userID, msgBytes)
+}
+
+// BroadcastMessageListMarkAsRead sends a message list mark as read notification to all clients
+func BroadcastMessageListMarkAsRead(userID, recipientID int) {
+	message := map[string]interface{}{
+		"type": "message_list_mark_as_read",
+		"payload": map[string]interface{}{
+			"userId": recipientID,
+		},
+	}
+
+	msgBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Error creating message list mark as read message: %v", err)
+		return
+	}
+
 	SendToUser(userID, msgBytes)
 }
