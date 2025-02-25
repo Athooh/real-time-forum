@@ -175,14 +175,19 @@ func MarkMessageAsReadHandler(mc *controllers.MessageController) http.HandlerFun
 			return
 		}
 
-		var unreadCount int
-		if unreadCount, err = mc.MarkMessageAsRead(msgID); err != nil {
+		response, err := mc.MarkMessageAsRead(msgID)
+		if err != nil {
 			logger.Error("Failed to mark message as read %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		unreadCount := response.UnreadCount
+		senderID := response.UserId
+
 		BroadcastUnreadCount(userIDInt, unreadCount)
+
+		BroadcastMessageListMarkAsRead(userIDInt, senderID)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
