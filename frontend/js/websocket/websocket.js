@@ -5,10 +5,12 @@ import {
   handlePostReactionUpdate,
   handleUnreadCountUpdate,
   handleNewNotification,
+  handleMessageListUpdate,
+  handleMessageListMarkAsRead,
 } from "./websocketUpdates.js";
 import { formatNumber, formatTimeAgo } from "../utils.js";
 import { fetchUserPhotos } from "../components/profile/profileApi.js";
-import { startTimeUpdates } from '../utils/timeUpdater.js';
+import { startTimeUpdates } from "../utils/timeUpdater.js";
 
 export let globalSocket = null;
 export let isIntentionalLogout = false;
@@ -42,7 +44,7 @@ export function initializeWebSocket() {
       console.log("WebSocket connection established");
       socket.wasConnected = true;
       reconnectAttempts = 0;
-      
+
       // Start time updates when connection is established
       startTimeUpdates();
     };
@@ -144,6 +146,8 @@ export const WebSocketMessageType = {
   POST_REACTION: "post_reaction",
   UNREAD_COUNT_UPDATE: "unread_count_update",
   NEW_NOTIFICATION: "new_notification",
+  MESSAGE_LIST_UPDATE: "message_list_update",
+  MESSAGE_LIST_MARK_AS_READ: "message_list_mark_as_read",
 };
 
 export function handleWebSocketMessage(data) {
@@ -200,6 +204,12 @@ export function handleWebSocketMessage(data) {
       break;
     case WebSocketMessageType.NEW_NOTIFICATION:
       handleNewNotification(payload);
+      break;
+    case WebSocketMessageType.MESSAGE_LIST_UPDATE:
+      handleMessageListUpdate(payload);
+      break;
+    case WebSocketMessageType.MESSAGE_LIST_MARK_AS_READ:
+      handleMessageListMarkAsRead(payload);
       break;
     default:
       console.log("Unknown message type:", data.type);
@@ -316,73 +326,43 @@ function updatePostCount(payload) {
 function handleWebsocketNewMessage(payload) {
   const { sender_id, content, timestamp } = payload;
 
-  // Find the active chat window if it exists
+  // Update chat window if open
   const chatMessages = document.getElementById("chat-messages");
   if (chatMessages && chatMessages.dataset.userId === sender_id.toString()) {
-    // Add the new message to the chat
     const newMessageHTML = `
-            <div class="chat-message received">
-                <div class="message-avatar">
-                    <img src="${
-                      payload.user.avatar || "images/avatar.png"
-                    }" alt="${payload.user.nickname}">
-                </div>
-                <div class="message-bubble">
-                    <div class="message-content">
-                        <p>${escapeHTML(content)}</p>
-                        <span class="message-time">${formatTimeAgo(
-                          timestamp || new Date()
-                        )}</span>
-                    </div>
-                </div>
-            </div>
-        `;
+      <div class="chat-message received">
+        <div class="message-avatar">
+          <img src="${payload.user.avatar || "images/avatar.png"}" alt="${
+      payload.user.nickname
+    }">
+        </div>
+        <div class="message-bubble">
+          <div class="message-content">
+            <p>${escapeHTML(content)}</p>
+            <span class="message-time">${formatTimeAgo(
+              timestamp || new Date()
+            )}</span>
+          </div>
+        </div>
+      </div>
+    `;
     chatMessages.insertAdjacentHTML("beforeend", newMessageHTML);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // Update the messages list if it exists
-  const messagesList = document.getElementById("messages-list");
-  if (messagesList) {
-    const existingThread = messagesList.querySelector(
-      `[data-user-id="${sender_id}"]`
-    );
-    if (existingThread) {
-      // Update existing thread with new message preview
-      const previewElement = existingThread.querySelector(".message-preview");
-      const timeElement = existingThread.querySelector(".message-time");
-      if (previewElement && timeElement) {
-        previewElement.textContent = content;
-        timeElement.textContent = formatTimeAgo(timestamp || new Date());
-      }
-      // Move thread to top
-      messagesList.insertBefore(existingThread, messagesList.firstChild);
-    } else {
-      // Create new thread
-      const newThreadHTML = `
-                <div class="message-item" data-user-id="${sender_id}">
-                    <div class="user-avatar-wrapper">
-                        <img src="${
-                          payload.user.avatar || "images/avatar.png"
-                        }" alt="${payload.user.nickname}" class="user-avatar">
-                        <span class="status-indicator ${
-                          payload.user.isOnline ? "online" : "offline"
-                        }"></span>
-                    </div>
-                    <div class="message-content">
-                        <div class="message-header">
-                            <h4>${escapeHTML(payload.user.nickname)}</h4>
-                            <span class="message-time">${formatTimeAgo(
-                              timestamp || new Date()
-                            )}</span>
-                        </div>
-                        <p class="message-preview">${escapeHTML(content)}</p>
-                    </div>
-                </div>
-            `;
-      messagesList.insertAdjacentHTML("afterbegin", newThreadHTML);
-    }
-  }
+  // Update messages list
+  handleMessageListUpdate({
+    user: {
+      id: sender_id,
+      nickname: payload.user.nickname,
+      avatar: payload.user.avatar,
+      first_name: payload.user.first_name,
+      last_name: payload.user.last_name,
+      is_online: payload.user.is_online,
+      unread_messages: payload.unread_messages || 1,
+      last_message: content,
+    },
+  });
 }
 
 // Add new function to handle photos section update
