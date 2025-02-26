@@ -116,7 +116,7 @@ async function handlePostSubmit(e) {
   }
 }
 
-async function handleCommentSubmit(e) {
+async function handleEnterKeyCommentSubmit(e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     const postId = e.target.dataset.postId;
@@ -126,7 +126,7 @@ async function handleCommentSubmit(e) {
       try {
         await submitComment(postId, content);
         e.target.value = "";
-        await refreshComments(postId);
+        // await refreshComments(postId);
       } catch (error) {
         showNotification("Failed to post comment", NotificationType.ERROR);
       }
@@ -396,8 +396,6 @@ async function refreshComments(postId) {
           )
         )
         .join("");
-
-      setupCommentEventListeners();
     }
   } catch (error) {
     console.error("Error refreshing comments:", error);
@@ -444,7 +442,7 @@ if (!forumState.hasOwnProperty("allPostsLoaded")) {
 export {
   handleCreatePost,
   handlePostReaction,
-  handleCommentSubmit,
+  handleEnterKeyCommentSubmit,
   handleSavePost,
   handlePostSubmit,
   fetchPosts,
