@@ -121,6 +121,8 @@ export function setupCommentEventListeners() {
           .querySelector(".comment-input");
         const content = input?.value?.trim();
 
+        console.log("submitting comment");
+
         if (content && postId) {
           try {
             await handleCommentSubmit(e, postId);
@@ -129,7 +131,7 @@ export function setupCommentEventListeners() {
           }
         }
       }),
-      300
+      1000
     );
   });
 }
@@ -230,9 +232,7 @@ async function handleCommentSubmit(e, postId) {
 
   try {
     const response = await submitComment(postId, content);
-    await refreshComments(postId);
     input.value = "";
-    showNotification("Comment posted successfully!", NotificationType.SUCCESS);
   } catch (error) {
     showNotification("Failed to post comment", NotificationType.ERROR);
   }
