@@ -184,6 +184,12 @@ export async function showChatInColumn(userId, userInfo) {
 
       // Add the message to the chat immediately
       const chatMessages = document.getElementById("chat-messages");
+
+      const emptyConversation = chatMessages.querySelector(".empty-conversation")
+      if (emptyConversation) {
+        emptyConversation.remove()
+      }
+      
       const newMessageHTML = `
                 <div class="message-date-group">
                     <div class="chat-message sent">
