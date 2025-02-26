@@ -11,7 +11,7 @@ import {
 import {
   handleCreatePost,
   handlePostReaction,
-  handleCommentSubmit,
+  handleEnterKeyCommentSubmit,
   handleSavePost,
   handlePostSubmit,
   fetchPosts,
@@ -57,7 +57,7 @@ function setupPostEventListeners() {
 
   // Comment submission
   document.querySelectorAll(".comment-input").forEach((input) => {
-    input.addEventListener("keypress", handleCommentSubmit);
+    input.addEventListener("keypress", handleEnterKeyCommentSubmit);
   });
 
   // Save post
