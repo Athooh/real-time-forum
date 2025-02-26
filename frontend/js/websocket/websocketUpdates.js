@@ -2,6 +2,7 @@ import { renderPosts } from "../components/posts/posts.js";
 import { showNotification, NotificationType } from "../utils/notifications.js";
 
 import { createNotificationItem } from "../components/header/headerTemplate.js";
+import {updateNotificationBadge} from "../components/header/headerEvent.js";
 
 function handleWebsocketUpdatePost(post) {
   if (post) {
@@ -160,6 +161,7 @@ export function handleMessageListUpdate(data) {
     // Add new item at the top
     messagesList.insertAdjacentHTML("afterbegin", newMessageHTML);
   }
+  showNotification(`You have a new Message from ${user.nickname || "anonymouse"  }`, NotificationType.INFO);
 }
 
 export function handleMessageListMarkAsRead(data) {
