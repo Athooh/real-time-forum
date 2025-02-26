@@ -369,7 +369,7 @@ func (uc *UsersController) UpsertUserAbout(about *models.UserAbout) error {
 	_, err := uc.db.Exec(query,
 		about.UserID, about.Bio, about.DateOfBirth, about.RelationshipStatus, about.Location,
 		about.GithubURL, about.LinkedinURL, about.TwitterURL, about.PhoneNumber, about.Interests,
-
+		about.IsProfilePublic, about.ShowEmail, about.ShowPhone, about.Website,
 		// Update values
 		about.Bio, about.DateOfBirth, about.RelationshipStatus, about.Location,
 		about.GithubURL, about.LinkedinURL, about.TwitterURL, about.PhoneNumber, about.Interests,
