@@ -52,6 +52,7 @@ export async function searchMessages(query) {
 
 export async function sendMessage(recipientId, content) {
   try {
+    console.log("Sending message to server", recipientId, content);
     const response = await authenticatedFetch(`/messages/send`, {
       method: "POST",
       headers: {
@@ -157,4 +158,25 @@ export async function fetchUsers() {
   }
 
   return await response.json();
+}
+
+export async function sendTypingStatusToServer(recipientId, isTyping) {
+  try {
+    const response = await authenticatedFetch(`/messages/typing-status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        recipient_id: parseInt(recipientId),
+        is_typing: isTyping,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to send typing status");
+    }
+  } catch (error) {
+    console.error("Error sending typing status:", error);
+  }
 }
