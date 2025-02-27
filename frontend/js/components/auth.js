@@ -229,6 +229,13 @@ async function handleRegister(e) {
 
     const data = await response.json();
 
+    if (data.error) {
+      console.error("Registration error:", data.error);
+      showNotification(data.error, NotificationType.ERROR);
+      return
+    }
+
+ 
     if (response.ok) {
       // Reset form
       e.target.reset();
