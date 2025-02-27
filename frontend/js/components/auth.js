@@ -174,7 +174,6 @@ export async function handleLogin(e) {
 
       showNotification("Login successful!", NotificationType.SUCCESS);
     } else {
-      console.log("Attempt failed");
       const errorMessage = data.error || "Invalid credentials";
       showNotification(errorMessage, NotificationType.ERROR);
     }
