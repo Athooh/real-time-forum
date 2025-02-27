@@ -245,7 +245,6 @@ async function handleRecipientSearch(event) {
         const resultItem = e.target.closest(".recipient-result");
         if (resultItem) {
           const userId = resultItem.dataset.userId;
-          console.log("userId from resultItem", userId);
           const nickname =
             resultItem.querySelector(".user-nickname").textContent;
           event.target.value = nickname;
