@@ -218,3 +218,29 @@ func GetUnreadCountHandler(mc *controllers.MessageController) http.HandlerFunc {
 		})
 	}
 }
+
+func TypingStatusHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(models.UserIDKey).(string)
+	senderID, err := strconv.Atoi(userID)
+	if err != nil {
+		logger.Error("Invalid user ID in TypingStatusHandler %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		RecipientID int  `json:"recipient_id"`
+		IsTyping    bool `json:"is_typing"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Error("Invalid request body in TypingStatusHandler %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Broadcast typing status through WebSocket
+	BroadcastTypingStatus(senderID, req.RecipientID, req.IsTyping)
+
+	w.WriteHeader(http.StatusOK)
+}
