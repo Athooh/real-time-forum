@@ -14,6 +14,7 @@ func UserRegAndLogin(db *sql.DB) {
 	http.Handle("/register", middleware.ApplyMiddleware(
 		http.HandlerFunc(handlers.RegisterHandler(AuthController)),
 		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 
 	http.Handle("/login", middleware.ApplyMiddleware(
