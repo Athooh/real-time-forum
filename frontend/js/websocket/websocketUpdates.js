@@ -2,7 +2,8 @@ import { renderPosts } from "../components/posts/posts.js";
 import { showNotification, NotificationType } from "../utils/notifications.js";
 
 import { createNotificationItem } from "../components/header/headerTemplate.js";
-import {updateNotificationBadge} from "../components/header/headerEvent.js";
+import { updateNotificationBadge } from "../components/header/headerEvent.js";
+import { updateTypingStatus } from "../components/messages/messagesTemplates.js";
 
 function handleWebsocketUpdatePost(post) {
   if (post) {
@@ -161,7 +162,10 @@ export function handleMessageListUpdate(data) {
     // Add new item at the top
     messagesList.insertAdjacentHTML("afterbegin", newMessageHTML);
   }
-  showNotification(`You have a new Message from ${user.nickname || "anonymouse"  }`, NotificationType.INFO);
+  showNotification(
+    `You have a new Message from ${user.nickname || "anonymouse"}`,
+    NotificationType.INFO
+  );
 }
 
 export function handleMessageListMarkAsRead(data) {
@@ -188,5 +192,26 @@ export function handleMessageListMarkAsRead(data) {
     }
   } else {
     console.error("Message item not found");
+  }
+}
+
+export function handleTypingStatus(data) {
+  const { sender_id, recipient_id, is_typing } = data;
+  const currentUserId = parseInt(
+    JSON.parse(localStorage.getItem("userData")).id
+  );
+
+  // Only proceed if we are the recipient
+  if (currentUserId !== recipient_id) {
+    return;
+  }
+
+  // Get the current chat window's user ID
+  const chatMessages = document.getElementById("chat-messages");
+  if (!chatMessages) return;
+
+  // Only show typing indicator if we're chatting with the sender
+  if (chatMessages.dataset.userId === sender_id.toString()) {
+    updateTypingStatus(sender_id, is_typing);
   }
 }
