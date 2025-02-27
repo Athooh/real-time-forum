@@ -121,8 +121,6 @@ export function setupCommentEventListeners() {
           .querySelector(".comment-input");
         const content = input?.value?.trim();
 
-        console.log("submitting comment");
-
         if (content && postId) {
           try {
             await handleCommentSubmit(e, postId);
