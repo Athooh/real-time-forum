@@ -8,31 +8,9 @@ import (
 	"path/filepath"
 )
 
-var GloabalDB *sql.DB
-
-// InitializeDatabase creates all necessary tables if they don't exist
-func InitializeDatabase() (*sql.DB, error) {
-	// Create database directory in backend folder
-	dbDir := filepath.Join(".", "data")
-	if err := os.MkdirAll(dbDir, 0o755); err != nil {
-		log.Fatal("Failed to create database directory:", err)
-	}
-
-	// Open database connection with absolute path
-	dbPath := filepath.Join(dbDir, "forum.db")
-	db, err := sql.Open("sqlite3", dbPath)
-	if err != nil {
-		log.Fatal("Failed to open database:", err)
-	}
-
-	_, err = db.Exec("PRAGMA foreign_keys = ON;")
-	if err != nil {
-		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
-	}
-
-	GloabalDB = db
-	// Create tables
-	_, err = db.Exec(`
+var (
+	GloabalDB    *sql.DB
+	TableQueries string = `
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			nickname TEXT UNIQUE,
@@ -199,7 +177,32 @@ func InitializeDatabase() (*sql.DB, error) {
 
 		CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
 		CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);
-	`)
+	`
+)
+
+// InitializeDatabase creates all necessary tables if they don't exist
+func InitializeDatabase() (*sql.DB, error) {
+	// Create database directory in backend folder
+	dbDir := filepath.Join(".", "data")
+	if err := os.MkdirAll(dbDir, 0o755); err != nil {
+		log.Fatal("Failed to create database directory:", err)
+	}
+
+	// Open database connection with absolute path
+	dbPath := filepath.Join(dbDir, "forum.db")
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		log.Fatal("Failed to open database:", err)
+	}
+
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+	}
+
+	GloabalDB = db
+	// Create tables
+	_, err = db.Exec(TableQueries)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
