@@ -13,8 +13,9 @@ import (
 
 // TestDB holds the test database connection and cleanup function
 type TestDB struct {
-	DB      *sql.DB
-	Cleanup func()
+	DB            *sql.DB
+	Cleanup       func()
+	ClearDatabase func()
 }
 
 // SetupTestDB creates a new test database and returns a cleanup function
@@ -45,9 +46,18 @@ func SetupTestDB(t *testing.T) *TestDB {
 		os.RemoveAll(tmpDir)
 	}
 
+	clearDatabase := func() {
+		db.Exec("DELETE FROM users")
+
+		db.Exec("DELETE FROM posts")
+
+		db.Exec("DELETE FROM comments")
+	}
+
 	return &TestDB{
-		DB:      db,
-		Cleanup: cleanup,
+		DB:            db,
+		Cleanup:       cleanup,
+		ClearDatabase: clearDatabase,
 	}
 }
 
