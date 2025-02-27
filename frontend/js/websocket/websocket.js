@@ -7,6 +7,7 @@ import {
   handleNewNotification,
   handleMessageListUpdate,
   handleMessageListMarkAsRead,
+  handleTypingStatus,
 } from "./websocketUpdates.js";
 import { formatNumber, formatTimeAgo } from "../utils.js";
 import { fetchUserPhotos } from "../components/profile/profileApi.js";
@@ -148,6 +149,7 @@ export const WebSocketMessageType = {
   NEW_NOTIFICATION: "new_notification",
   MESSAGE_LIST_UPDATE: "message_list_update",
   MESSAGE_LIST_MARK_AS_READ: "message_list_mark_as_read",
+  TYPING_STATUS: "typing_status",
 };
 
 export function handleWebSocketMessage(data) {
@@ -210,6 +212,9 @@ export function handleWebSocketMessage(data) {
       break;
     case WebSocketMessageType.MESSAGE_LIST_MARK_AS_READ:
       handleMessageListMarkAsRead(payload);
+      break;
+    case WebSocketMessageType.TYPING_STATUS:
+      handleTypingStatus(payload);
       break;
     default:
       console.log("Unknown message type:", data.type);
