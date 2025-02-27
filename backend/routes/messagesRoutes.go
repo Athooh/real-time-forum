@@ -49,4 +49,12 @@ func MessagesRoutes(db *sql.DB) {
 		middleware.CORSMiddleware,
 		middleware.SetCSPHeaders,
 	))
+
+	http.Handle("/messages/typing-status", middleware.ApplyMiddleware(
+		http.HandlerFunc(handlers.TypingStatusHandler),
+		middleware.SessionAuthMiddleware,
+		middleware.JWTAuthMiddleware,
+		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
+	))
 }
