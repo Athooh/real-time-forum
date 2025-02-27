@@ -12,7 +12,11 @@ import {
 import { createNotificationItem } from "../header/headerTemplate.js";
 import { fetchUnreadCount } from "../messages/messagesApi.js";
 
+let headerEventListenerAttached = false
+
 function setupHeaderEventListeners() {
+ 
+
   const router = new Router();
 
   // Add navigation callback
@@ -20,6 +24,13 @@ function setupHeaderEventListeners() {
     initializeNotifications();
     initializeMessageBadge();
   });
+
+  if (headerEventListenerAttached) {
+    cleanupHeaderEventListeners()
+  };
+
+  
+  headerEventListenerAttached = true
 
   // Add click handlers for navigation
   document.querySelectorAll(".nav-link").forEach((link) => {
@@ -63,21 +74,56 @@ function setupHeaderEventListeners() {
     searchBtn.addEventListener("click", handleSearch);
   }
 
-  // Logout functionality - Use event delegation for dynamically added elements
-  document.addEventListener("click", (e) => {
-    if (e.target.closest("#logout")) {
-      e.preventDefault();
-      handleLogout();
-    }
-  });
 
-  // Initialize notifications
-  initializeNotifications();
+  const logoutBtn = document.getElementById("logout")
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", handleLogout)
+  }
+  // Logout functionality - Use event delegation for dynamically added elements
+  // document.addEventListener("click", (e) => {
+  //   if (e.target.closest("#logout")) {
+  //     e.preventDefault();
+  //     handleLogout();
+  //   }
+  // });
+
 
   // Initialize profile menu events
   setupProfileMenuEvents();
 }
 
+function cleanupHeaderEventListeners() {
+  // Remove event listeners from navigation links
+  document.querySelectorAll(".nav-link").forEach((link) => {
+    link.replaceWith(link.cloneNode(true)); // Remove all event listeners
+  });
+
+  // Remove event listeners from buttons
+  const homeBtn = document.getElementById("home-btn");
+  if (homeBtn) {
+    homeBtn.replaceWith(homeBtn.cloneNode(true));
+  }
+
+  const profileBtn = document.getElementById("profile-btn");
+  if (profileBtn) {
+    profileBtn.replaceWith(profileBtn.cloneNode(true));
+  }
+
+  const messagesBtn = document.getElementById("messages-btn");
+  if (messagesBtn) {
+    messagesBtn.replaceWith(messagesBtn.cloneNode(true));
+  }
+
+  const searchBtn = document.querySelector(".search-btn");
+  if (searchBtn) {
+    searchBtn.replaceWith(searchBtn.cloneNode(true));
+  }
+
+  const logoutBtn = document.getElementById("logout")
+  if (logoutBtn) {
+    logoutBtn.replaceWith(logoutBtn.cloneNode(true))
+  }
+}
 async function handleSearch(e) {
   const searchInput = document.querySelector(".search-container input");
   const searchTerm = searchInput.value.trim();
@@ -97,6 +143,8 @@ let isLoading = false;
 let hasMoreNotifications = true;
 
 export async function initializeNotifications() {
+
+  console.error("Initializnge page")
   // Reset state
   currentPage = 1;
   isLoading = false;
@@ -124,6 +172,7 @@ export async function initializeNotifications() {
 async function loadNotifications(append = false) {
   if (isLoading || (!append && !hasMoreNotifications)) return;
 
+  console.error("Loading notifcations with current page as",currentPage)
   isLoading = true;
   try {
     const { notifications, total, unread } = await fetchNotifications(
@@ -148,7 +197,6 @@ async function loadNotifications(append = false) {
     }
   } catch (error) {
     console.error("Error loading notifications:", error);
-    showNotification("Failed to load notifications", NotificationType.ERROR);
   } finally {
     isLoading = false;
   }
@@ -250,7 +298,7 @@ function updateNotificationBadge(count) {
   }
 }
 
-function setupNotificationDropdown() {
+export function setupNotificationDropdown() {
   const notificationBtn = document.querySelector(
     ".notification-menu .icon-btn"
   );
