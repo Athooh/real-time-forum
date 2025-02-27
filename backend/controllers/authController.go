@@ -99,13 +99,13 @@ func (ac *AuthController) IsValidUsername(username string) bool {
 	}
 
 	// Check if username starts with a letter
-	if !regexp.MustCompile(`^[a-z]`).MatchString(username) {
-		logger.Debug("Username must start with a lowercase letter: %s", username)
+	if !regexp.MustCompile(`^[a-zA-Z]`).MatchString(username) {
+		logger.Debug("Username must start with a letter (uppercase or lowercase): %s", username)
 		return false
 	}
 
 	// Only allow lowercase letters, numbers, and underscores after first character
-	regex := regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+	regex := regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 	if !regex.MatchString(username) {
 		logger.Debug("Username contains invalid characters: %s", username)
 		return false
