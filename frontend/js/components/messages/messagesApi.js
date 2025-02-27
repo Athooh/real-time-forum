@@ -52,7 +52,6 @@ export async function searchMessages(query) {
 
 export async function sendMessage(recipientId, content) {
   try {
-    console.log("Sending message to server", recipientId, content);
     const response = await authenticatedFetch(`/messages/send`, {
       method: "POST",
       headers: {
