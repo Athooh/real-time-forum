@@ -224,3 +224,24 @@ func BroadcastMessageListMarkAsRead(userID, recipientID int) {
 
 	SendToUser(userID, msgBytes)
 }
+
+// Add this function after the WebSocketHandler function
+func BroadcastTypingStatus(senderID, recipientID int, isTyping bool) {
+	message := map[string]interface{}{
+		"type": "typing_status",
+		"payload": map[string]interface{}{
+			"sender_id":    senderID,
+			"recipient_id": recipientID,
+			"is_typing":    isTyping,
+		},
+	}
+
+	msgBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Error creating typing status message: %v", err)
+		return
+	}
+
+	// Send only to the recipient
+	SendToUser(recipientID, msgBytes)
+}
