@@ -5,6 +5,7 @@ import {
   markMessageAsRead,
   fetchUnreadCount,
   fetchUsers,
+  sendTypingStatusToServer,
 } from "./messagesApi.js";
 import { handleChatOpen } from "./messagesEvents.js";
 import { registerTimeElement } from "../../utils/timeUpdater.js";
@@ -127,6 +128,13 @@ export async function loadMessagesList(messagesList, messages) {
   }
 }
 
+let typingTimer;
+const TYPING_TIMEOUT = 2000; // 2 seconds
+
+async function sendTypingStatus(recipientId, isTyping) {
+  await sendTypingStatusToServer(recipientId, isTyping);
+}
+
 export async function showChatInColumn(userId, userInfo) {
   const chatColumn = document.querySelector(".chat-column");
   if (!chatColumn) return;
@@ -142,8 +150,15 @@ export async function showChatInColumn(userId, userInfo) {
                         <h4>${escapeHTML(userInfo.nickname)}</h4>
                         <span class="status ${
                           userInfo.isOnline ? "online" : "offline"
-                        }" data-status-indicator="true">
-                            ${userInfo.isOnline ? "Online" : "Offline"}
+                        }" 
+                              data-status-indicator="true" 
+                              data-user-id="${userId}">
+                            <span class="status-text">${
+                              userInfo.isOnline ? "Online" : "Offline"
+                            }</span>
+                            <span class="typing-text" style="display: none">
+                                typing<span class="typing-dots"></span>
+                            </span>
                         </span>
                     </div>
                 </div>
@@ -185,11 +200,13 @@ export async function showChatInColumn(userId, userInfo) {
       // Add the message to the chat immediately
       const chatMessages = document.getElementById("chat-messages");
 
-      const emptyConversation = chatMessages.querySelector(".empty-conversation")
+      const emptyConversation = chatMessages.querySelector(
+        ".empty-conversation"
+      );
       if (emptyConversation) {
-        emptyConversation.remove()
+        emptyConversation.remove();
       }
-      
+
       const newMessageHTML = `
                 <div class="message-date-group">
                     <div class="chat-message sent">
@@ -226,6 +243,28 @@ export async function showChatInColumn(userId, userInfo) {
       document.querySelector(".messages-page").classList.remove("chat-active");
     });
   }
+
+  // Add input event listener for typing status
+  inputField.addEventListener("input", () => {
+    // Send typing status when user starts typing
+    sendTypingStatus(userId, true);
+
+    // Clear existing timer
+    clearTimeout(typingTimer);
+
+    // Set new timer to stop typing status after user stops typing
+    typingTimer = setTimeout(() => {
+      sendTypingStatus(userId, false);
+      updateTypingStatus(userId, false);
+    }, TYPING_TIMEOUT);
+  });
+
+  // Add blur event to handle when user leaves the input
+  inputField.addEventListener("blur", () => {
+    clearTimeout(typingTimer);
+    sendTypingStatus(userId, false);
+    updateTypingStatus(userId, false);
+  });
 }
 
 async function loadChatHistory(userId) {
@@ -439,4 +478,39 @@ function formatTimeAgo(timestamp) {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return date.toLocaleDateString();
 }
-export { formatTimeAgo, formatMessageDate, formatMessageTime };
+
+function updateTypingStatus(userId, isTyping) {
+  const statusElement = document.querySelector(
+    `[data-status-indicator="true"][data-user-id="${userId}"]`
+  );
+
+  if (statusElement) {
+    const statusText = statusElement.querySelector(".status-text");
+    const typingText = statusElement.querySelector(".typing-text");
+
+    if (isTyping) {
+      if (statusText) {
+        statusText.style.display = "none";
+      }
+      if (typingText) {
+        typingText.style.display = "inline-flex";
+      }
+      statusElement.classList.add("typing");
+    } else {
+      if (statusText) {
+        statusText.style.display = "inline";
+      }
+      if (typingText) {
+        typingText.style.display = "none";
+      }
+      statusElement.classList.remove("typing");
+    }
+  }
+}
+
+export {
+  formatTimeAgo,
+  formatMessageDate,
+  formatMessageTime,
+  updateTypingStatus,
+};
