@@ -30,3 +30,9 @@ type Message struct {
 	IsRead         bool        `json:"is_read"`
 	User           MessageUser `json:"user"`
 }
+
+type TypingStatus struct {
+	SenderID    int    `json:"sender_id"`
+	RecipientID int    `json:"recipient_id"`
+	IsTyping    bool   `json:"is_typing"`
+}
