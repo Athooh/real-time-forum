@@ -10,12 +10,12 @@ import { createHeader } from "./components/header/header.js";
 import {
   setupHeaderEventListeners,
   initializeMessageBadge,
+  setupNotificationDropdown
 } from "./components/header/headerEvent.js";
 import {
   createLeftSidebar,
   createRightSidebar,
 } from "./components/sideBar/sidebar.js";
-import { initializeNotifications } from "./components/header/headerEvent.js";
 import { createMainContent } from "./components/posts/posts.js";
 import { fetchPosts } from "./components/posts/postsApi.js";
 import Router from "./router/router.js";
@@ -92,7 +92,6 @@ class App {
         </div>
     `;
 
-    setupHeaderEventListeners();
     this.attachEventListeners();
     this.initializeForumFeatures();
 
@@ -157,7 +156,7 @@ class App {
     if (messagesContent) {
       initializeMessages(messagesContent);
     }
-
+    setupNotificationDropdown()
     setupHeaderEventListeners();
     this.initializeForumFeatures();
   }
@@ -181,6 +180,7 @@ class App {
     document.getElementById("profile-content-container").innerHTML =
       profileContent;
 
+    setupNotificationDropdown()
     setupHeaderEventListeners();
     this.setupProfileEventListeners();
     this.initializeForumFeatures();
@@ -355,9 +355,9 @@ class App {
 
   attachEventListeners() {
     // Attach all necessary event listeners
+    setupNotificationDropdown()
     setupAuthEventListeners();
     setupHeaderEventListeners();
-    initializeNotifications();
   }
 
   async initializeForumFeatures() {
