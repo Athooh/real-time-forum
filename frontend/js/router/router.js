@@ -29,8 +29,10 @@ class Router {
       this.currentPath = path;
       this.handleRoute(path);
 
-      // After navigation is complete, call all callbacks
-      this.callbacks.forEach(callback => callback());
+      if (path !== "/loginPage") {
+        // After navigation is complete, call all callbacks
+        this.callbacks.forEach(callback => callback())
+      };
     }
   }
 
