@@ -71,7 +71,7 @@ The forum is designed as a **single-page application (SPA)**, meaning all intera
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/your-username/real-time-forum.git
+git clone https://github.com/Athooh/social-network.git
 cd real-time-forum
 ```
 
