@@ -18,42 +18,46 @@ func NewPostController(db *sql.DB) *PostController {
 }
 
 func (pc *PostController) InsertPost(post models.Post) (int, error) {
-	tx, err := pc.DB.Begin()
-	if err != nil {
-		return 0, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// Insert the post
-	result, err := tx.Exec(`
-		INSERT INTO posts (title, user_id, author, category, likes, dislikes, content, timestamp, video_url)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-	`, post.Title, post.UserID, post.Author, post.Category, post.Likes, post.Dislikes, post.Content, post.Timestamp, post.VideoUrl)
-	if err != nil {
-		return 0, fmt.Errorf("failed to insert post: %w", err)
-	}
-
-	postID, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get last insert ID: %w", err)
-	}
-
-	// Insert images if any
-	for _, imagePath := range post.Images {
-		_, err = tx.Exec(`
-			INSERT INTO post_images (post_id, image_url)
-			VALUES (?, ?);
-		`, postID, imagePath)
+	var postID int
+	err := utils.RetryOnLocked(pc.DB, func() error {
+		tx, err := pc.DB.Begin()
 		if err != nil {
-			return 0, fmt.Errorf("failed to insert image: %w", err)
+			return fmt.Errorf("failed to begin transaction: %w", err)
 		}
-	}
+		defer tx.Rollback()
 
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("failed to commit transaction: %w", err)
-	}
+		// Insert the post
+		result, err := tx.Exec(`
+			INSERT INTO posts (title, user_id, author, category, likes, dislikes, content, timestamp, video_url)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+		`, post.Title, post.UserID, post.Author, post.Category, post.Likes, post.Dislikes, post.Content, post.Timestamp, post.VideoUrl)
+		if err != nil {
+			return fmt.Errorf("failed to insert post: %w", err)
+		}
 
-	return int(postID), nil
+		lastID, err := result.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("failed to get last insert ID: %w", err)
+		}
+		postID = int(lastID)
+
+		// Insert images if any
+		for _, imagePath := range post.Images {
+			_, err = tx.Exec(`
+				INSERT INTO post_images (post_id, image_url)
+				VALUES (?, ?);
+			`, postID, imagePath)
+			if err != nil {
+				return fmt.Errorf("failed to insert image: %w", err)
+			}
+		}
+
+		return tx.Commit()
+	})
+	if err != nil {
+		return 0, err
+	}
+	return postID, nil
 }
 
 func (pc *PostController) GetAllPosts(offset, limit int) ([]models.Post, error) {
@@ -305,78 +309,69 @@ func (pc *PostController) UpdatePost(post models.Post) error {
 
 // DeletePost deletes a post from the database by its ID, along with its comments and associated images
 func (pc *PostController) DeletePost(postID, userID int) error {
-	// Ensure the database connection is not nil
-	if pc.DB == nil {
-		return errors.New("database connection is nil")
-	}
-
-	// Begin a transaction to ensure atomicity
-	tx, err := pc.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback() // Rollback in case of error
-
-	// Step 1: Delete all comments associated with the post
-	_, err = tx.Exec(`
-		DELETE FROM comments 
-		WHERE post_id = ?;
-	`, postID)
-	if err != nil {
-		return fmt.Errorf("failed to delete comments: %w", err)
-	}
-
-	// Step 2: Fetch image paths associated with the post before deleting the post
-	var imagePaths []string
-	rows, err := tx.Query(`
-		SELECT image_url FROM post_images 
-		WHERE post_id = ?;
-	`, postID)
-	if err != nil {
-		return fmt.Errorf("failed to fetch image paths: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var imagePath sql.NullString // Use sql.NullString to handle NULL values
-		if err := rows.Scan(&imagePath); err != nil {
-			return fmt.Errorf("failed to scan image path: %w", err)
+	return utils.RetryOnLocked(pc.DB, func() error {
+		tx, err := pc.DB.Begin()
+		if err != nil {
+			return fmt.Errorf("failed to begin transaction: %w", err)
 		}
-		if imagePath.Valid && imagePath.String != "" { // Only append non-empty paths
-			imagePaths = append(imagePaths, imagePath.String)
+		defer tx.Rollback()
+
+		// Step 1: Delete all comments associated with the post
+		_, err = tx.Exec(`
+			DELETE FROM comments 
+			WHERE post_id = ?;
+		`, postID)
+		if err != nil {
+			return fmt.Errorf("failed to delete comments: %w", err)
 		}
-	}
 
-	// Step 3: Delete the post
-	result, err := tx.Exec(`
-		DELETE FROM posts 
-		WHERE id = ? AND user_id = ?;
-	`, postID, userID)
-	if err != nil {
-		return fmt.Errorf("failed to delete post: %w", err)
-	}
+		// Step 2: Fetch image paths associated with the post before deleting the post
+		var imagePaths []string
+		rows, err := tx.Query(`
+			SELECT image_url FROM post_images 
+			WHERE post_id = ?;
+		`, postID)
+		if err != nil {
+			return fmt.Errorf("failed to fetch image paths: %w", err)
+		}
+		defer rows.Close()
 
-	// Check if the post was actually deleted
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to check rows affected: %w", err)
-	}
-	if rowsAffected == 0 {
-		return errors.New("no post found with the given ID or user ID")
-	}
+		for rows.Next() {
+			var imagePath sql.NullString // Use sql.NullString to handle NULL values
+			if err := rows.Scan(&imagePath); err != nil {
+				return fmt.Errorf("failed to scan image path: %w", err)
+			}
+			if imagePath.Valid && imagePath.String != "" { // Only append non-empty paths
+				imagePaths = append(imagePaths, imagePath.String)
+			}
+		}
 
-	// Step 4: Delete the image files from the upload folder
-	err = utils.RemoveImages(imagePaths)
-	if err != nil {
-		return fmt.Errorf("failed to delete image files: %w", err)
-	}
+		// Step 3: Delete the post
+		result, err := tx.Exec(`
+			DELETE FROM posts 
+			WHERE id = ? AND user_id = ?;
+		`, postID, userID)
+		if err != nil {
+			return fmt.Errorf("failed to delete post: %w", err)
+		}
 
-	// Commit the transaction
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
+		// Check if the post was actually deleted
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to check rows affected: %w", err)
+		}
+		if rowsAffected == 0 {
+			return errors.New("no post found with the given ID or user ID")
+		}
 
-	return nil
+		// Step 4: Delete the image files from the upload folder
+		err = utils.RemoveImages(imagePaths)
+		if err != nil {
+			return fmt.Errorf("failed to delete image files: %w", err)
+		}
+
+		return tx.Commit()
+	})
 }
 
 func (pc *PostController) IsPostAuthor(postID, userID int) (bool, error) {
@@ -467,65 +462,39 @@ func (pc *PostController) GetCommentReplies(commentID int) ([]models.Comment, er
 }
 
 // HandleVote manages likes and dislikes for a post
-func (pc *PostController) HandleVote(postID, userID int, voteType string) error {
-	tx, err := pc.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// Check if user has already voted
-	var existingVote string
-	err = tx.QueryRow(`
-		SELECT user_vote 
-		FROM user_votes 
-		WHERE post_id = ? AND user_id = ?
-	`, postID, userID).Scan(&existingVote)
-
-	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check existing vote: %w", err)
-	}
-
-	// If user hasn't voted before
-	if err == sql.ErrNoRows {
-		// Insert new vote
-		_, err = tx.Exec(`
-			INSERT INTO user_votes (post_id, user_id, user_vote)
-			VALUES (?, ?, ?)
-		`, postID, userID, voteType)
+func (pc *PostController) HandleVote(postID, userID int, voteType string) (bool, error) {
+	var sameVote bool
+	err := utils.RetryOnLocked(pc.DB, func() error {
+		tx, err := pc.DB.Begin()
 		if err != nil {
-			return fmt.Errorf("failed to insert vote: %w", err)
+			return fmt.Errorf("failed to begin transaction: %w", err)
+		}
+		defer tx.Rollback()
+
+		// Check if user has already voted
+		var existingVote string
+		err = tx.QueryRow(`
+			SELECT user_vote 
+			FROM user_votes 
+			WHERE post_id = ? AND user_id = ?
+		`, postID, userID).Scan(&existingVote)
+
+		if err != nil && err != sql.ErrNoRows {
+			return fmt.Errorf("failed to check existing vote: %w", err)
 		}
 
-		// Update post likes/dislikes count
-		var column string
-		if voteType == "like" {
-			column = "likes"
-		} else {
-			column = "dislikes"
-		}
-
-		_, err = tx.Exec(`
-			UPDATE posts 
-			SET `+column+` = `+column+` + 1 
-			WHERE id = ?
-		`, postID)
-		if err != nil {
-			return fmt.Errorf("failed to update post vote count: %w", err)
-		}
-	} else {
-		// If user is voting the same way, remove the vote
-		if existingVote == voteType {
-			// Delete the vote
+		// If user hasn't voted before
+		if err == sql.ErrNoRows {
+			// Insert new vote
 			_, err = tx.Exec(`
-				DELETE FROM user_votes 
-				WHERE post_id = ? AND user_id = ?
-			`, postID, userID)
+				INSERT INTO user_votes (post_id, user_id, user_vote)
+				VALUES (?, ?, ?)
+			`, postID, userID, voteType)
 			if err != nil {
-				return fmt.Errorf("failed to delete vote: %w", err)
+				return fmt.Errorf("failed to insert vote: %w", err)
 			}
 
-			// Decrease the corresponding counter
+			// Update post likes/dislikes count
 			var column string
 			if voteType == "like" {
 				column = "likes"
@@ -535,44 +504,83 @@ func (pc *PostController) HandleVote(postID, userID int, voteType string) error 
 
 			_, err = tx.Exec(`
 				UPDATE posts 
-				SET `+column+` = `+column+` - 1 
+				SET `+column+` = `+column+` + 1 
 				WHERE id = ?
 			`, postID)
 			if err != nil {
 				return fmt.Errorf("failed to update post vote count: %w", err)
 			}
 		} else {
-			// If user is changing their vote
-			// Update the vote type
-			_, err = tx.Exec(`
-				UPDATE user_votes 
-				SET user_vote = ? 
-				WHERE post_id = ? AND user_id = ?
-			`, voteType, postID, userID)
-			if err != nil {
-				return fmt.Errorf("failed to update vote: %w", err)
-			}
+			// If user is voting the same way, remove the vote
+			if existingVote == voteType {
+				// Delete the vote
+				_, err = tx.Exec(`
+					DELETE FROM user_votes 
+					WHERE post_id = ? AND user_id = ?
+				`, postID, userID)
+				if err != nil {
+					return fmt.Errorf("failed to delete vote: %w", err)
+				}
 
-			// Update post counts (decrease old vote type, increase new vote type)
-			_, err = tx.Exec(`
-				UPDATE posts 
-				SET likes = CASE 
-						WHEN ? = 'like' THEN likes + 1 
-						ELSE likes - 1 
-					END,
-					dislikes = CASE 
-						WHEN ? = 'dislike' THEN dislikes + 1 
-						ELSE dislikes - 1 
-					END
-				WHERE id = ?
-			`, voteType, voteType, postID)
-			if err != nil {
-				return fmt.Errorf("failed to update post vote counts: %w", err)
+				// Decrease the corresponding counter
+				var column string
+				if voteType == "like" {
+					column = "likes"
+				} else {
+					column = "dislikes"
+				}
+
+				_, err = tx.Exec(`
+					UPDATE posts 
+					SET `+column+` = `+column+` - 1 
+					WHERE id = ?
+				`, postID)
+				if err != nil {
+					return fmt.Errorf("failed to update post vote count: %w", err)
+				}
+				sameVote = true
+			} else {
+				// If user is changing their vote
+				// Update the vote type
+				_, err = tx.Exec(`
+					UPDATE user_votes 
+					SET user_vote = ? 
+					WHERE post_id = ? AND user_id = ?
+				`, voteType, postID, userID)
+				if err != nil {
+					return fmt.Errorf("failed to update vote: %w", err)
+				}
+
+				// Update post counts (decrease old vote type, increase new vote type)
+				_, err = tx.Exec(`
+					UPDATE posts 
+					SET likes = CASE 
+							WHEN ? = 'like' THEN likes + 1 
+							ELSE likes - 1 
+						END,
+						dislikes = CASE 
+							WHEN ? = 'dislike' THEN dislikes + 1 
+							ELSE dislikes - 1 
+						END
+					WHERE id = ?
+				`, voteType, voteType, postID)
+				if err != nil {
+					return fmt.Errorf("failed to update post vote counts: %w", err)
+				}
 			}
 		}
-	}
 
-	return tx.Commit()
+		// Set sameVote value based on the existing logic
+		if err == sql.ErrNoRows {
+			sameVote = false
+		} else {
+			sameVote = (existingVote == voteType)
+		}
+
+		return tx.Commit()
+	})
+
+	return sameVote, err
 }
 
 // GetUserVote returns the user's current vote on a post

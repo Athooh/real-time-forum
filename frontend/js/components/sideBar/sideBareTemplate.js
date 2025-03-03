@@ -7,26 +7,38 @@ import {
 import { createLoader } from "../loader.js";
 import { loadSuggestions } from "./sideBarEvent.js";
 import { followUser, updateLatestNews } from "./sideBarApi.js";
-function createUserProfileCard() {
-    const userDataAbout = JSON.parse(localStorage.getItem("userDataAbout")) || {};
-    const userData = userDataAbout.profile || {};
-    const userAbout = userDataAbout.about || {};
-    
-    const avatar = userData.avatar || "images/avatar.png";
-    const banner = userData.cover_image || "images/banner.png";
 
-    return `
+function createUserProfileCard() {
+  const userDataAbout = JSON.parse(localStorage.getItem("userDataAbout")) || {};
+  const userData = userDataAbout.profile || {};
+  const userAbout = userDataAbout.about || {};
+
+  const avatar = userData.avatar || "images/avatar.png";
+  const banner = userData.cover_image || "images/banner.png";
+
+  return `
         <div class="user-profile-card">
             <div class="profile-banner">
-                <img src="${banner}" alt="Profile Banner" data-user-banner="${userData.id}">
+                <img src="${banner}" alt="Profile Banner" data-user-banner="${
+    userData.id
+  }">
             </div>
             <div class="profile-info">
                 <div class="profile-avatar">
-                    <img src="${avatar}" alt="Profile Picture" data-user-avatar="${userData.id}">
+                    <img src="${avatar}" alt="Profile Picture" data-user-avatar="${
+    userData.id
+  }">
                 </div>
-                <h3 class="user-name">${escapeHTML(userData.nickname || "John Doe")}</h3>
-                <p class="user-profession">${escapeHTML(userData.profession || "Software Engineer")}</p>
-                <p class="user-tagline">${escapeHTML(userAbout.bio || "Building the future, one line of code at a time")}</p>
+                <h3 class="user-name">${escapeHTML(
+                  userData.nickname || "John Doe"
+                )}</h3>
+                <p class="user-profession">${escapeHTML(
+                  userData.profession || "Software Engineer"
+                )}</p>
+                <p class="user-tagline">${escapeHTML(
+                  userAbout.bio ||
+                    "Building the future, one line of code at a time"
+                )}</p>
                 <div id="profile-stats-container">
                     ${createLoader()}
                 </div>
@@ -230,7 +242,6 @@ async function createSuggestionItems(page = 1) {
 }
 
 function createLatestNewsSection() {
-  // Initial loading state
   const initialHTML = `
           <div class="sidebar-card latest-news">
               <div class="who-to-follow-header">
@@ -243,7 +254,6 @@ function createLatestNewsSection() {
           </div>
       `;
 
-  // After the section is created, fetch and update the latest posts
   setTimeout(() => {
     updateLatestNews();
   }, 0);

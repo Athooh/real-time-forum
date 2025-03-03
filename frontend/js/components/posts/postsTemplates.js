@@ -1,6 +1,7 @@
 import { escapeHTML, formatTimeAgo } from "../../utils.js";
 import { BASE_URL } from "../../state.js";
 
+
 // Helper functions
 function createStorySection() {
   const stories = [
@@ -218,6 +219,7 @@ function createPostCard() {
 }
 
 function createPostHeader(post) {
+  const timeId = `post-time-${post.id}`;
   return `
         <div class="post-header">
             <div class="post-user">
@@ -230,7 +232,7 @@ function createPostHeader(post) {
                       post.user.profession
                         ? `${post.user.profession} • `
                         : "Feature in progress • "
-                    }${formatTimeAgo(post.timestamp)}</span>
+                    }<span id="${timeId}">${formatTimeAgo(post.timestamp)}</span></span>
                 </div>
             </div>
             <div class="post-menu">
@@ -384,12 +386,16 @@ function createPostActions(post) {
 }
 
 function createPostComments(post) {
+
+    const userData = JSON.parse(localStorage.getItem("userDataAbout"))
+    const avatar = userData.profile.avatar || "images/avatar.png"
+
   return `
         <div class="post-comments" id="comments-section-${post.id}">
             <div class="comments-content" style="display: none;">
                 <div class="comment-input-wrapper">
                     <img src="${
-                      post.user.avatar || "images/avatar.png"
+                      avatar|| "images/avatar.png"
                     }" alt="User" class="user-avatar">
                     <div class="comment-input-container">
                         <input type="text" placeholder="Write a comment..." class="comment-input" data-post-id="${
@@ -480,7 +486,7 @@ function createComment(comment, isReply = false, hasReplies = false) {
                 ? `
                 <div class="reply-input-container" id="reply-input-${comment.ID}" style="display: none;">
                     <div class="comment-input-wrapper">
-                        <img src="images/avatar.png" alt="User" class="user-avatar">
+                        <img src="${avatar}" alt="User" class="user-avatar">
                         <div class="comment-input-container">
                             <input type="text" placeholder="Write a reply..." class="reply-input data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">
                             <button class="reply-submit-btn" data-comment-id="${comment.ID}" data-post-id="${comment.PostID}">

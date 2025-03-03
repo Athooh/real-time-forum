@@ -1,6 +1,5 @@
 import { NotificationType, showNotification } from "../utils/notifications.js";
 import Router from "../router/router.js";
-import { initializeMessenger } from "./messages.js";
 
 export function createAuthSection() {
   return `
@@ -175,7 +174,6 @@ export async function handleLogin(e) {
 
       showNotification("Login successful!", NotificationType.SUCCESS);
     } else {
-      console.log("Attempt failed");
       const errorMessage = data.error || "Invalid credentials";
       showNotification(errorMessage, NotificationType.ERROR);
     }
@@ -231,6 +229,13 @@ async function handleRegister(e) {
 
     const data = await response.json();
 
+    if (data.error) {
+      console.error("Registration error:", data.error);
+      showNotification(data.error, NotificationType.ERROR);
+      return
+    }
+
+ 
     if (response.ok) {
       // Reset form
       e.target.reset();

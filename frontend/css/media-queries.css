@@ -39,7 +39,7 @@
     }
 
     .search-container input {
-        width: 180px;
+        width: 160px;
     }
 
     .dashboard-container {
@@ -493,7 +493,7 @@
         background: var(--white-color);
         border-top: 1px solid var(--border-color);
         position: absolute;
-        bottom: 0;
+        bottom: 30px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -565,12 +565,17 @@
         justify-content: space-evenly;
     }
 
+    .logo h1 {
+        display: none;
+    }
+
     .header-actions {
         padding-top: 0.5rem;
     }
 
     .notification-menu .dropdown-menu {
         right: -80px;
+        width: 300px;
     }
 
     .search-container {

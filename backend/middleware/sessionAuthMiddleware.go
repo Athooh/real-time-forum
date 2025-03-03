@@ -19,7 +19,7 @@ func SessionAuthMiddleware(next http.Handler) http.Handler {
 				r.Method,
 				r.URL.Path,
 			)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
@@ -30,7 +30,7 @@ func SessionAuthMiddleware(next http.Handler) http.Handler {
 				r.Method,
 				r.URL.Path,
 			)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 

@@ -27,14 +27,17 @@ func PostRoute(db *sql.DB) {
 				w.WriteHeader(http.StatusMethodNotAllowed)
 			}
 		}),
-		middleware.ErrorHandler(handlers.ServeErrorPage),
 		middleware.JWTAuthMiddleware,
 		middleware.SessionAuthMiddleware,
+		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 
 	http.Handle("/api/posts/vote", middleware.ApplyMiddleware(
 		handlers.HandleVotePost(PostController),
 		middleware.JWTAuthMiddleware,
 		middleware.SessionAuthMiddleware,
+		middleware.CORSMiddleware,
+		middleware.SetCSPHeaders,
 	))
 }

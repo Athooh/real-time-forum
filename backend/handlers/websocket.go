@@ -3,15 +3,13 @@ package handlers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
-	"forum/backend/database"
 	"forum/backend/logger"
 	"forum/backend/models"
+	"forum/backend/utils"
 
 	"github.com/gorilla/websocket"
 )
@@ -22,19 +20,13 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// Update the clients map to store user IDs
-var (
-	clients = make(map[*websocket.Conn]int) // Changed from bool to int to store userID
-	mutex   = &sync.Mutex{}
-)
-
 // Add a function to send message to specific user
 func SendToUser(userID int, message []byte) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	utils.Mutex.Lock()
+	defer utils.Mutex.Unlock()
 
 	found := false
-	for conn, connUserID := range clients {
+	for conn, connUserID := range utils.Clients {
 		if connUserID == userID {
 			found = true
 			logger.Info("Sending message to user %d", userID)
@@ -42,28 +34,13 @@ func SendToUser(userID int, message []byte) {
 			if err != nil {
 				logger.Error("Error sending message to user %d: %v", userID, err)
 				conn.Close()
-				delete(clients, conn)
+				delete(utils.Clients, conn)
 			}
 		}
 	}
 
 	if !found {
 		logger.Warning("No active WebSocket connection found for user %d", userID)
-	}
-}
-
-// Broadcast sends a message to all connected clients
-func Broadcast(message []byte) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	for client := range clients {
-		err := client.WriteMessage(websocket.TextMessage, message)
-		if err != nil {
-			log.Println("Error broadcasting message:", err)
-			client.Close()
-			delete(clients, client)
-		}
 	}
 }
 
@@ -85,12 +62,12 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store the user ID with the connection
-	mutex.Lock()
-	clients[conn] = userIDInt
-	mutex.Unlock()
+	utils.Mutex.Lock()
+	utils.Clients[conn] = userIDInt
+	utils.Mutex.Unlock()
 
 	// Mark user as online
-	MarkUserOnline(userIDInt)
+	utils.MarkUserOnline(userIDInt)
 
 	// Start a goroutine to handle this client's messages
 	go handleClientMessages(conn, userIDInt)
@@ -107,18 +84,33 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 		return nil
 	})
 
+	// Add close handler
+	conn.SetCloseHandler(func(code int, text string) error {
+		if code != websocket.CloseGoingAway &&
+			code != websocket.CloseNormalClosure {
+			logger.Warning("WebSocket closed with code %d: %s", code, text)
+		} else {
+			logger.Info("WebSocket connection closed normally for user %d", userIDInt)
+		}
+		return nil
+	})
+
 	defer func() {
-		mutex.Lock()
-		delete(clients, conn)
-		mutex.Unlock()
-		MarkUserOffline(userIDInt)
+		utils.Mutex.Lock()
+		delete(utils.Clients, conn)
+		utils.Mutex.Unlock()
+		utils.MarkUserOffline(userIDInt)
 		conn.Close()
 	}()
 
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			logger.Error("Error reading message: %v", err)
+			if websocket.IsUnexpectedCloseError(err,
+				websocket.CloseGoingAway,
+				websocket.CloseNormalClosure) {
+				logger.Error("Error reading message: %v", err)
+			}
 			break
 		}
 
@@ -130,12 +122,11 @@ func handleClientMessages(conn *websocket.Conn, userIDInt int) {
 		if err := json.Unmarshal(message, &msg); err == nil && msg.Type == "ping" {
 			// Update the read deadline when we receive a ping
 			conn.SetReadDeadline(time.Now().Add(40 * time.Second))
-			MarkUserOnline(userIDInt)
+			utils.MarkUserOnline(userIDInt)
 			continue
 		}
 
-		logger.Info("Received message: %s", message)
-		Broadcast(message)
+		utils.Broadcast(message)
 	}
 }
 
@@ -163,67 +154,7 @@ func BroadcastNewPost(post models.Post) {
 	}
 
 	// Broadcast the message
-	Broadcast(msgBytes)
-}
-
-func MarkUserOnline(userID int) {
-	stmt := `
-		INSERT INTO user_status (user_id, is_online, last_seen) 
-		VALUES (?, TRUE, datetime('now'))
-		ON CONFLICT (user_id) 
-		DO UPDATE SET 
-			is_online = TRUE,
-			last_seen = datetime('now')
-	`
-	if _, err := database.GloabalDB.Exec(stmt, userID); err != nil {
-		logger.Error("Failed to update user online status: %v", err)
-		return
-	}
-
-	// Broadcast online status
-	onlineEvent := map[string]interface{}{
-		"type": "user_online",
-		"payload": map[string]interface{}{
-			"userId":   userID,
-			"isOnline": true,
-		},
-	}
-	msgBytes, err := json.Marshal(onlineEvent)
-	if err != nil {
-		logger.Error("Error creating message: %v", err)
-		return
-	}
-	Broadcast(msgBytes)
-}
-
-func MarkUserOffline(userID int) {
-	stmt := `
-		INSERT INTO user_status (user_id, is_online, last_seen) 
-		VALUES (?, FALSE, datetime('now'))
-		ON CONFLICT (user_id) 
-		DO UPDATE SET 
-			is_online = FALSE,
-			last_seen = datetime('now')
-	`
-	if _, err := database.GloabalDB.Exec(stmt, userID); err != nil {
-		logger.Error("Failed to update user offline status: %v", err)
-		return
-	}
-
-	// Broadcast offline status
-	offlineEvent := map[string]interface{}{
-		"type": "user_offline",
-		"payload": map[string]interface{}{
-			"userId":   userID,
-			"isOnline": false,
-		},
-	}
-	msgBytes, err := json.Marshal(offlineEvent)
-	if err != nil {
-		logger.Error("Error creating message: %v", err)
-		return
-	}
-	Broadcast(msgBytes)
+	utils.Broadcast(msgBytes)
 }
 
 // Add new function to broadcast post reactions
@@ -254,5 +185,63 @@ func BroadcastPostReaction(postID int, likes int, dislikes int) {
 		return
 	}
 
-	Broadcast(messageBytes)
+	utils.Broadcast(messageBytes)
+}
+
+// Add this function to broadcast unread count updates
+func BroadcastUnreadCount(userID, unreadCount int) {
+	message := map[string]interface{}{
+		"type": "unread_count_update",
+		"payload": map[string]interface{}{
+			"unreadCount": unreadCount,
+		},
+	}
+
+	msgBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Error creating unread count message: %v", err)
+		return
+	}
+
+	// Send only to the specific user
+	SendToUser(userID, msgBytes)
+}
+
+// BroadcastMessageListMarkAsRead sends a message list mark as read notification to all clients
+func BroadcastMessageListMarkAsRead(userID, recipientID int) {
+	message := map[string]interface{}{
+		"type": "message_list_mark_as_read",
+		"payload": map[string]interface{}{
+			"userId": recipientID,
+		},
+	}
+
+	msgBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Error creating message list mark as read message: %v", err)
+		return
+	}
+
+	SendToUser(userID, msgBytes)
+}
+
+// Add this function after the WebSocketHandler function
+func BroadcastTypingStatus(senderID, recipientID int, isTyping bool) {
+	message := map[string]interface{}{
+		"type": "typing_status",
+		"payload": map[string]interface{}{
+			"sender_id":    senderID,
+			"recipient_id": recipientID,
+			"is_typing":    isTyping,
+		},
+	}
+
+	msgBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Error("Error creating typing status message: %v", err)
+		return
+	}
+
+	// Send only to the recipient
+	SendToUser(recipientID, msgBytes)
 }

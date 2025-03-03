@@ -65,3 +65,21 @@ func Debug(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	debugLogger.Printf("[%s] %s", getFileInfo(), msg)
 }
+
+func Close() error {
+	// Close all loggers by setting them to nil
+	infoLogger = nil
+	errorLogger = nil
+	warningLogger = nil
+	debugLogger = nil
+
+	// Get the log directory path
+	logDir := "logs"
+
+	// Remove all files in the logs directory
+	if err := os.RemoveAll(logDir); err != nil {
+		return fmt.Errorf("failed to remove log directory: %v", err)
+	}
+
+	return nil
+}

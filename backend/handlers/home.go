@@ -14,14 +14,15 @@ func HomeHandler(db *sql.DB) http.HandlerFunc {
 		tmpl, err := template.ParseFiles("frontend/index.html")
 		if err != nil {
 			logger.Error("Failed to load homepage: %v", err)
-			http.Error(w, "Failed to load homepage", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/html")
 		if err := tmpl.Execute(w, nil); err != nil {
 			logger.Error("Failed to render homepage %v", err)
-			http.Error(w, "Failed to render homepage", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	}
 }

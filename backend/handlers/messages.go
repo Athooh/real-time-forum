@@ -66,6 +66,15 @@ func SendMessageHandler(mc *controllers.MessageController) http.HandlerFunc {
 		payloadBytes, _ := json.Marshal(payload)
 		SendToUser(req.RecipientID, payloadBytes)
 
+		unreadCount, err := mc.GetUnreadMessageCount(req.RecipientID)
+		if err != nil {
+			logger.Error("Failed to get unread message count in SendMessageHandler %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		BroadcastUnreadCount(req.RecipientID, unreadCount)
+
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"message": "Message sent successfully",
@@ -150,6 +159,14 @@ func GetAllMessagesHandler(mc *controllers.MessageController) http.HandlerFunc {
 
 func MarkMessageAsReadHandler(mc *controllers.MessageController) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(models.UserIDKey).(string)
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID in MarkMessageAsReadHandler %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		msgIDStr := r.URL.Query().Get("msgID")
 		msgID, err := strconv.Atoi(msgIDStr)
 		if err != nil {
@@ -158,14 +175,72 @@ func MarkMessageAsReadHandler(mc *controllers.MessageController) http.HandlerFun
 			return
 		}
 
-		if err := mc.MarkMessageAsRead(msgID); err != nil {
+		response, err := mc.MarkMessageAsRead(msgID)
+		if err != nil {
 			logger.Error("Failed to mark message as read %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		unreadCount := response.UnreadCount
+		senderID := response.UserId
+
+		BroadcastUnreadCount(userIDInt, unreadCount)
+
+		BroadcastMessageListMarkAsRead(userIDInt, senderID)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 	}
+}
+
+func GetUnreadCountHandler(mc *controllers.MessageController) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value(models.UserIDKey).(string)
+		userIDInt, err := strconv.Atoi(userID)
+		if err != nil {
+			logger.Error("Invalid user ID in GetUnreadCountHandler %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		count, err := mc.GetUnreadMessageCount(userIDInt)
+		if err != nil {
+			logger.Error("Failed to get unread message count in GetUnreadCountHandler %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{
+			"unreadCount": count,
+		})
+	}
+}
+
+func TypingStatusHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(models.UserIDKey).(string)
+	senderID, err := strconv.Atoi(userID)
+	if err != nil {
+		logger.Error("Invalid user ID in TypingStatusHandler %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		RecipientID int  `json:"recipient_id"`
+		IsTyping    bool `json:"is_typing"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Error("Invalid request body in TypingStatusHandler %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Broadcast typing status through WebSocket
+	BroadcastTypingStatus(senderID, req.RecipientID, req.IsTyping)
+
+	w.WriteHeader(http.StatusOK)
 }

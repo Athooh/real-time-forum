@@ -28,21 +28,30 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.message-badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #ff4444;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white;
-    font-weight: bold;
+.icon-btn {
+    position: relative;
+}
+
+
+
+.icon-wrapper {
+    display: inline-block;  /* Makes the wrapper respect transformations */
+    position: relative;     /* Ensures proper positioning context */
+}
+
+.icon-wrapper.shake-animation {
+    animation: shake 0.5s ease-in-out;
+    transform-origin: center;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+.shake-animation {
+    animation: shake 0.5s ease-in-out;
 }
 
 /* Messages Slide Panel */
@@ -296,6 +305,8 @@
     overflow-y: auto;
     padding: 20px;
     background-color: #f8f9fa;
+    /* Ensure messages don't push other elements off screen */
+    min-height: 0;
 }
 
 .message-date-group {
@@ -449,6 +460,9 @@
     display: flex;
     gap: 10px;
     align-items: center;
+    background: white;
+    /* Ensure it stays at the bottom */
+    position: relative;
 }
 
 .chat-input-area input {
@@ -574,8 +588,17 @@
     display: flex;
     flex-direction: column;
     background: var(--search-input-color);
-    height: 100%; /* Fill available height */
-    overflow: hidden; /* Prevent column overflow */
+    height: 100%;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    /* Ensure messages don't push other elements off screen */
+    min-height: 0;
 }
 
 .chat-placeholder {
@@ -851,3 +874,93 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+.message-item .user-info {
+    font-size: 0.8em;
+    color: #666;
+    margin-left: 8px;
+}
+
+.message-item .message-preview {
+    color: #888;
+    font-style: italic;
+}
+
+.message-sender {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.chat-message.sent .message-sender {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.chat-message.received .message-sender {
+    color: var(--text-muted);
+}
+
+.message-item.unread-message {
+    background-color: var(--notification-color);
+}
+
+.message-item.unread-message:hover {
+    background-color: var(--notification-hover-color);
+}
+
+.unread-badge {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    margin-left: 8px;
+    font-weight: bold;
+}
+
+.message-item.unread-message .message-preview {
+    font-weight: 600;
+    color: var(--notification-header-color);
+}
+
+
+
+.status .typing-text {
+    display: none;
+    color: #44b700;
+    font-size: 0.9rem;
+    align-items: center;
+    gap: 4px;
+}
+
+.status.typing .typing-text {
+    display: inline-flex;
+}
+
+.typing-dots {
+    display: inline-block;
+    width: 12px;
+}
+
+.typing-dots::after {
+    content: '';
+    animation: typingDots 1.5s infinite;
+}
+
+@keyframes typingDots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+    100% { content: ''; }
+}
+
+/* Hide status text when typing */
+.status.typing .status-text {
+    display: none;
+}
+
+.status.typing .typing-text {
+    display: flex !important;
+}
+

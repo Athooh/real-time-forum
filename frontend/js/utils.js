@@ -137,7 +137,6 @@ function formatTimeAgo(timestamp) {
   return `${Math.floor(diff / 31536000)}yrs`;
 }
 
-
 function setupInfiniteScroll() {
   const handleScroll = throttle(() => {
     const scrollPosition = window.innerHeight + window.scrollY;
@@ -167,15 +166,26 @@ export function getCurrentUserId() {
   return user?.id || null;
 }
 
+function getNotificationTypeIcon(type) {
+  const icons = {
+    like: '<i class="fas fa-heart"></i>',
+    comment: '<i class="fas fa-comment"></i>',
+    follow: '<i class="fas fa-user-plus"></i>',
+    mention: '<i class="fas fa-at"></i>',
+    default: '<i class="fas fa-bell"></i>',
+  };
+  return icons[type] || icons.default;
+}
+
 // Export utilities to window object
 export {
   throttle,
   debounce,
   validatePassword,
-  rateLimiter,
   escapeHTML,
   formatTimeAgo,
   setupInfiniteScroll,
   formatNumber,
   formatDateToMonthDayYear,
+  getNotificationTypeIcon,
 };

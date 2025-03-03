@@ -8,31 +8,9 @@ import (
 	"path/filepath"
 )
 
-var GloabalDB *sql.DB
-
-// InitializeDatabase creates all necessary tables if they don't exist
-func InitializeDatabase() (*sql.DB, error) {
-	// Create database directory in backend folder
-	dbDir := filepath.Join(".", "data")
-	if err := os.MkdirAll(dbDir, 0o755); err != nil {
-		log.Fatal("Failed to create database directory:", err)
-	}
-
-	// Open database connection with absolute path
-	dbPath := filepath.Join(dbDir, "forum.db")
-	db, err := sql.Open("sqlite3", dbPath)
-	if err != nil {
-		log.Fatal("Failed to open database:", err)
-	}
-
-	_, err = db.Exec("PRAGMA foreign_keys = ON;")
-	if err != nil {
-		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
-	}
-
-	GloabalDB = db
-	// Create tables
-	_, err = db.Exec(`
+var (
+	GloabalDB    *sql.DB
+	TableQueries string = `
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			nickname TEXT UNIQUE,
@@ -182,6 +160,64 @@ func InitializeDatabase() (*sql.DB, error) {
 			description TEXT,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		);
-	`)
-	return db, err
+
+		CREATE TABLE IF NOT EXISTS notifications (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			recipient_id INTEGER NOT NULL,
+			actor_id INTEGER NOT NULL,
+			type TEXT NOT NULL CHECK(type IN ('like', 'dislike', 'comment', 'follow', 'message', 'unfollow')),
+			entity_type TEXT NOT NULL CHECK(entity_type IN ('post', 'comment', 'profile', 'message')),
+			entity_id INTEGER NOT NULL,
+			message TEXT NOT NULL,
+			is_read BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+		CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);
+	`
+)
+
+// InitializeDatabase creates all necessary tables if they don't exist
+func InitializeDatabase() (*sql.DB, error) {
+	// Create database directory in backend folder
+	dbDir := filepath.Join(".", "data")
+	if err := os.MkdirAll(dbDir, 0o755); err != nil {
+		log.Fatal("Failed to create database directory:", err)
+	}
+
+	// Open database connection with absolute path
+	dbPath := filepath.Join(dbDir, "forum.db")
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		log.Fatal("Failed to open database:", err)
+	}
+
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+	}
+
+	GloabalDB = db
+	// Create tables
+	_, err = db.Exec(TableQueries)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tables: %w", err)
+	}
+
+	// Enable WAL mode
+	_, err = db.Exec("PRAGMA journal_mode=WAL")
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
+	}
+
+	// Set busy timeout
+	_, err = db.Exec("PRAGMA busy_timeout=5000")
+	if err != nil {
+		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+
+	return db, nil
 }

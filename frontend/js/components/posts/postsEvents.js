@@ -63,70 +63,74 @@ export function setupCommentEventListeners() {
     });
   });
 
-
   document.querySelectorAll(".reply-submit-btn").forEach((button) => {
-    button.addEventListener("click", debounce( async (e) => {
-      e.preventDefault(); // Prevent default behavior if necessary
-  
-      // Extract data attributes from the clicked button
-      const commentId = button.dataset.commentId;
-      const postId = button.dataset.postId;
-  
-      // Find the closest reply input container and get the input field
-      const replyInputContainer = e.target.closest(".reply-input-container");
-      if (!replyInputContainer) {
-        console.error("Reply input container not found.");
-        return;
-      }
-  
-      const replyInput = replyInputContainer.querySelector(".reply-input");
-      if (!replyInput) {
-        console.error("Reply input field not found.");
-        return;
-      }
-  
-      const content = replyInput.value.trim();
-  
-      // Validate content
-      if (!content) {
-        console.error("No content to submit.");
-        return;
-      }
-  
-      try {
-        // Submit the reply
-        await submitReply(commentId, content, postId);
-  
-        // Clear the input field after successful submission
-        replyInput.value = "";
-  
-       
-        replyInputContainer.style.display = "none";
-      } catch (error) {
-        console.error("Error submitting reply:", error);
-      }
-    }),300);
+    button.addEventListener(
+      "click",
+      debounce(async (e) => {
+        e.preventDefault(); // Prevent default behavior if necessary
+
+        // Extract data attributes from the clicked button
+        const commentId = button.dataset.commentId;
+        const postId = button.dataset.postId;
+
+        // Find the closest reply input container and get the input field
+        const replyInputContainer = e.target.closest(".reply-input-container");
+        if (!replyInputContainer) {
+          console.error("Reply input container not found.");
+          return;
+        }
+
+        const replyInput = replyInputContainer.querySelector(".reply-input");
+        if (!replyInput) {
+          console.error("Reply input field not found.");
+          return;
+        }
+
+        const content = replyInput.value.trim();
+
+        // Validate content
+        if (!content) {
+          console.error("No content to submit.");
+          return;
+        }
+
+        try {
+          // Submit the reply
+          await submitReply(commentId, content, postId);
+
+          // Clear the input field after successful submission
+          replyInput.value = "";
+
+          replyInputContainer.style.display = "none";
+        } catch (error) {
+          console.error("Error submitting reply:", error);
+        }
+      }),
+      300
+    );
   });
   // Submit buttons click handlers
   document.querySelectorAll(".comment-submit-btn").forEach((btn) => {
-    btn.addEventListener("click", debounce(async (e) => {
-      const button = e.target.closest(".comment-submit-btn");
-      const postId = button.dataset.postId;
-      const input = button
-        .closest(".comment-input-container")
-        .querySelector(".comment-input");
-      const content = input.value.trim();
+    btn.addEventListener(
+      "click",
+      debounce(async (e) => {
+        const button = e.target.closest(".comment-submit-btn");
+        const postId = button.dataset.postId;
+        const input = button
+          .closest(".comment-input-container")
+          .querySelector(".comment-input");
+        const content = input?.value?.trim();
 
-
-      if (content && postId) {
-        try {
-          await submitComment(postId, content);
-          input.value = "";
-        } catch (error) {
-          console.error("Error submitting comment:", error);
+        if (content && postId) {
+          try {
+            await handleCommentSubmit(e, postId);
+          } catch (error) {
+            console.error("Error submitting comment:", error);
+          }
         }
-      }
-    }),300);
+      }),
+      1000
+    );
   });
 }
 
@@ -208,5 +212,28 @@ async function handlePostAction(e) {
     }
   } else if (editBtn) {
     showNotification("Edit functionality coming soon", NotificationType.INFO);
+  }
+}
+
+async function handleCommentSubmit(e, postId) {
+  e.preventDefault();
+  const button = e.target.closest(".comment-submit-btn");
+  const input = button
+    .closest(".comment-input-container")
+    .querySelector(".comment-input");
+  const content = input?.value?.trim();
+
+  if (!content) {
+    console.error("No content to submit.");
+    return;
+  }
+
+  try {
+    await submitComment(postId, content);
+    input.value = "";
+
+    // WebSocket update will handle the UI update
+  } catch (error) {
+    showNotification("Failed to post comment", NotificationType.ERROR);
   }
 }

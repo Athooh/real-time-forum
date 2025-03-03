@@ -119,3 +119,172 @@ func (c *CommentController) GetCommentsByPostID(postID int) ([]models.Comment, e
 	}
 	return comments, nil
 }
+
+// GetCommentWithDetails retrieves a single comment with all its details
+func (c *CommentController) GetCommentWithDetails(commentID int) (*models.Comment, error) {
+	query := `
+		SELECT c.id, c.post_id, c.user_id, c.parent_id, c.author, c.content, 
+			   c.likes, c.dislikes, c.timestamp,
+			   u.id as user_id, u.nickname, u.email, u.avatar, u.cover_image, u.profession, u.age, u.created_at,
+			   EXISTS(SELECT 1 FROM comments r WHERE r.parent_id = c.id) as has_replies
+		FROM comments c
+		LEFT JOIN users u ON c.user_id = u.id
+		WHERE c.id = ?
+	`
+	var comment models.Comment
+	var parentID sql.NullInt64
+	var avatar, coverImage sql.NullString
+	var profession sql.NullString
+	var age sql.NullInt32
+
+	err := c.DB.QueryRow(query, commentID).Scan(
+		&comment.ID,
+		&comment.PostID,
+		&comment.UserID,
+		&parentID,
+		&comment.Author,
+		&comment.Content,
+		&comment.Likes,
+		&comment.Dislikes,
+		&comment.Timestamp,
+		&comment.User.ID,
+		&comment.User.Nickname,
+		&comment.User.Email,
+		&avatar,
+		&coverImage,
+		&profession,
+		&age,
+		&comment.User.CreatedAt,
+		&comment.HasReplies,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Handle nullable fields
+	if avatar.Valid {
+		comment.User.Avatar = &avatar.String
+	}
+	if coverImage.Valid {
+		comment.User.CoverImage = &coverImage.String
+	}
+	if profession.Valid {
+		comment.User.Profession = profession.String
+	}
+	if age.Valid {
+		comment.User.Age = int(age.Int32)
+	}
+
+	if parentID.Valid {
+		comment.ParentID = sql.NullInt64{
+			Int64: parentID.Int64,
+			Valid: true,
+		}
+	}
+
+	// Fetch replies if they exist
+	if comment.HasReplies {
+		replies, err := c.getReplies(comment.ID)
+		if err != nil {
+			return nil, err
+		}
+		comment.Replies = replies
+	}
+
+	return &comment, nil
+}
+
+// Helper function to get replies recursively
+func (c *CommentController) getReplies(parentID int) ([]models.Comment, error) {
+	query := `
+		SELECT c.id, c.post_id, c.user_id, c.parent_id, c.author, c.content, 
+			   c.likes, c.dislikes, c.timestamp,
+			   u.id as user_id, u.nickname, u.email, u.avatar, u.cover_image, u.profession, u.age, u.created_at,
+			   EXISTS(SELECT 1 FROM comments r WHERE r.parent_id = c.id) as has_replies
+		FROM comments c
+		LEFT JOIN users u ON c.user_id = u.id
+		WHERE c.parent_id = ?
+		ORDER BY c.timestamp ASC
+	`
+	rows, err := c.DB.Query(query, parentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var replies []models.Comment
+	for rows.Next() {
+		var reply models.Comment
+		var parentID sql.NullInt64
+		var avatar, coverImage sql.NullString
+		var profession sql.NullString
+		var age sql.NullInt32
+
+		err := rows.Scan(
+			&reply.ID,
+			&reply.PostID,
+			&reply.UserID,
+			&parentID,
+			&reply.Author,
+			&reply.Content,
+			&reply.Likes,
+			&reply.Dislikes,
+			&reply.Timestamp,
+			&reply.User.ID,
+			&reply.User.Nickname,
+			&reply.User.Email,
+			&avatar,
+			&coverImage,
+			&profession,
+			&age,
+			&reply.User.CreatedAt,
+			&reply.HasReplies,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Handle nullable fields
+		if avatar.Valid {
+			reply.User.Avatar = &avatar.String
+		}
+		if coverImage.Valid {
+			reply.User.CoverImage = &coverImage.String
+		}
+		if profession.Valid {
+			reply.User.Profession = profession.String
+		}
+		if age.Valid {
+			reply.User.Age = int(age.Int32)
+		}
+
+		if parentID.Valid {
+			reply.ParentID = sql.NullInt64{
+				Int64: parentID.Int64,
+				Valid: true,
+			}
+		}
+
+		// Recursively fetch nested replies
+		if reply.HasReplies {
+			nestedReplies, err := c.getReplies(reply.ID)
+			if err != nil {
+				return nil, err
+			}
+			reply.Replies = nestedReplies
+		}
+
+		replies = append(replies, reply)
+	}
+	return replies, nil
+}
+
+// GetCommentCount returns the total number of comments for a specific post
+func (c *CommentController) GetCommentCount(postID int) int {
+	var count int
+	err := c.DB.QueryRow("SELECT COUNT(*) FROM comments WHERE post_id = ?", postID).Scan(&count)
+	if err != nil {
+		return 0
+	}
+	return count
+}

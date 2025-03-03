@@ -24,6 +24,7 @@ import { handlePasswordSubmit } from "./profileApi.js";
 import { authenticatedFetch } from "../../security.js";
 import { initializePhotoSlideshow } from "./profileTemplate.js";
 import { globalSocket } from "../../websocket/websocket.js";
+import { loadUserPosts } from "../posts/postsApi.js";
 
 let currentFriendsPage = 1;
 let isLoadingFriends = false;
@@ -397,6 +398,111 @@ function setupSettingsEventListeners() {
   });
 }
 
+const setupProfileEventListeners = function() {
+  const navLinks = document.querySelectorAll(".profile-nav-link");
+  const sections = document.querySelectorAll(".profile-section");
+
+  // Get the initial active section and show it
+  const initialActiveSection = document.querySelector(
+    ".profile-nav-link.active"
+  );
+
+  if (initialActiveSection) {
+    const sectionId = `${initialActiveSection.dataset.section}-section`;
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+      sections.forEach((s) => (s.style.display = "none"));
+      targetSection.style.display = "block";
+
+      if (initialActiveSection.dataset.section === "posts") {
+        loadUserPosts();
+      }
+    }
+  }
+
+  // Setup click handlers for nav links
+  navLinks.forEach((link) => {
+    link.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // Stop event bubbling
+
+      const sectionId = `${link.dataset.section}-section`;
+      const targetSection = document.getElementById(sectionId);
+
+      if (targetSection) {
+        // Update active states
+        navLinks.forEach((l) => l.classList.remove("active"));
+        sections.forEach((s) => (s.style.display = "none"));
+
+        link.classList.add("active");
+        targetSection.style.display = "block";
+
+        // Handle specific section actions
+        if (link.dataset.section === "posts") {
+          loadUserPosts
+        }
+      }
+    });
+  });
+
+  // Add delete account event listeners
+  const deleteConfirmCheckbox = document.getElementById("delete-confirm");
+  const deleteAccountBtn = document.querySelector(".delete-account-btn");
+  const cancelDeleteBtn = document.querySelector(".cancel-delete-btn");
+
+  if (deleteConfirmCheckbox && deleteAccountBtn) {
+    deleteConfirmCheckbox.addEventListener("change", (e) => {
+      deleteAccountBtn.disabled = !e.target.checked;
+    });
+  }
+
+  if (cancelDeleteBtn) {
+    cancelDeleteBtn.addEventListener("click", () => {
+      // Navigate back to profile or previous section
+      const profileNav = document.querySelector('[data-section="posts"]');
+      if (profileNav) {
+        profileNav.click();
+      }
+    });
+  }
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      if (
+        confirm(
+          "Are you absolutely sure you want to delete your account? This cannot be undone."
+        )
+      ) {
+        try {
+          const response = await fetch("/api/users/delete", {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+
+          if (response.ok) {
+            showNotification(
+              "Account Deleted Succesfully",
+              NotificationType.SUCCESS
+            );
+            localStorage.clear();
+            window.location.href = "/loginpage";
+          } else {
+            throw new Error("Failed to delete account");
+          }
+        } catch (error) {
+          console.error("Error deleting account:", error);
+          showNotification(
+            "Failed to delete account. Please try again.",
+            "error"
+          );
+        }
+      }
+    });
+  }
+}
+
 // Add this new function to initialize connections data
 export async function initializeConnectionsSection() {
   // Set initial tab and load data
@@ -412,4 +518,5 @@ export {
   loadConnectionsData,
   setupConnectionsInfiniteScroll,
   setupSettingsEventListeners,
+  setupProfileEventListeners
 };

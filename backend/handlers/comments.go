@@ -3,12 +3,14 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"forum/backend/controllers"
 	"forum/backend/logger"
 	"forum/backend/models"
+	"forum/backend/utils"
 )
 
 type Comment struct {
@@ -115,6 +117,78 @@ func CreateCommentHandler(cc *controllers.CommentController) http.HandlerFunc {
 				"error": "Failed to create comment",
 			})
 			return
+		}
+
+		// Get post author ID
+		var postAuthorID int
+		err = cc.DB.QueryRow("SELECT user_id FROM posts WHERE id = ?", Decodecomment.PostID).Scan(&postAuthorID)
+		if err != nil {
+			logger.Error("Failed to get post author ID: %v", err)
+			// Continue without notification since the comment was created successfully
+		} else if postAuthorID != userID { // Don't notify if user comments on their own post
+			// Create notification for post author
+			notification := models.Notification{
+				RecipientID: postAuthorID,
+				ActorID:     userID,
+				Type:        "comment",
+				EntityType:  "post",
+				EntityID:    Decodecomment.PostID,
+				Message:     fmt.Sprintf("%s commented on your post", userName),
+			}
+
+			nc := controllers.NewNotificationController(cc.DB)
+			_, err = nc.CreateNotification(notification)
+			if err == nil {
+				// Get the created notification with actor details
+				notifications, _, err := nc.GetNotifications(postAuthorID, 1, 0)
+				if err == nil && len(notifications) > 0 {
+					// Convert notification to JSON bytes
+					msgBytes, err := json.Marshal(map[string]interface{}{
+						"type":    "new_notification",
+						"payload": notifications[0],
+					})
+					if err == nil {
+						// Send notification to post author
+						SendToUser(postAuthorID, msgBytes)
+					}
+				}
+			}
+		}
+
+		// After successfully creating the comment
+		comment, err := cc.GetCommentWithDetails(commentID)
+		if err != nil {
+			logger.Error("Error getting comment details: %v", err)
+			return
+		}
+		commentCount := cc.GetCommentCount(comment.PostID)
+
+		// Broadcast new comment to all users
+		commentEvent := map[string]interface{}{
+			"type": "new_comment",
+			"payload": map[string]interface{}{
+				"postId":  comment.PostID,
+				"comment": comment,
+			},
+		}
+
+		msgBytes, err := json.Marshal(commentEvent)
+		if err == nil {
+			utils.Broadcast(msgBytes)
+		}
+
+		// Update comment count
+		countEvent := map[string]interface{}{
+			"type": "comment_count_update",
+			"payload": map[string]interface{}{
+				"postId": comment.PostID,
+				"count":  commentCount,
+			},
+		}
+
+		countBytes, err := json.Marshal(countEvent)
+		if err == nil {
+			utils.Broadcast(countBytes)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

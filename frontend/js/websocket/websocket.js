@@ -1,8 +1,20 @@
 import { NotificationType, showNotification } from "../utils/notifications.js";
 import { escapeHTML } from "../utils.js";
-import { handleWebsocketUpdatePost, handlePostReactionUpdate } from "./websocketUpdates.js";
+import {
+  handleWebsocketUpdatePost,
+  handlePostReactionUpdate,
+  handleUnreadCountUpdate,
+  handleNewNotification,
+  handleMessageListUpdate,
+  handleMessageListMarkAsRead,
+  handleTypingStatus,
+  handleNewComment,
+  handleNewReply,
+  handleCommentCountUpdate,
+} from "./websocketUpdates.js";
 import { formatNumber, formatTimeAgo } from "../utils.js";
 import { fetchUserPhotos } from "../components/profile/profileApi.js";
+import { startTimeUpdates } from "../utils/timeUpdater.js";
 
 export let globalSocket = null;
 export let isIntentionalLogout = false;
@@ -34,7 +46,11 @@ export function initializeWebSocket() {
 
     socket.onopen = () => {
       console.log("WebSocket connection established");
-      reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      socket.wasConnected = true;
+      reconnectAttempts = 0;
+
+      // Start time updates when connection is established
+      startTimeUpdates();
     };
 
     socket.onmessage = (event) => {
@@ -46,15 +62,17 @@ export function initializeWebSocket() {
       console.log("WebSocket connection closed");
       clearInterval(pingInterval);
 
-      // Don't attempt to reconnect if the closure was clean and intended
+      // Don't attempt to reconnect if:
+      // 1. The closure was clean and intended
+      // 2. We had a successful connection (event.wasClean)
+      // 3. User logged out intentionally
       if (event.wasClean || isIntentionalLogout) {
         console.log("WebSocket connection closed cleanly or intentionally");
         return;
       }
 
-      // Only attempt to reconnect if we haven't exceeded max attempts
-      if (reconnectAttempts < maxReconnectAttempts) {
-        // Exponential backoff
+      // Only attempt to reconnect if connection was never established
+      if (!socket.wasConnected && reconnectAttempts < maxReconnectAttempts) {
         const delay = Math.min(
           baseDelay * Math.pow(2, reconnectAttempts),
           30000
@@ -71,11 +89,8 @@ export function initializeWebSocket() {
           connect();
         }, delay);
       } else {
-        console.log("Max reconnection attempts reached");
-        // Optionally notify the user that the connection was lost
-        showNotification(
-          "Connection lost. Please refresh the page.",
-          NotificationType.ERROR
+        console.log(
+          "Max reconnection attempts reached or connection was previously established"
         );
       }
     };
@@ -133,6 +148,14 @@ export const WebSocketMessageType = {
   PHOTO_UPDATE: "photo_update",
   PROFILE_UPDATE: "profile_update",
   POST_REACTION: "post_reaction",
+  UNREAD_COUNT_UPDATE: "unread_count_update",
+  NEW_NOTIFICATION: "new_notification",
+  MESSAGE_LIST_UPDATE: "message_list_update",
+  MESSAGE_LIST_MARK_AS_READ: "message_list_mark_as_read",
+  TYPING_STATUS: "typing_status",
+  NEW_COMMENT: "new_comment",
+  NEW_REPLY: "new_reply",
+  COMMENT_COUNT_UPDATE: "comment_count_update",
 };
 
 export function handleWebSocketMessage(data) {
@@ -183,6 +206,30 @@ export function handleWebSocketMessage(data) {
       break;
     case WebSocketMessageType.POST_REACTION:
       handlePostReactionUpdate(payload);
+      break;
+    case WebSocketMessageType.UNREAD_COUNT_UPDATE:
+      handleUnreadCountUpdate(payload);
+      break;
+    case WebSocketMessageType.NEW_NOTIFICATION:
+      handleNewNotification(payload);
+      break;
+    case WebSocketMessageType.MESSAGE_LIST_UPDATE:
+      handleMessageListUpdate(payload);
+      break;
+    case WebSocketMessageType.MESSAGE_LIST_MARK_AS_READ:
+      handleMessageListMarkAsRead(payload);
+      break;
+    case WebSocketMessageType.TYPING_STATUS:
+      handleTypingStatus(payload);
+      break;
+    case WebSocketMessageType.NEW_COMMENT:
+      handleNewComment(payload);
+      break;
+    case WebSocketMessageType.NEW_REPLY:
+      handleNewReply(payload);
+      break;
+    case WebSocketMessageType.COMMENT_COUNT_UPDATE:
+      handleCommentCountUpdate(payload);
       break;
     default:
       console.log("Unknown message type:", data.type);
@@ -299,73 +346,43 @@ function updatePostCount(payload) {
 function handleWebsocketNewMessage(payload) {
   const { sender_id, content, timestamp } = payload;
 
-  // Find the active chat window if it exists
+  // Update chat window if open
   const chatMessages = document.getElementById("chat-messages");
   if (chatMessages && chatMessages.dataset.userId === sender_id.toString()) {
-    // Add the new message to the chat
     const newMessageHTML = `
-            <div class="chat-message received">
-                <div class="message-avatar">
-                    <img src="${
-                      payload.user.avatar || "images/avatar.png"
-                    }" alt="${payload.user.nickname}">
-                </div>
-                <div class="message-bubble">
-                    <div class="message-content">
-                        <p>${escapeHTML(content)}</p>
-                        <span class="message-time">${formatTimeAgo(
-                          timestamp || new Date()
-                        )}</span>
-                    </div>
-                </div>
-            </div>
-        `;
+      <div class="chat-message received">
+        <div class="message-avatar">
+          <img src="${payload.user.avatar || "images/avatar.png"}" alt="${
+      payload.user.nickname
+    }">
+        </div>
+        <div class="message-bubble">
+          <div class="message-content">
+            <p>${escapeHTML(content)}</p>
+            <span class="message-time">${formatTimeAgo(
+              timestamp || new Date()
+            )}</span>
+          </div>
+        </div>
+      </div>
+    `;
     chatMessages.insertAdjacentHTML("beforeend", newMessageHTML);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // Update the messages list if it exists
-  const messagesList = document.getElementById("messages-list");
-  if (messagesList) {
-    const existingThread = messagesList.querySelector(
-      `[data-user-id="${sender_id}"]`
-    );
-    if (existingThread) {
-      // Update existing thread with new message preview
-      const previewElement = existingThread.querySelector(".message-preview");
-      const timeElement = existingThread.querySelector(".message-time");
-      if (previewElement && timeElement) {
-        previewElement.textContent = content;
-        timeElement.textContent = formatTimeAgo(timestamp || new Date());
-      }
-      // Move thread to top
-      messagesList.insertBefore(existingThread, messagesList.firstChild);
-    } else {
-      // Create new thread
-      const newThreadHTML = `
-                <div class="message-item" data-user-id="${sender_id}">
-                    <div class="user-avatar-wrapper">
-                        <img src="${
-                          payload.user.avatar || "images/avatar.png"
-                        }" alt="${payload.user.nickname}" class="user-avatar">
-                        <span class="status-indicator ${
-                          payload.user.isOnline ? "online" : "offline"
-                        }"></span>
-                    </div>
-                    <div class="message-content">
-                        <div class="message-header">
-                            <h4>${escapeHTML(payload.user.nickname)}</h4>
-                            <span class="message-time">${formatTimeAgo(
-                              timestamp || new Date()
-                            )}</span>
-                        </div>
-                        <p class="message-preview">${escapeHTML(content)}</p>
-                    </div>
-                </div>
-            `;
-      messagesList.insertAdjacentHTML("afterbegin", newThreadHTML);
-    }
-  }
+  // Update messages list
+  handleMessageListUpdate({
+    user: {
+      id: sender_id,
+      nickname: payload.user.nickname,
+      avatar: payload.user.avatar,
+      first_name: payload.user.first_name,
+      last_name: payload.user.last_name,
+      is_online: payload.user.is_online,
+      unread_messages: payload.unread_messages || 1,
+      last_message: content,
+    },
+  });
 }
 
 // Add new function to handle photos section update
@@ -556,29 +573,39 @@ function handleProfileUpdate(data) {
   );
 
   // Add this new section to update sidebar profile card
-  const sidebarAvatar = document.querySelector('.user-profile-card .profile-avatar img');
+  const sidebarAvatar = document.querySelector(
+    ".user-profile-card .profile-avatar img"
+  );
   if (sidebarAvatar) {
     sidebarAvatar.src = data.profile.avatar || "images/avatar.png";
   }
 
-  const sidebarBanner = document.querySelector('.user-profile-card .profile-banner img');
+  const sidebarBanner = document.querySelector(
+    ".user-profile-card .profile-banner img"
+  );
   if (sidebarBanner) {
     sidebarBanner.src = data.profile.cover_image || "images/banner.png";
   }
 
-  const sidebarName = document.querySelector('.user-profile-card .user-name');
+  const sidebarName = document.querySelector(".user-profile-card .user-name");
   if (sidebarName) {
     sidebarName.textContent = data.profile.nickname || "John Doe";
   }
 
-  const sidebarProfession = document.querySelector('.user-profile-card .user-profession');
+  const sidebarProfession = document.querySelector(
+    ".user-profile-card .user-profession"
+  );
   if (sidebarProfession) {
-    sidebarProfession.textContent = data.profile.profession || "Software Engineer";
+    sidebarProfession.textContent =
+      data.profile.profession || "Software Engineer";
   }
 
-  const sidebarTagline = document.querySelector('.user-profile-card .user-tagline');
+  const sidebarTagline = document.querySelector(
+    ".user-profile-card .user-tagline"
+  );
   if (sidebarTagline) {
-    sidebarTagline.textContent = data.about?.bio || "Building the future, one line of code at a time";
+    sidebarTagline.textContent =
+      data.about?.bio || "Building the future, one line of code at a time";
   }
 }
 

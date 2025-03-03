@@ -27,6 +27,12 @@ type Message struct {
 	ConversationID int         `json:"conversation_id"`
 	Content        string      `json:"content"`
 	SentAt         string      `json:"timestamp"`
-	IsRead         bool        `json:"unread"`
+	IsRead         bool        `json:"is_read"`
 	User           MessageUser `json:"user"`
+}
+
+type TypingStatus struct {
+	SenderID    int    `json:"sender_id"`
+	RecipientID int    `json:"recipient_id"`
+	IsTyping    bool   `json:"is_typing"`
 }

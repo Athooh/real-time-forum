@@ -27,6 +27,10 @@ func (ac *AuthController) RegisterUser(user models.User) (int64, error) {
 		logger.Warning("Registration failed - missing required fields")
 		return 0, errors.New("missing required fields")
 	}
+	if !ac.IsValidEmail(user.Email) {
+		logger.Warning("Registration failed - invalid email format: %s", user.Email)
+		return 0, errors.New("invalid email format")
+	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Error("Failed to hash password: %v", err)
@@ -76,6 +80,9 @@ func (ac *AuthController) AuthenticateUser(credentials models.LoginRequest) (*mo
 
 // isValidEmail checks if the email is in a valid format
 func (ac *AuthController) IsValidEmail(email string) bool {
+	if email == "" {
+		return false
+	}
 	_, err := mail.ParseAddress(email)
 	if err != nil {
 		logger.Debug("Invalid email format: %s", email)
@@ -90,8 +97,15 @@ func (ac *AuthController) IsValidUsername(username string) bool {
 		logger.Debug("Invalid username length: %s", username)
 		return false
 	}
-	// Only allow letters, numbers, and underscores
-	regex := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+
+	// Check if username starts with a letter
+	if !regexp.MustCompile(`^[a-zA-Z]`).MatchString(username) {
+		logger.Debug("Username must start with a letter (uppercase or lowercase): %s", username)
+		return false
+	}
+
+	// Only allow lowercase letters, numbers, and underscores after first character
+	regex := regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 	if !regex.MatchString(username) {
 		logger.Debug("Username contains invalid characters: %s", username)
 		return false
@@ -101,9 +115,23 @@ func (ac *AuthController) IsValidUsername(username string) bool {
 
 // isValidPassword checks if the password meets the requirements
 func (ac *AuthController) IsValidPassword(password string) bool {
+	// Check minimum length
 	if len(password) < 8 {
 		return false
 	}
+
+	// Check maximum length (e.g., 32 characters)
+	if len(password) > 32 {
+		logger.Debug("Password exceeds maximum length")
+		return false
+	}
+
+	// Check for spaces
+	if strings.Contains(password, " ") {
+		logger.Debug("Password contains spaces")
+		return false
+	}
+
 	// Check for at least one uppercase, one lowercase, one number, and one special character
 	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
 	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)
@@ -131,6 +159,10 @@ func (ac *AuthController) SanitizeInput(input string) string {
 // Function to retrieve username based on user ID from SQLite database
 func GetUsernameByID(db *sql.DB, userID int) (string, error) {
 	var username string
+
+	if db == nil {
+		return "", errors.New("database connection is nil")
+	}
 
 	// Query to fetch the username for the given user ID
 	query := `SELECT nickname FROM users WHERE id = ?`

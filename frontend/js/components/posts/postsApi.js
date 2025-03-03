@@ -9,6 +9,7 @@ import { SelectedCategories } from "./postsEvent.js";
 import { setupCommentEventListeners } from "./postsEvents.js";
 import { createComment } from "./postsTemplates.js";
 import { globalSocket } from "../../websocket/websocket.js";
+import { WebSocketMessageType } from "../../websocket/websocket.js";
 
 async function handleCreatePost(e) {
   e.preventDefault();
@@ -30,16 +31,15 @@ async function handleCreatePost(e) {
 async function handlePostReaction(e) {
   const postId = e.currentTarget.dataset.postId;
   const isLike = e.currentTarget.classList.contains("action-like-btn");
-  const isDislike = e.currentTarget.classList.contains("action-dislike-btn");
 
   try {
     const response = await reactToPost(postId, isLike);
 
-    // If the WebSocket is connected, send the update
+    // Send WebSocket update for reaction counts
     if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
       globalSocket.send(
         JSON.stringify({
-          type: "post_reaction",
+          type: WebSocketMessageType.POST_REACTION,
           payload: {
             post_id: parseInt(postId),
             likes: response.likes,
@@ -116,19 +116,17 @@ async function handlePostSubmit(e) {
   }
 }
 
-async function handleCommentSubmit(e) {
+async function handleEnterKeyCommentSubmit(e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     const postId = e.target.dataset.postId;
     const content = e.target.value.trim();
 
-
-
     if (content && postId) {
       try {
         await submitComment(postId, content);
         e.target.value = "";
-        await refreshComments(postId);
+        // await refreshComments(postId);
       } catch (error) {
         showNotification("Failed to post comment", NotificationType.ERROR);
       }
@@ -148,18 +146,24 @@ async function handleSavePost(e) {
 }
 
 async function fetchPosts(page = 1, append = false) {
-  if (forumState.isLoading || forumState.allPostsLoaded) return;
+  if (forumState.isLoading) return;
+  
+  // Reset state when loading first page
+  if (page === 1 && !append) {
+    forumState.allPostsLoaded = false;
+  }
+  
   forumState.isLoading = true;
 
   try {
-    const limit = 10; // Posts per page
+    const limit = 10;
     const response = await authenticatedFetch(
       `/api/posts?page=${page}&limit=${limit}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-        },
+        }
       }
     );
 
@@ -170,7 +174,6 @@ async function fetchPosts(page = 1, append = false) {
     const data = await response.json();
     const posts = data.posts;
 
-    // Check if we've reached the end
     if (!posts || posts.length < limit) {
       forumState.allPostsLoaded = true;
     }
@@ -382,15 +385,17 @@ async function refreshComments(postId) {
 
     const comments = await response.json();
 
-    console.log("refresh  comments", comments);
     const commentsContainer = document.querySelector(`#comments-${postId}`);
     if (commentsContainer) {
-     
       commentsContainer.innerHTML = Object.values(comments)
-        .map((comment) => createComment(comment,false,comment.replies && comment.replies.length > 0))
+        .map((comment) =>
+          createComment(
+            comment,
+            false,
+            comment.replies && comment.replies.length > 0
+          )
+        )
         .join("");
-
-      setupCommentEventListeners();
     }
   } catch (error) {
     console.error("Error refreshing comments:", error);
@@ -425,7 +430,18 @@ async function submitReply(commentId, content, postId) {
     throw error;
   }
 }
+async  function loadUserPosts() {
+  
+    const postsContainer = document.getElementById("posts-container");
+    if (!postsContainer) return;
 
+    // Clear existing posts first
+    postsContainer.innerHTML =
+      '<div class="loading-spinner">Loading posts...</div>';
+
+    fetchPosts(1, false);
+
+}
 // Initialize state
 if (!forumState.hasOwnProperty("currentPage")) {
   forumState.currentPage = 1;
@@ -437,11 +453,12 @@ if (!forumState.hasOwnProperty("allPostsLoaded")) {
 export {
   handleCreatePost,
   handlePostReaction,
-  handleCommentSubmit,
+  handleEnterKeyCommentSubmit,
   handleSavePost,
   handlePostSubmit,
   fetchPosts,
   refreshComments,
   submitComment,
   submitReply,
+  loadUserPosts,
 };
